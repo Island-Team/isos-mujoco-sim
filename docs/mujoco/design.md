@@ -1,5 +1,23 @@
 # Scene runtime and integration
 
+**Status:** The scene engine and the framed socket are implemented. The 0.x integrated target below still needs EOS/IsOS version-aware graph support, selector metadata, socket ownership/deduplication, and complete stop coordination. Product release `0.1.1` does not make socket protocol `2.0.0` a product release.
+
+The owner contracts are [package descriptor and contributions](interfaces/package.md), [EOS-owned socket](interfaces/socket.md), and [benchmark RPC](interfaces/benchmark.md). This design describes the algorithms rather than redefining their payloads.
+
+## Target activation algorithm
+
+1. IsOS resolves an exact verified package receipt, checks the descriptor and scene asset stays inside the immutable bundle, checks `MUJOCO_ROOT` and its required library, then presents registry-derived scene and device options. Package installation does not edit the graph.
+2. The operator previews `sim-hardware`, chooses stable scene/device IDs, checks the draft and applies one revision. IsOS resolves verified paths in generated config; the graph keeps IDs and the exact package pin. A legacy `1.0.0` graph and `@v1.0` types remain readable; new authored graphs use `0.1.0` and newly registered types `@v0.1` after all readers support them.
+3. EOS reads that revision without editing it, selects the compiled internal `mujoco-v2` adapter factory, starts the verified simulator as its direct child, waits for socket health and creates only graph-declared camera/base/arm adapters. Failed health or a mismatched device keeps the node unavailable and is logged with `run_id`, optional `node_path` and `correlation_id`.
+4. The dispatcher admits each actuator command before the adapter sends it. EOS verifies the graph node to simulator device mapping; the simulator validates its device ID, operation kind, and numeric bounds, then deduplicates `command_id` to protect identical transport retransmission without authorizing EOS to replay an uncertain released command. A stop command interrupts in-flight work and is independent of lower-priority observations. No backend creates another actuator route.
+5. On shutdown EOS closes command admission, requests stop for every admitted actuator with a bounded deadline, records any missing acknowledgment, then terminates and reaps its child. IsOS reports deployment stopped only after EOS exits or a bounded forced-stop path is recorded. The simulator removes owner-only sockets on normal exit.
+
+## Target command and log algorithms
+
+For each admitted movement, key the dedup table by `(node, command_id)`, store a bounded hash of operation and canonical typed values, plus the result and expiry. An identical transport retransmission returns the prior result; a different payload with that key returns `command_id_conflict`. Bound memory by time and count, and retain a key at least through the command lease plus the bounded transport retransmission window. EOS never automatically replays an uncertain released command; it reconciles status or requires an explicit authorized new admission. The existing service does **not** enforce `node` or `command_id`; this algorithm is a TODO, not a current guarantee.
+
+Emit a sanitized JSONL event once for startup identity (package, scene ID, protocol and `run_id`), then on readiness changes, command admission/result, socket failures and shutdown. Do not log image bytes, arbitrary environment values or all high-rate observations. A first-use reader starts at the current run's first ready/failure event, then filters by canonical `node_path` and `correlation_id`. The shared event shape, rotation and cursor reading are defined by IsOS; this package supplies source `mujoco` and its own event codes.
+
 [中文](../../docs_cn/mujoco/design_cn.md)
 
 [Package overview](README.md) · [Benchmark tasks](benchmarks.md)
@@ -8,7 +26,7 @@ One simulator process loads one scene profile at startup. Its engine owns MuJoCo
 
 Direct launch uses `--scene`; an IsOS/EOS v2 deployment selects the scene in its applied shared graph and EOS passes that path to its simulator child. The selected MJCF declares exactly one supported custom numeric marker, `eos_benchmark_pick_place_v1` or `eos_benchmark_navigation_v1`; an unknown or multiple benchmark markers are rejected. The engine then checks required named elements, including `navigation_goal` for the navigation profile. A different XML file is not automatically an admitted benchmark; each profile needs explicit reset and scoring logic, documented capabilities, and tests. Changing a scene requires a process restart.
 
-The simulator still exposes the legacy `eos.simulator.v1.SimulatorService` gRPC socket for older direct integrations. The current IsOS/EOS v2 runtime connects generic camera, base, and manipulator adapters to the separate owner-only framed socket selected by `--v2-socket`; its contract is in [backend-v2.md](backend-v2.md). EOS owns the simulator child and exposes graph-declared observation and primitive ports to agents. The benchmark socket remains separate from both robot-facing interfaces. This package does not link into EOS core.
+The simulator still exposes the legacy `eos.simulator.v1.SimulatorService` gRPC socket for older direct integrations. The current IsOS/EOS v2 runtime connects generic camera, base, and manipulator adapters to the separate owner-only framed socket selected by `--v2-socket`; its contract is in [backend.md](backend.md). EOS owns the simulator child and exposes graph-declared observation and primitive ports to agents. The benchmark socket remains separate from both robot-facing interfaces. This package does not link into EOS core.
 
 EGIA attaches to an already-running EOS gateway, discovers its healthy devices and versioned primitives, and executes through EOS. It does not receive benchmark seed, goal truth, privileged state, or score. EGIA fleet aliases identify EOS endpoints; the simulation scene remains EOS's configuration choice. Agent evaluation compares an EGIA or other agent's EOS-visible behavior with a separate evaluator's private result.
 

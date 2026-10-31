@@ -1,10 +1,8 @@
-# Coding Conventions
+# 编码规范
 
-[中文](../../docs_cn/island/conventions.v1.2.0_cn.md)
+[English](../../docs/island/conventions.v1.3.0.md)
 
-**Convention version: 1.2.0**
-
-This standalone simulator follows the Island team convention v1.2.0. Adapt EOS-specific paths and release workflow to this repository.
+**Convention version: 1.3.0**
 
 General coding conventions and practices. Adapt paths, tooling, and optional sections to each repository.
 
@@ -19,33 +17,39 @@ graph LR
 
 When a component-specific note under `docs/<component>/` conflicts with this file, the component doc wins for that scope only.
 
-Island is the team, Aether is the product version, and EOS is a component. Use each name for its role; keep established wire names for compatibility. See [Aether EOS contracts](https://github.com/Island-Team/Island-eos/blob/master/docs/island/contracts_aether.md).
+Island 是团队名称，Aether 是产品版本名称，EOS 是组件名称。按各自角色使用名称；为兼容性保留既有传输名称。参见 [Aether EOS 契约](https://github.com/Island-Team/Island-eos/blob/master/docs_cn/island/contracts_aether_cn.md)。
 
-This document has its own version, independent of the EOS product version. Replacing or removing an established rule increments the major version; new compatible guidance increments the minor version; clarifications and corrections increment the patch version. Update the English and Chinese versions together in one PR, record the new version in both headers, and describe the rule change in the PR. Version 1.2.0 adds first-use introductions and the task-based documentation catalog; earlier revisions remain available in Git history.
-
----
-
-## Inline documentation
-
-**Keep inline notes short and inconspicuous.** Add a comment or docstring only when a name, type, signature, and nearby code do not reveal an important constraint, unit, ownership rule, safety or concurrency invariant, surprising failure, or reason for a choice. Put it beside the relevant declaration or operation. Do not document every public item, file, or obvious wrapper merely for coverage; keep detailed design in `docs/`.
-
-Use the language's customary syntax: Rust `///` and `//!`, Python docstrings, TypeScript TSDoc, Go declaration comments, or C/C++ Doxygen where generated references need them. Keep any note to the information a caller or maintainer cannot infer from the code. Public C/C++ headers still describe ownership, blocking, and error behavior when these affect callers. Fix stale notes when changing behavior. In-code comments and docstrings are in English.
-
-Doc-only changes use `docs:` commits; mixed code and documentation changes use the primary change prefix.
+本文档的版本独立于 EOS 产品版本。替换或删除既有规则时提升主版本；新增兼容性指导时提升次版本；澄清和勘误时提升修订版本。英文和中文版本应在同一 PR 中更新，并在两个文件的页首记录版本号，在 PR 中说明规则变化。1.3.0 版增加接口字段、首次使用顺序、统一可观测性与发布说明，以及明确的页面类型；旧版本可通过 Git 历史查阅。
 
 ---
 
-## Markdown documentation
+## 代码内文档
 
-Write like an article: one idea per paragraph, with headings that help readers follow the subject. Prefer prose and occasional **bold emphasis**. Use bullets for genuine sequences or checklists and tables only when they clarify a comparison. Avoid repeated inline code marks, decorative diagrams, large fenced blocks, and a mandatory Contents list or fixed page template. Short fenced payload examples are useful when exact syntax matters. Write each prose paragraph on one physical source line; do not wrap Markdown to an 80-column limit. Let the viewer wrap it. Preserve line breaks that carry Markdown meaning, such as code blocks, tables, lists, and intentional hard breaks.
+**代码内注释应简短、低调。** 只有名称、类型、签名和邻近代码无法说明重要约束、单位、所有权、安全或并发不变量、意外故障或设计理由时，才添加注释或文档字符串。将其放在相关声明或操作旁。不要为了覆盖率而逐一解释显而易见的公开项、文件或简单封装；详细设计写在 `docs/` 中。
 
-Hand-written docs live under the owning product or component. `docs/README.md` introduces the catalog; `docs/island/README.md` introduces the product and its core projects before the EOS guide. Organize EOS pages by reader task: `usage/` for setup and operation, `debug/` for running problems, `develop/` for module and extension authoring, `interfaces/` for contracts, `design/` for architecture and runtime internals, and `maintenance/` for release work. Keep one short component `README.md` as the entry point. The `docs_cn/` tree mirrors the English reading path, with `_cn` before the extension; translations retain the same API names and link to each other near the top. Update both when behavior changes. Do not edit generated references by hand.
+采用语言惯用的注释形式，例如 Rust 文档注释、Python 文档字符串、TypeScript TSDoc、Go 声明注释，以及生成参考文档所需的 C/C++ Doxygen。只记录调用者或维护者无法从代码推断的信息。公开 C/C++ 头文件中的所有权、阻塞及错误行为若影响调用者，仍须说明。行为变更时同步修正注释。代码注释和文档字符串使用英语。
 
-Introduce a product, process, tool, module, or specialized term before the reader first needs it. Give its role in one sentence and link to its detailed page on first mention. A standalone page also needs enough context to be understood when opened directly; do not require the reader to infer an unexplained name from a path or prior page.
+仅修改文档的提交使用 `docs:` 前缀；代码与文档共同变更时使用主要变更类型的前缀。
 
-**All hand-written interface contracts belong only in an `interfaces` folder under the owning component's documentation tree**, such as `docs/island/interfaces/`, `docs/eos/interfaces/`, and their `docs_cn/` mirrors. This applies to HTTP, WebSocket, RPC, IPC, plugin, skill, and hardware-facing interfaces. Design pages may explain why an interface exists and link to its contract, but should not duplicate payload definitions.
+---
 
-An interface page identifies callers and owners, invocation or transport, input and output, lifecycle, and observable errors. **Show payloads with small, valid examples** using actual wire field names and values. Include both request and response when applicable, and an error example when useful. Explain constraints beside examples instead of repeating their fields in a table. Synchronize examples with schemas, headers, handlers, and tests. Document current behavior in present tense and plans explicitly as future work.
+## Markdown 文档
+
+采用文章式写法：每段讲述一个要点，用标题引导阅读。优先使用正文和少量**加粗强调**。只有真实的步骤或清单才使用项目符号；表格只用于有助于比较的场合。减少行内代码标记、装饰性图表和大段围栏代码块，不要求目录列表或固定模板。精确语法重要时，可以使用简短的载荷示例。每个 Markdown 正文段落在源码中占一行，不设 80 字符宽度限制，由阅读器自行换行；保留代码块、表格、列表和有意使用的硬换行。
+
+手写文档放在所属产品或组件目录下。`docs/README.md` 是总目录，`docs/island/README.md` 先介绍产品及其核心项目，再进入 EOS。EOS 按读者任务组织：`usage/` 用于部署和操作，`debug/` 用于运行问题，`develop/` 用于模块与扩展开发，`interfaces/` 用于契约，`design/` 用于架构和运行时内部机制，`maintenance/` 用于发布工作。组件根目录保留一个简短的 `README.md` 作为入口。`docs_cn/` 保持相同阅读路径，文件扩展名前加 `_cn`；译文保留相同 API 名称，并在页面开头互相链接。行为变化时同步更新两种语言。不要手工修改生成的参考文档。
+
+在读者首次需要某个产品、进程、工具、模块或专业术语之前，先用一句话说明其职责，并在首次提及时链接详细页面。独立打开的页面也应提供足够上下文；不要让读者从路径或前一页猜测未解释的名称。
+
+**所有手写接口契约仅放在所属组件文档树的 `interfaces` 目录中**，例如 `docs/island/interfaces/`、`docs/eos/interfaces/` 及对应的 `docs_cn/` 目录。这包括 HTTP、WebSocket、RPC、IPC、插件、技能和硬件接口。设计页面可以解释接口缘由并链接契约，但不要重复定义载荷。
+
+接口页面说明调用方与负责人、调用方式或传输机制、输入输出、生命周期和可观察的错误。**用简短且有效的示例展示载荷**，使用真实的传输字段名和值。适用时同时给出请求与响应，并在有帮助时给出错误示例。在示例旁解释约束，避免用表格重复字段。示例须与 schema、头文件、处理代码和测试一致。当前行为用现在时描述，计划明确标为未来工作。
+
+### 契约与首次使用文档
+
+每份手写契约放在负责准入或传输的组件目录中。每个公开字段都写明类型、单位（或“—”）、用途、默认值或缺省行为、校验规则和兼容规则。说明调用方与所有者、传输、生命周期、超时、失败结果，并提供有效的请求、响应和错误示例。设计文档解释算法并链接所属契约，不另写一套载荷定义。仅规划的行为标记为 **目标设计——尚未实现**，并链接具体 TODO。
+
+使用和日志指南按首次操作的顺序组织：前提与安装、查找和验证软件包、选择并配置图、校验与 Apply、启动与就绪、实时控制与监视、日志与排错，最后是停止、升级和恢复。每个进程和术语都在首次命令之前介绍。日志指南先讲如何找到当前运行及第一条就绪或失败事件，再讲筛选、关联、轮转与保留。
 
 ---
 
@@ -105,9 +109,9 @@ Follow the official [Rust Style Guide](https://doc.rust-lang.org/style-guide/) a
 
 ---
 
-## Editor and IDE setup
+## 编辑器与 IDE 设置
 
-**Repository configuration is the source of truth.** Keep formatting, lint, indentation, and type-check rules in repository configuration so tools and CI apply the same rules. Configure any editor or IDE to use those settings and the language's tooling. Describe required capabilities and repository settings without prescribing a particular application, extension, menu, or editor-specific configuration file. Coding assistants follow the same conventions and configuration as other contributors.
+**以仓库配置为准。** 将格式化、静态检查、缩进和类型检查规则写入仓库配置，让开发工具和 CI 使用相同规则。任何编辑器或 IDE 都应采用这些设置及对应语言工具。说明需要的能力和仓库设置，不指定某个应用、扩展、菜单或编辑器专有配置文件。代码助手也遵循与其他贡献者相同的约定和配置。
 
 ---
 
@@ -143,11 +147,13 @@ A typical stack uses TypeScript (strict), React with functional components, SCSS
 
 **Styling.** Prefer design tokens (`var(--token)`) over raw colors in components. When the project supports themes, define tokens in a central theme file and apply via a provider or root attributes. Aim for WCAG AA contrast.
 
-**Visual consistency.** Reuse the product's shared theme, typography, spacing, controls, and status treatments across pages. A feature may have its own layout, but it should still look like the same frontend. Prefer translucent surfaces and subtle separators when grouping data; solid cards and visible frames are appropriate where they clarify structure or interaction. Keep a small, shared set of font families and text roles. Match line height and container size to the text so letters and labels are never clipped or obscured.
+**视觉一致性。** 各页面复用产品统一的主题、字体、间距、控件和状态样式。功能页面可以采用适合任务的布局，但整体应属于同一套前端视觉语言。组织数据时优先使用半透明背景和轻量分隔；实体卡片和明显边框在有助于说明结构或交互时仍可使用。全站只保留少量统一的字体族和文字层级。行高及容器尺寸要适应文字，不能裁切或遮挡字符和标签。
 
-**Controls and preferences.** Standard desktop buttons should be about 30 px tall, matching the existing controls. Preserve at least 44×44 px targets on touch devices. Use the application's existing owners for language, time zone, date and number formats, theme, and other global preferences. A page should not create its own competing preference state or visual rules.
+**控件与全局偏好。** 桌面端常规按钮高度约为 30 px，以现有控件为准；触控设备上的点击区域至少为 44×44 px。语言、时区、日期和数字格式、主题等全局偏好应由应用现有的统一机制管理，页面不得另设互相冲突的状态或样式规则。
 
-**Audience and density.** Choose information density by task and reader. A developer console or service, job, or domain administration page should make operational facts easy to scan: concise rows, aligned labels and values, and bounded scrolling for long lists. A client or general guest page may use more space for explanation and visual presentation. Keep important information available at narrow widths, even when a compact desktop row must wrap or disclose details.
+**受众与信息密度。** 根据任务和读者决定信息密度。面向开发者的控制台，以及服务、任务或领域管理页面，应让运行信息便于扫描：使用简短的行、对齐的标签与数值，并对长列表设置有界滚动。面向客户或普通访客的页面可以给说明与视觉内容更多空间。窄屏下即使需要换行或展开详情，也要保留重要信息。
+
+**页面类型。** 工作页面（图编辑器、控制台、软件包管理、日志或配置）优先使用对齐的紧凑行、可见状态、有界滚动和键盘操作。视觉页面（概览、展示或说明型首页）可使用更宽的间距和较大的图像。两类页面共用字体、颜色变量、焦点样式、响应式行为和无障碍状态提示。以 Island-web 为视觉参考：默认使用透明或轻微半透明表面与克制的边框；只有在层级或可读性需要时才使用实体背景。桌面常规控件使用统一的 28–30 px 高度；触控区域至少为 44×44 px。浮动和停靠面板也遵守这些规则，不能遮蔽关键停止操作或故障状态。
 
 **Responsive.** Mobile-first breakpoints via a shared mixin or media-query helper. Grid for page shells; Flexbox inside components. On touch devices, interactive targets are at least 44×44 px.
 
@@ -156,6 +162,15 @@ A typical stack uses TypeScript (strict), React with functional components, SCSS
 **Accessibility.** Use semantic landmarks (`nav`, `main`, `article`, `section`, `footer`). Actions use `<button>`; navigation uses `<a>`. Every control has visible text or `aria-label`.
 
 **Build.** Keep production output self-contained (no runtime CDN dependencies unless explicitly allowed). Configure the server or host for SPA fallback to `index.html` when using client-side routing.
+
+---
+
+
+## 统一可观测性与发布记录
+
+所有组件用 UTF-8 JSON Lines 输出经过脱敏的机器可读事件。共同字段包括 RFC3339 UTC `timestamp`、`level`（`trace`、`debug`、`info`、`warn` 或 `error`）、`source`、`core`、可选的规范 `node_path`、稳定的 `event_code`、`run_id`、可选的 `correlation_id`、可读的 `message` 和有界的 `fields`。组件启动或就绪时输出一条有用事件，此后只记录状态变化与可处理的故障，避免周期性成功日志。不得记录密钥、原始媒体、提示词、原语参数或无界的服务商载荷。IsOS 负责部署级聚合、按来源存储、轮转和游标读取；组件各自负责结构化事件生产。所属接口文档应说明保留策略和游标遇到轮转时的恢复方法。
+
+低于 1.0.0 的产品版本表示仍在开发，不能据此推断接口稳定性。图格式、节点类型 ID、protobuf 命名空间、HTTP 路由、软件包版本和套接字协议各有独立兼容规则。兼容扩展应新增带默认值的可选字段，保留现有 proto 字段号及 JSON 名称，并让新读取器接受旧数据。破坏性行为需要明确的新契约标识与迁移指南。历史发布标签不可改写。发布说明统一按简短顺序书写：版本和日期、操作员可见变更、兼容性与迁移、安装或升级步骤、已知限制、可复现命令与验证结果。明确标注已实现、候选或目标设计。
 
 ---
 
@@ -271,7 +286,7 @@ module/gateway/
     └── test_srv.py
 ```
 
-**Tests** — prefer `<module>/tests/` for local unit tests when the language tooling benefits from co-location. In this standalone repository, `tests/eos/` owns component-wide and contract behavior, while C++ module tests remain beside their modules. A combined product tree may add separate EGIA, integration, system, or hardware test trees, but those paths are not part of this checkout. Not every module needs its own test tree; thin adapters and one-liner wrappers often do not. **You must add tests** when a module is large, owns non-obvious algorithms, or would be painful to debug by hand — that is when tests pay off most.
+**Tests** — 当语言工具适合共址时，优先将本地 unit test 放在 `<module>/tests/`。在此独立仓库中，`tests/eos/` 负责 component-wide 与 contract 行为，C++ module test 则与各自 module 共址。合并产品树可以增加 EGIA、integration、 system 或 hardware test tree，但这些路径不属于当前 checkout。并非每个 module 都需要自己的 test tree；简单 adapter 和单行 wrapper 通常不需要。当 module 较大、 包含非显而易见的算法，或手工调试成本高时，**必须添加测试**。
 
 When present, each test file targets one unit, feeds **mock or stub input**, and asserts **expected output**. No hardware in unit tests — mock backends and contracts at the module boundary. Acceptable kinds include **smoke**, **unit with mock**, **stubbed integration**, **simulation**, **replay**, **benchmark**, **hardware-in-loop**, and **manual acceptance** — name the method in the module doc. Cross-module smoke checks live beside the composed process; deeper manual verification uses in-code debug hooks or a dedicated test plan rather than ad-hoc top-level trees.
 
@@ -299,7 +314,7 @@ Services and tools talk to runtime through **public contracts** (RPC, IPC, or HT
 
 Hand-written docs live under `docs/{island,egia,eos}/`. Generated API detail (Doxygen, Sphinx, rustdoc) goes to a generated output directory; never edit it by hand. Link to it from module docs instead of duplicating every signature.
 
-Public EOS interface definitions are authored in focused proto files under `share/eos/contracts/eos/`. JSON Schemas and the manifest under `share/eos/schemas/eos/`, and the optional `share/ext/north-http/openapi/north-http/openapi.json`, are generated artifacts. Change the proto source and regenerate; do not patch generated JSON.
+公开的 EOS 接口定义只在 `share/eos/contracts/eos/` 下的专注 proto 文件中维护。`share/eos/schemas/eos/` 下的 JSON Schema 与清单，以及可选的 `share/ext/north-http/openapi/north-http/openapi.json`，均为生成产物。修改 proto 后重新生成，不要直接修改生成的 JSON。
 
 Canonical roles: the product introduction lives at `docs/island/README.md`; each component has one `README.md` catalog. EOS pages use `usage/`, `debug/`, `develop/`, `interfaces/`, `design/`, and `maintenance/`. The component README is the navigation index.
 
@@ -373,19 +388,21 @@ When adding configuration options, add the field to the corresponding config str
 
 ---
 
-## Git workflow
+## Git 工作流
 
-Start each change on a new branch from the current target branch, usually `master`. Name a fix branch `fix(<scope>)/<short-description>`, for example `fix(runtime)/queue-overflow`; use lowercase words and hyphens in the description. Use the corresponding type for other work, such as `feat(<scope>)/...` or `docs(<scope>)/...`. Do not develop directly on the target branch.
+每项修改都从最新的目标分支（通常是 `master`）创建新分支。修复分支命名为 `fix(<scope>)/<short-description>`，例如 `fix(runtime)/queue-overflow`；描述使用小写单词和连字符。其他修改沿用对应类型，例如 `feat(<scope>)/...` 或 `docs(<scope>)/...`。不要直接在目标分支上开发。
 
-Keep commit messages concise and imperative, prefixed with `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, or `chore:`. Make each commit one logical change; use the primary change type when code and docs change together. Review the diff and stage only intended files. Exclude logs, build output, caches, credentials, and machine-specific files.
+提交信息简短明确，以 `feat:`、`fix:`、`docs:`、`refactor:`、`test:` 或 `chore:` 开头。每次提交只包含一项逻辑修改；代码与文档同时变更时采用主要修改类型。提交前检查 diff，只暂存本次修改需要的文件，不提交日志、构建产物、缓存、密钥或本机配置。
 
-Merge through a PR. Name a fix PR `fix: <brief description> (#<index>)`, for example `fix: handle queue overflow (#123)`; use the corresponding type prefix and index format for other work. The index is the related issue or task number. Describe the behavior change, verification, and relevant docs in the PR. Choose **Squash and merge** so each PR adds one commit to the target branch and repository history stays linear. Bring the branch up to date with its target and rerun relevant checks after resolving conflicts. Do not force-push shared branches unless the team agrees.
+通过 PR 合并。修复 PR 标题使用 `fix: <brief description> (#<index>)`，例如 `fix: handle queue overflow (#123)`；其他类型使用相同的类型前缀和索引格式。`#<index>` 是关联的问题或任务编号。PR 应说明行为变化、验证结果，并链接相关文档。合并时选择 **Squash and merge**，让每个 PR 在目标分支成为一个提交，保持仓库历史线性。合并前先让分支与目标分支同步，并解决冲突、重跑相关检查；不要在共享分支上强制推送，除非团队同意。
 
-### Private development and public releases
+---
 
-For EOS, the private `Island-eos` repository owns development history, and the public `Aether-EOS-R` repository owns its own release history. Use private branches and PRs for development. Publish reviewed source snapshots through public PRs based on the public branch; never push, merge, cherry-pick, or mirror private commits or tags into the public repository. Follow the [EOS publishing procedure](../eos/maintenance/publish.md) for remote setup, review, and public contributions.
+### 私有开发与公开发布
 
-The product release version is set in the root `CMakeLists.txt` and reflected in generated API documentation. A release version bump does not automatically change primitive versions, schema versions, or skill ABI versions; change those only when their own contracts change. Create a public release tag only after the corresponding public commit is merged.
+对于 EOS，私有 `Island-eos` 仓库保留开发历史，公开 `Aether-EOS-R` 仓库维护独立的发布历史。开发使用私有分支和 PR。发布时以公开分支为基础，通过公开 PR 提交已审查的源码快照；不要将私有提交或标签推送、合并、cherry-pick 或镜像到公开仓库。远程配置、审查和公开贡献流程见 [EOS 发布流程](https://github.com/Island-Team/Island-eos/blob/master/docs_cn/eos/maintenance/publish_cn.md)。
+
+产品发布版本在根目录 `CMakeLists.txt` 中设置，并反映在生成的 API 文档中。产品版本提升不会自动修改 primitive、schema 或 skill ABI 的版本；仅在对应契约变化时提升它们。对应公开提交合并后，才能创建公开发布标签。
 
 ---
 
