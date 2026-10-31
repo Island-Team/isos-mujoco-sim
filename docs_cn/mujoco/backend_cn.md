@@ -1,6 +1,8 @@
-# IsOS 管理的 MuJoCo v2 后端
+# IsOS 管理的 MuJoCo 后端
 
-[English](../../docs/mujoco/backend-v2.md)
+**当前实现：** 本页记录现有包与集成路径。[包描述符与声明](interfaces/package_cn.md)和[模拟器套接字](interfaces/socket_cn.md)是本包拥有的字段契约；[设计](design_cn.md)与 [TODO](todo_cn.md)区分新的 0.x 目标。协议或已生成描述符文件名中的 `v2` 为兼容而保留；本主题页文件名不带版本后缀。
+
+[English](../../docs/mujoco/backend.md)
 
 先构建模拟器，再生成本地 `island/mujoco-sim@0.1.1` 包：
 

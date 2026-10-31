@@ -1,6 +1,8 @@
 # 构建与运行
 
-[English](../../docs/mujoco/usage.md) · [v2 后端](backend-v2_cn.md)
+**集成路径的首次使用：** 先按下文构建并测试模拟器；按 [backend_cn.md](backend_cn.md) 安装或链接精确且已验证的包；在 IsosUI 预览 `sim-hardware` 并选择场景；验证并 Apply 一个图修订；运行 IsOS 并等待 EOS 与模拟器健康；只使用 EOS 声明的控制和观察；随后在 IsOS Logs 先找当前运行的首条就绪或失败事件，再按节点/关联 ID 筛选；最后通过 IsOS 停止部署。本文后面的独立启动器和定时评测是可选开发流程。参见[包契约](interfaces/package_cn.md)、[套接字契约](interfaces/socket_cn.md)、[目标算法](design_cn.md)和[实现 TODO](todo_cn.md)。选择器元数据、共享关联日志和完整停止协调属于目标行为，不是当前保证。
+
+[English](../../docs/mujoco/usage.md) · [v2 后端](backend_cn.md)
 
 MuJoCo 模拟器由此仓库构建，EOS 通过私有套接字连接它；可信评测器使用另一个私有套接字进行重置与评分。安装 MuJoCo 3.16.0 后，将 `.env.example` 复制为忽略的 `.env`，把 `MUJOCO_ROOT` 设为实际安装目录。该目录需要 `include/mujoco/mujoco.h`、`lib/libmujoco.so`、`bin/compile` 和 `bin/simulate`。构建还需要 C++20、CMake、protobuf、gRPC 与 libjpeg。
 
@@ -38,9 +40,9 @@ build/eos-mujoco-sim \
 
 套接字权限为 `0600`。评测时使用私有运行目录，仅向评测器开放 benchmark 套接字。SIGINT 或 SIGTERM 正常停止进程并移除套接字。
 
-## IsOS 与 EOS v2
+## IsOS 与 EOS 部署
 
-当前 IsOS/EOS 路径使用本地 `island/mujoco-sim@0.1.1` 包和共享部署图。已发布的 v1.0.1 包属于旧图形态；其[发布文档](package-release_cn.md)仅供旧安装参考。按照 [v2 后端指南](backend-v2_cn.md)构建包，并设置真实的 `MUJOCO_ROOT`。
+当前 IsOS/EOS 路径使用本地 `island/mujoco-sim@0.1.1` 包和共享部署图。已发布的 v1.0.1 包属于旧图形态；其[发布文档](package-release_cn.md)仅供旧安装参考。按照 [后端指南](backend_cn.md)构建包，并设置真实的 `MUJOCO_ROOT`。
 
 ```sh
 python3 tools/build-backend-bundle.py --output /absolute/path/to/mujoco-v2-bundle
@@ -53,7 +55,7 @@ isos pkg node-sets
 
 另一终端运行 `isos run` 启动已应用部署。IsOS 启动前检查精确的软件包、资源、场景、MuJoCo 库、EOS 程序、套接字与端口；EOS 将模拟器作为直接子进程，并在终止前停止已准入执行器。`isos deployment stop` 只停止部署，`isos stop` 停止管理器、API、UI、部署和独立服务。EGIA 只通过 EOS 的正常代理接口行动，不连接私有评测套接字。模型类服务管理器独立于此硬件图。
 
-v2 图中的模拟器节点可以在 `settings.env` 设置 `MUJOCO_GUI=1`，以同一模拟器引擎打开实时 X11 视图；独立启动脚本的 `--gui` 只是静态场景查看器。节点与套接字契约见 [backend-v2_cn.md](backend-v2_cn.md)。
+v2 图中的模拟器节点可以在 `settings.env` 设置 `MUJOCO_GUI=1`，以同一模拟器引擎打开实时 X11 视图；独立启动脚本的 `--gui` 只是静态场景查看器。节点与套接字契约见 [backend_cn.md](backend_cn.md)。
 
 ## 定时评测与验证
 

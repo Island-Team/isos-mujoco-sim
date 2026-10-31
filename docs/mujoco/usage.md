@@ -1,5 +1,7 @@
 # Build and run
 
+**First use of the integrated path:** build and test the simulator below; install or link the exact verified package as described in [backend.md](backend.md); preview `sim-hardware` in IsosUI and choose a scene; validate and Apply one graph revision; run IsOS and wait for EOS and simulator health; use only EOS-declared controls and observations; then inspect the current run's first ready or failure event in IsOS Logs before filtering by node/correlation ID; finally stop the deployment through IsOS. The standalone launcher and timed evaluator later on this page are optional development workflows. See [the package](interfaces/package.md), [socket](interfaces/socket.md), [target algorithms](design.md) and [implementation TODO](todo.md). Selector metadata, shared correlation logs and full stop coordination are target behavior, not current guarantees.
+
 [中文](../../docs_cn/mujoco/usage_cn.md)
 
 [Package overview](README.md) · [Benchmark tasks](benchmarks.md)
@@ -39,9 +41,9 @@ build/eos-mujoco-sim \
 
 The Unix sockets are owner-only (`0600`). Use a private runtime directory for evaluation and give the benchmark socket only to the evaluator. Stop the process with `SIGINT` or `SIGTERM`; it removes its sockets on normal shutdown. `--help` prints the available flags.
 
-## IsOS and EOS v2
+## IsOS and EOS deployment
 
-For the current IsOS/EOS path, build and link a local `island/mujoco-sim@0.1.1` bundle as described in the [v2 backend guide](backend-v2.md). The published v1.0.1 package uses the retired graph shape; its [release guide](package-release.md) remains for historical installations. MuJoCo 3.16.0 is an operator-provided dependency; set `MUJOCO_ROOT` to the real installation before building the bundle and running the graph.
+For the current IsOS/EOS path, build and link a local `island/mujoco-sim@0.1.1` bundle as described in the [backend guide](backend.md). The published v1.0.1 package uses the retired graph shape; its [release guide](package-release.md) remains for historical installations. MuJoCo 3.16.0 is an operator-provided dependency; set `MUJOCO_ROOT` to the real installation before building the bundle and running the graph.
 
 ```sh
 python3 tools/build-backend-bundle.py --output /absolute/path/to/mujoco-v2-bundle
@@ -54,7 +56,7 @@ Stage and select EOS and IsosUI builds with `isos build eos`, `isos version sele
 
 Run `isos run` in another terminal to start the applied deployment. IsOS preflights the exact package, assets, scene, MuJoCo library, EOS executables, sockets, and ports before starting graph children. EOS starts the simulator as its direct child and stops admitted actuators before terminating it. `isos deployment stop` stops the deployment only; `isos stop` shuts down the manager, API, UI, deployment, and independent IsOS services. EGIA uses EOS's normal agent interface and never connects to the private benchmark socket. The service manager for model-like processes is separate from this hardware graph.
 
-The v2 package permits `MUJOCO_GUI=1` in the simulator node's `settings.env`. It opens a live X11 view from the same simulator engine used by the v2 socket. The standalone `--gui` launcher below opens a separate static MuJoCo viewer instead. See [backend-v2.md](backend-v2.md) for the node and socket contracts.
+The v2 package permits `MUJOCO_GUI=1` in the simulator node's `settings.env`. It opens a live X11 view from the same simulator engine used by the v2 socket. The standalone `--gui` launcher below opens a separate static MuJoCo viewer instead. See [backend.md](backend.md) for the node and socket contracts.
 
 ## Timed agent episode
 

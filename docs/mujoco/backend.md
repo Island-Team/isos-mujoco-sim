@@ -1,6 +1,8 @@
-# IsOS managed MuJoCo v2 backend
+# IsOS managed MuJoCo backend
 
-[中文](../../docs_cn/mujoco/backend-v2_cn.md)
+**Current implementation:** This page records the existing bundle and integration path. [Package descriptor and contributions](interfaces/package.md) and [simulator socket](interfaces/socket.md) are the owner-specific field contracts; [design](design.md) and [TODO](todo.md) distinguish the new 0.x target. The `v2` in a protocol or generated descriptor filename is retained for compatibility; this topic page has no version suffix.
+
+[中文](../../docs_cn/mujoco/backend_cn.md)
 
 Build the simulator and stage a local `island/mujoco-sim@0.1.1` bundle:
 
