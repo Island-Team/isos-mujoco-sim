@@ -1,14 +1,14 @@
 """Declarative EOS node types and graph set shipped with the MuJoCo package."""
 
 
-BACKEND = "eos.process.mujoco@v1.0"
-CAMERA = "eos.hardware.camera@v1.0"
-BASE = "eos.hardware.base@v1.0"
-MANIPULATOR = "eos.hardware.manipulator@v1.0"
-CAMERA_GATE = "eos.interface.camera_gate@v1.0"
-VISION = "isos.ui.vision@v1.0"
-BASE_PRIMITIVE = "eos.dispatcher.primitive_base@v1.0"
-MANIPULATOR_PRIMITIVE = "eos.dispatcher.primitive_manipulator@v1.0"
+BACKEND = "eos.process.mujoco@v0.1"
+LEGACY_BACKEND = "eos.process.mujoco@v1.0"
+CAMERA = "eos.hardware.camera@v0.1"
+BASE = "eos.hardware.base@v0.1"
+MANIPULATOR = "eos.hardware.manipulator@v0.1"
+CAMERA_GATE = "eos.interface.camera_gate@v0.1"
+BASE_PRIMITIVE = "eos.dispatcher.primitive_base@v0.1"
+MANIPULATOR_PRIMITIVE = "eos.dispatcher.primitive_manipulator@v0.1"
 
 
 def port(name: str, data_type: str, required: bool = False,
@@ -41,8 +41,14 @@ def node_type(id: str, layer: str, kind: str, lifecycle: str,
   }
 
 
-def setting(name: str, data_type: str, required: bool = False) -> dict:
-  return {"name": name, "data_type": data_type, "required": required}
+def setting(name: str, data_type: str, required: bool = False,
+            description: str | None = None, selector: dict | None = None) -> dict:
+  result = {"name": name, "data_type": data_type, "required": required}
+  if description is not None:
+    result["description"] = description
+  if selector is not None:
+    result["selector"] = selector
+  return result
 
 
 def hardware_profile(id: str, type_id: str, label: str, description: str,
@@ -74,11 +80,11 @@ def hardware_profile(id: str, type_id: str, label: str, description: str,
 def contributions() -> dict:
   camera = hardware_profile(
     "front", CAMERA, "Front RGB camera", "MuJoCo JPEG camera decoded to RGB8",
-    "front_camera_optical", ["rgb8"], "cam-0", 30.0, 8388608,
+    "front_camera_optical", ["rgb8"], "${camera_device}", 30.0, 8388608,
   )
   base = hardware_profile(
     "drive", BASE, "Planar base", "MuJoCo base velocity controller",
-    "base_link", ["body_velocity"], "base-0", 50.0, 4096,
+    "base_link", ["body_velocity"], "${base_device}", 50.0, 4096,
   )
   base["movement"] = {
     "modes": ["body_velocity"],
@@ -88,7 +94,7 @@ def contributions() -> dict:
   base["inputs"] = {"command": [{"node": "@base-velocity", "output": "command"}]}
   arm = hardware_profile(
     "arm", MANIPULATOR, "Six axis arm", "MuJoCo six-joint position controller",
-    "arm_base", ["joint_positions"], "arm-0", 50.0, 4096,
+    "arm_base", ["joint_positions"], "${manipulator_device}", 50.0, 4096,
   )
   arm["joint_names"] = ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6"]
   arm["movement"] = {
@@ -96,15 +102,32 @@ def contributions() -> dict:
     "limits": {"max_joint_position_rad": 3.14, "max_joint_speed_rad_s": 1.0},
   }
   arm["inputs"] = {"command": [{"node": "@arm-movej", "output": "command"}]}
+  legacy = node_type(
+    LEGACY_BACKEND, "process", "software", "process", ["process"], [],
+    [port("status", "status", description="Simulator process lifecycle"),
+     port("health", "health", description="Simulator process health")],
+    [setting("scene", "string", True), setting("socket", "string", True),
+     setting("env", "string_table"), setting("start_timeout_ms", "positive_integer")],
+  )
+  current = node_type(
+    BACKEND, "process", "software", "process", ["process"], [],
+    [port("status", "status", description="Simulator process lifecycle"),
+     port("health", "health", description="Simulator process health")],
+    [setting("scene", "string", True, "Stable verified scene ID",
+             {"provider": "package", "resource": "scene", "package_from": "node.package"}),
+     setting("socket", "string", True, "Owner-only simulator Unix socket path"),
+     setting("env", "string_table", description="Simulator child environment references"),
+     setting("start_timeout_ms", "positive_integer",
+             description="Simulator readiness deadline in milliseconds")],
+  )
+  current["description"] = (
+    "Starts one verified MuJoCo scene as an EOS-owned simulator child and supplies "
+    "only the graph-declared simulated devices."
+  )
   return {
     "node_types": [
-      node_type(
-        BACKEND, "process", "software", "process", ["process"], [],
-        [port("status", "status", description="Simulator process lifecycle"),
-         port("health", "health", description="Simulator process health")],
-        [setting("scene", "string", True), setting("socket", "string", True),
-         setting("env", "string_table"), setting("start_timeout_ms", "positive_integer")],
-      ),
+      legacy,
+      current,
     ],
     "safety_adapters": [],
     "adapter_families": [{
@@ -118,6 +141,9 @@ def contributions() -> dict:
       "id": "sim-hardware",
       "parameters": {
         "scene": {"type": "string", "default": "pick-place"},
+        "camera_device": {"type": "string", "default": "cam-0"},
+        "base_device": {"type": "string", "default": "base-0"},
+        "manipulator_device": {"type": "string", "default": "arm-0"},
         "socket": {"type": "string"},
       },
       "nodes": [
@@ -154,13 +180,6 @@ def contributions() -> dict:
            "label": "Front camera preview gate",
            "description": "Publishes a bounded preview of the MuJoCo front camera",
            "inputs": {"frame": {"node": "@front", "output": "frame"}},
-         }},
-        {"ref": "vision", "core": "isos", "layer": "ui", "group": "panel",
-         "profile": {
-           "id": "vision", "node_type": VISION,
-           "label": "Vision monitor",
-           "description": "Displays a selected active camera gate in IsosUI",
-           "inputs": {"preview": {"node": "@camera-gate", "output": "preview"}},
          }},
       ],
     }],

@@ -53,7 +53,11 @@ isos pkg node-sets
 
 用 `isos build eos`、`isos version select eos <selector>`、`isos build isosui` 和 `isos version select isosui <selector>` 构建并显式选择版本。同一 EOS 提交有多个构建时，用源码指纹选择唯一收据。`isos init` 创建配置后退出。在一个终端运行 `isos serve`，于 Graph 工作台预览 `sim-hardware` 节点集，指定场景和仅所有者可访问的套接字，再 Validate 与 Apply。该预设添加 EOS 持有的模拟器进程、三个通用硬件适配器、dispatcher 绑定和有类型连接；已有图会保留至操作员显式应用新修订。
 
+**P02 包目录与 IsOS 首次使用目标。** 构建工具现已输出 `0.1.0` 目录描述符和七节点 `@v0.1` 预设，参数为稳定的 `scene`、`camera_device`、`base_device` 和 `manipulator_device`。用 `python3 tools/build-backend-bundle.py --build-dir build-p02 --output <空目录>` 构建并检查包；`backend-v2.json` 含两个场景 ID、标签、profile 和 SHA-256，以及三台设备的描述和场景支持列表。P01 验证精确的 `island/mujoco-sim@0.1.1` 收据后，IsOS 配套 P02/P03 切片须展示可用 ID、依当前已保存修订 Validate 与 Apply 所选场景和设备，并保留不可用的已保存 ID 供修复。修改场景生成新的已保存修订，必须 Restart 才能替换 EOS 持有的子进程。详见 [P02 包契约](interfaces/package_cn.md#p02-描述符扩展)和[负面样本](../../tests/fixtures/scene_catalog/negative-cases.json)。
+
 另一终端运行 `isos run` 启动已应用部署。IsOS 启动前检查精确的软件包、资源、场景、MuJoCo 库、EOS 程序、套接字与端口；EOS 将模拟器作为直接子进程，并在终止前停止已准入执行器。`isos deployment stop` 只停止部署，`isos stop` 停止管理器、API、UI、部署和独立服务。EGIA 只通过 EOS 的正常代理接口行动，不连接私有评测套接字。模型类服务管理器独立于此硬件图。
+
+发生 P02 目录故障时，先查看场景/设备的不可用原因与第一条包或 Apply 失败事件，再修改草稿。已链接资源变化时，按 P01 收据规则显式重新链接。缺少 `MUJOCO_ROOT` 库会阻止启动就绪，场景/profile 不匹配会阻止 Apply。这些失败均保留图与运行中子进程此前的修订。
 
 v2 图中的模拟器节点可以在 `settings.env` 设置 `MUJOCO_GUI=1`，以同一模拟器引擎打开实时 X11 视图；独立启动脚本的 `--gui` 只是静态场景查看器。节点与套接字契约见 [backend_cn.md](backend_cn.md)。
 
