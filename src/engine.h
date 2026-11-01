@@ -4,6 +4,7 @@
 #include <atomic>
 #include <cstdint>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -52,6 +53,11 @@ struct CameraFrame {
   std::vector<std::uint8_t> jpeg;
   std::uint64_t sequence = 0;
 };
+struct StopProof {
+  bool base_stopped = false, arm_stopped = false;
+  std::uint64_t stop_epoch = 0;
+  Snapshot snapshot;
+};
 struct Score {
   bool navigation = false, grasp = false, placement = false;
   int collisions = 0;
@@ -68,9 +74,14 @@ class SimEngine {
   SimEngine& operator=(const SimEngine&) = delete;
   bool Load(std::string* error);
   bool Reset(std::uint64_t seed, std::string* error);
-  CommandResult Execute(const Command& command);
+  CommandResult Execute(const Command& command,
+                        std::optional<std::uint64_t> expected_stop_epoch = std::nullopt);
+  StopProof ManagedStop(std::uint64_t reserved_epoch);
+  StopProof ManagedStop() { return ManagedStop(ReserveManagedStopEpoch()); }
+  std::uint64_t ReserveManagedStopEpoch();
+  std::uint64_t StopEpoch() const;
   Snapshot GetSnapshot() const;
-  CameraFrame RenderCamera();
+  CameraFrame RenderCamera(std::optional<std::uint64_t> expected_stop_epoch = std::nullopt);
   Score GetScore() const;
   void Step(int steps);
   bool MotionActive() const { return active_motion_.load(); }
@@ -85,6 +96,7 @@ class SimEngine {
   std::string scene_path_;
   BenchmarkProfile profile_ = BenchmarkProfile::PickPlace;
   mutable std::mutex mutex_;
+  mutable std::mutex render_mutex_;
   mjModel_* model_ = nullptr;
   mjData_* data_ = nullptr;
   RenderState* render_state_ = nullptr;
@@ -96,6 +108,7 @@ class SimEngine {
   int left_pad_id_ = -1, right_pad_id_ = -1;
   int goal_site_id_ = -1;
   std::uint64_t sequence_ = 0, interruption_epoch_ = 0;
+  std::atomic<std::uint64_t> stop_epoch_{0};
   std::atomic_bool active_motion_{false};
   double base_drive_[3]{}, base_hold_[3]{}, target_joint_[6]{}, gripper_target_ = 0;
   double base_drive_until_s_ = 0;  // 0 keeps legacy gRPC drive behavior.

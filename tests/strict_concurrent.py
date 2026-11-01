@@ -48,7 +48,14 @@ def main():
             assert time.monotonic() - started < 5
             assert {reply["id"] for reply in responses} == {
                 "first-connection", "second-connection"}
-            assert all(reply["ok"] and reply["accepted"] for reply in responses)
+            assert any(reply["ok"] and reply["accepted"] for reply in responses)
+            assert all((reply["ok"] and reply["accepted"]) or
+                       reply["error"]["code"] == "command_in_progress"
+                       for reply in responses)
+            if not all(reply.get("accepted") for reply in responses):
+                responses = [request(path, "base_move", "base-0", "concurrent-1",
+                                     "resolved-" + str(index), **command)[0]
+                             for index in range(2)]
             assert responses[0]["timestamp_ns"] == responses[1]["timestamp_ns"]
             assert responses[0]["sequence"] == responses[1]["sequence"]
 

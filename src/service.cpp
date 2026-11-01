@@ -332,6 +332,10 @@ void Serve(const std::filesystem::path& simulator_socket,
     throw std::runtime_error("scene load failed: " + error);
   if (!engine.Reset(0, &error))
     throw std::runtime_error("scene reset failed: " + error);
+  if (managed_strict_socket) {
+    const auto frame = engine.RenderCamera();
+    if (frame.jpeg.empty()) throw std::runtime_error("managed_camera_unavailable");
+  }
   std::atomic_bool halted{false};
   std::atomic_bool paused{manual_step};
   std::mutex clock_mutex;

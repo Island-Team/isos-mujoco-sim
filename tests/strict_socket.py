@@ -12,6 +12,9 @@ import tempfile
 import time
 
 
+_generations = {}
+
+
 def exchange(path, message, *, raw=None):
     with socket.socket(socket.AF_UNIX) as client:
         client.settimeout(15)
@@ -37,6 +40,14 @@ def exchange(path, message, *, raw=None):
 
 
 def request(path, op, node, command_id=None, correlation=None, **fields):
+    if op in ("base_move", "manipulator_move"):
+        key = str(path)
+        if key not in _generations:
+            health = {"version": "2.0.0", "id": "test-health", "node": "base-0",
+                      "op": "health"}
+            _generations[key] = exchange(path, health)[0]["generation_id"]
+        fields.setdefault("generation_id", _generations[key])
+        fields.setdefault("stop_epoch", "0")
     body = {"version": "2.0.0", "id": correlation or op, "node": node, "op": op,
             **fields}
     if command_id is not None:

@@ -63,6 +63,39 @@ int main(int argc, char** argv) {
   if (frame1.jpeg.size() < 4 || frame2.jpeg.size() < 4 || frame1.jpeg[0] != 0xff ||
       frame2.jpeg[1] != 0xd8)
     return Fail("repeated JPEG capture failed");
+  eos_mujoco::Command managed_drive{};
+  managed_drive.type = eos_mujoco::Command::Type::BaseDrive;
+  managed_drive.values = {0.2, 0, 0, 0.2};
+  if (!engine.Execute(managed_drive, 0).accepted) return Fail("initial managed drive rejected");
+  const auto proof = engine.ManagedStop();
+  if (!proof.base_stopped || !proof.arm_stopped || proof.stop_epoch != 1 || engine.StopEpoch() != 1)
+    return Fail("managed stop lacked both committed holds and epoch");
+  const auto after_stop = engine.GetSnapshot();
+  const auto delayed = engine.Execute(managed_drive, 0);
+  if (delayed.accepted || delayed.error_code != "command_interrupted")
+    return Fail("delayed old movement crossed the engine stop fence");
+  engine.Step(10);
+  const auto after_step = engine.GetSnapshot();
+  if (std::abs(after_step.base_pose[0] - after_stop.base_pose[0]) > 0.02)
+    return Fail("base target moved after positive managed stop");
+  if (!engine.Execute(managed_drive, 1).accepted)
+    return Fail("new current-epoch controlled movement rejected");
+  eos_mujoco::Command managed_arm = joint;
+  managed_arm.values[0] = 2.7;
+  eos_mujoco::CommandResult interrupted_arm;
+  std::thread managed_worker([&] { interrupted_arm = engine.Execute(managed_arm, 1); });
+  auto managed_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+  while (!engine.MotionActive() && std::chrono::steady_clock::now() < managed_deadline)
+    std::this_thread::yield();
+  if (!engine.MotionActive()) {
+    managed_worker.join();
+    return Fail("managed arm did not enter active state");
+  }
+  const auto arm_proof = engine.ManagedStop();
+  managed_worker.join();
+  if (!arm_proof.base_stopped || !arm_proof.arm_stopped || arm_proof.stop_epoch != 2 ||
+      interrupted_arm.accepted || interrupted_arm.error_code != "command_interrupted")
+    return Fail("managed stop did not preempt active arm motion");
   engine.Reset(42, &error);
   eos_mujoco::Command far{};
   far.type = eos_mujoco::Command::Type::BaseNavigateRelative;
