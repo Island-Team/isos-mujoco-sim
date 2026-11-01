@@ -79,34 +79,50 @@ EOS 从 IsOS 获得已验证的程序、场景和套接字，直接启动子进�
 
 ## R06 受管理停止契约（设计目标）
 
-本节只扩展 `--managed-strict-socket`。线协议仍为 `2.0.0`；帧格式、操作名、直接启动行为及 R05 的 `(node,command_id)` 全代际保留不变。只有专用有界停止通道、引擎写入屏障、底盘与机械臂分别确认以及取消路径全部启用后，受管理 `health` 才增加精确特性 `strict-stop-v1`。EOS 仅在每个声明的执行器健康响应同时含有 `strict-socket-v1` 和 `strict-stop-v1` 时才公开运动能力与终态停止屏障。仅有 `strict-socket-v1` 仍足以证明 R05 只读就绪。该特性证明可用能力，不代表之后某次停止成功。
+本节只扩展 `--managed-strict-socket`。线协议仍为 `2.0.0`；帧格式、操作名、直接启动行为及 R05 的 `(node,command_id)` 全代际保留不变。受管理子进程在现有 `--v2-socket` 路径后追加 ASCII 字面后缀 `.stop`，得到仅所有者可访问的停止套接字；图和启动参数均不新增套接字字段。两个路径须连 NUL 终止符一起符合 `sockaddr_un.sun_path`：主套接字路径最多 102 字节，才能使 `.stop` 后缀及终止符放入 108 字节。路径过长时以 `socket_path_too_long` 启动失败；任一路径绑定或权限设置失败时，启动也须失败并清理两个自有套接字文件。两者均在既有私有运行目录中使用 `0600`；EOS 推导同一路径，仅在直接子进程回收后清理旧的自有文件。直接启动不创建伴随停止套接字。
 
-严格模式的 `stop` 仍是整机请求，即使 `node` 为 `base-0` 或 `arm-0`；`node` 仍是 R05 去重键的一部分。新准入的停止屏蔽本子进程代际中所有先前运动。受管理 `base_move`、`manipulator_move` 请求增加必填前提字段 `stop_epoch`：非空规范 ASCII 十进制字符串，无符号及前导零，初始值例外为 `"0"`。它指定当前子进程内停止 epoch。缺失、畸形或旧令牌在日志预留与引擎下发前返回 `stop_fenced`。EOS 在新子进程内从 `"0"` 开始，每次已准入运动均传递它，只在停止完整证明后更新。直接启动和只读操作忽略该新请求字段。停止响应增加下列字段；通过校验且成功在停止日志中预留的请求必须返回，包括部分／未知结果及相同请求的已存储重发；损坏请求或预留前拒绝不带这些字段。`stop` 请求自身不增加字段。
+停止套接字有独立的监听器／分类器，只接受原有分帧 `health` 与 `stop` 操作；其他已解析操作在引擎下发前返回 `unsupported_operation`。该套接字上的 `health` 校验精确的底盘或机械臂场景设备 ID，并且仅在停止通道、引擎写入屏障、底盘／机械臂分别确认和取消路径全部启用时，返回 `ok:true,accepted:true,features:["strict-socket-v1","strict-stop-v1"]`。主套接字上的执行器健康响应只有在伴随监听器就绪后才增加 `strict-stop-v1` 成员。两个健康路径都返回本子进程相同的全新 `generation_id`；无法取得 128 个随机位时，受管理启动在公告特性前失败。EOS 在公开运动能力或终态停止屏障前，须检查每个已声明执行器的两个特性、探测停止套接字并比较代际 ID。仅有 `strict-socket-v1` 仍足以证明 R05 只读就绪。该特性证明可用能力，不代表之后某次停止成功。
+
+严格模式的 `stop` 仍是整机请求，即使 `node` 为 `base-0` 或 `arm-0`；`node` 仍是 R05 去重键的一部分。新准入的停止屏蔽本子进程代际中所有先前运动。主套接字为 R05 兼容仍接受 `stop`，但当普通入口槽全部占用时，只有伴随套接字上的停止具有 R06 入口保证；EOS 必须使用伴随路径。受管理 `base_move`、`manipulator_move` 请求增加两个必填前提字段：当前 `generation_id` 和 `stop_epoch`。前者来自健康响应，是每个子进程新的随机 128 位身份，用精确 32 位小写十六进制 ASCII 编码。缺失或不匹配代际在日志预留与引擎下发前返回 `stale_generation`。后者是非空规范 ASCII 十进制字符串，无符号及前导零，初始值例外为 `"0"`；缺失或畸形 epoch 返回 `stop_fenced`。EOS 缓存健康代际，在新子进程内从 epoch `"0"` 开始，只在停止完整证明后更新。伴随套接字的 `stop` 请求也须携带当前代际 ID，防止上代延迟请求影响新子进程。R05 兼容的主套接字 `stop` 接受缺失代际 ID，保留既有日志语义；EOS 不用它执行 R06。直接启动和只读操作忽略新请求字段。停止响应增加下列字段；通过校验且成功在停止日志中预留的请求必须返回，包括部分／未知结果及相同请求的已存储重发；损坏请求或预留前拒绝不带这些字段。
 
 | 字段 | 类型／单位 | 用途与校验 |
 | --- | --- | --- |
 | `base_stop` | 枚举字符串／— | 只能是 `"stopped"` 或 `"unknown"`；`stopped` 表示底盘租期已失效、零驱动和当前位置保持目标已在一个引擎步提交，屏障之前的运动之后不能再写底盘目标。仅有命令接受回执不够。 |
 | `arm_stop` | 枚举字符串／— | 只能是 `"stopped"` 或 `"unknown"`；`stopped` 表示六轴目标已替换为观察到的保持位置，屏障之前的运动之后不能再写机械臂目标。这证明终态命令保持，不保证残余物理速度在数学上为零。 |
+| `generation_id` | 32 位小写十六进制 ASCII 字符／子进程身份 | 每个受管理子进程全新随机 128 位值，由主套接字和伴随套接字的 `health` 及严格停止结果返回。受管理运动和伴随停止请求须携带精确当前值。它是身份检查，不是授权密钥或图修订。缺失／错误值在下发前返回 `stale_generation`。 |
 | `stop_epoch` | 非空十进制字符串／子进程内代际计数 | 单调递增的引擎屏障标识，首次停止前为 `"0"`，第一次准入停止为 `"1"`；同一子进程内不得复用。只允许 ASCII 数字，无符号与前导零，`"0"` 例外。受管理运动请求须携带当前值作为前提；停止响应返回新值，相同重发返回原值。它用于关联证据，不是图修订或跨进程序号。 |
 
-只有 `base_stop` 与 `arm_stop` 都是 `"stopped"`，才返回 `ok:true,accepted:true`。任一是 `"unknown"` 时，返回 `ok:false,accepted:false,error.code:"stop_outcome_unknown"`，同时保留分别得到的证明和屏障标识。超时、引擎故障、断连或崩溃都可能使任一结果未知；没有响应时，EOS 必须视两者均未知，无论子进程实际状态如何。预留前拒绝沿用 R05 校验／容量错误码，没有停止证明。已下发但被取消的运动返回 `ok:false,accepted:false,error.code:"command_interrupted"`；日志保留该失败结果，相同重发返回原结果。`command_interrupted` 本身不是停止证明。`stop_outcome_unknown`、`command_interrupted` 与 `stop_fenced` 是严格模式的新增稳定错误码，直接启动错误不变。停止响应的既有 `timestamp_ns` 与 `sequence` 必须在保持目标提交**之后**采样；相同重发除传输 `id` 外，所有结果字段均不变。
+受管理运动及伴随停止请求示例（每段仍有原来的帧头）：
 
-停止通道从完整有效停止帧读入起，以单调时钟计算 **1000 ms** 截止，届时必须提交底盘／机械臂证明或返回 `stop_outcome_unknown`。每条连接从 accept 起，读取帧头和元数据最多 **250 ms**，防止慢速部分请求长期占用入口槽。服务在调度已验证的停止前不能等待普通运动或相机工作线程。普通工作槽上限 32，入口槽上限 8，另有一个预留停止执行槽；普通工作超额须在引擎下发前拒绝或断开。运动日志容量不能占用停止日志容量。EOS 自身还须对连接、完整帧读写和子进程终止设置外层期限；准确的 EOS 外层预算待 EOS 设计审查确定。任何超时不得解释为成功停止。
+```json
+{"version":"2.0.0","id":"move-req-1","node":"base-0","op":"base_move","command_id":"cmd-1","generation_id":"00112233445566778899aabbccddeeff","stop_epoch":"0","linear_x_m_s":0.2,"linear_y_m_s":0.0,"angular_z_rad_s":0.0,"valid_for_ms":200.0}
+```
 
-停止通道预留有效请求时，递增引擎 `stop_epoch`，关闭旧运动写入门。每个运动携带请求中的 `stop_epoch`；引擎在与底盘驱动或机械臂目标写入共用的短命令状态锁内，把它与当前 epoch 比对。停止通道先递增 epoch 并使两个运动租期失效，再采样并保持两个设备。屏障前已解析或排队、但之后才到达引擎的运动不能写目标：日志已预留则返回并保留 `command_interrupted`，预留前拒绝则返回 `stop_fenced`。停止确认**之后**才到达的旧帧也带旧令牌，必须返回 `stop_fenced`。若运动先进入短写入段，停止等待它退出，随后覆盖目标；覆盖后才能确认。成功停止后，不得出现屏障前延迟写入。EOS 在非锁存控制停止后明确准入的新运动携带已证明的新令牌，可以执行；紧急关闭时由 EOS 关闭新准入。套接字只有所有者可用，自身不授予执行器权限。
+```json
+{"version":"2.0.0","id":"stop-req-1","node":"base-0","op":"stop","command_id":"stop-cmd-1","generation_id":"00112233445566778899aabbccddeeff"}
+```
+
+只有 `base_stop` 与 `arm_stop` 都是 `"stopped"`，才返回 `ok:true,accepted:true`。任一是 `"unknown"` 时，返回 `ok:false,accepted:false,error.code:"stop_outcome_unknown"`，同时保留分别得到的证明和屏障标识。超时、引擎故障、断连或崩溃都可能使任一结果未知；没有响应时，EOS 必须视两者均未知，无论子进程实际状态如何。预留前拒绝沿用 R05 校验／容量错误码，没有停止证明。已下发但被取消的运动返回 `ok:false,accepted:false,error.code:"command_interrupted"`；日志保留该失败结果，相同重发返回原结果。`command_interrupted` 本身不是停止证明。`stop_outcome_unknown`、`command_interrupted`、`stop_fenced` 与 `stale_generation` 是严格模式的新增稳定错误码，直接启动错误不变。停止响应的既有 `timestamp_ns` 与 `sequence` 必须在保持目标提交**之后**采样；相同重发除传输 `id` 外，所有结果字段均不变。
+
+**R05 重发优先顺序：** 常规请求、版本、节点、有类型数值、代际及规范 epoch 语法验证后，服务从操作名、规范化有类型值**及请求中的 `stop_epoch`**计算运动指纹。在与日志键预留、停止屏障递增共用的同步边界内，先查询既有 `(node,command_id)`。相同键与指纹即使在当前 epoch 已增加后，仍返回已存储的终态或不确定结果；进行中的相同重发返回 `command_in_progress`，负载或 epoch 改变则返回 `command_id_conflict`。重发绝不再次下发。仅对**新键**比较当前 epoch；旧值返回 `stop_fenced`，当前值才可预留并进入引擎写入复核。这样在拒绝延迟新命令的同时保留 R05 相同重发及冲突语义。错误的子进程代际即使重启后数字 epoch 一样，也先返回 `stale_generation`。EOS 仍不得自动重发结果不确定的已下发命令。
+
+
+停止通道从完整有效停止帧读入起，以单调时钟计算 **1000 ms** 截止，届时必须提交底盘／机械臂证明或返回 `stop_outcome_unknown`。每条连接从 accept 起，读取帧头和元数据最多 **250 ms**。主监听器有最多 32 个普通工作槽及 8 个入口槽；**全部八个都被部分帧占用，也不能占用伴随停止监听器**。伴随监听器有两个专属停止入口槽、仅所有者可访问的待连接队列、按最早连接优先分类、相同的每连接 250 ms 读取期限，以及一个预留停止执行槽。若此前恰有两个部分帧占满停止入口槽，且没有其他排队者，已成功连接的有效停止从连接到完成帧分类最多 **500 ms**：最多等 250 ms 让最早的入口过期，随后自身读取最多 250 ms；之后才开始 1000 ms 执行预算。若连接本身失败，或仅所有者可访问的待连接队列被其他客户占满，EOS 外层连接期限到期，停止结果为未知。普通工作不能占用伴随槽。停止执行器在调度有效停止前不能等待普通运动或相机工作线程。普通工作超额须在引擎下发前拒绝或断开。运动日志容量不能占用停止日志容量。EOS 自身还须对连接、完整帧读写和子进程终止设置外层期限；准确的 EOS 外层预算待 EOS 设计审查确定。任何超时不得解释为成功停止。
+
+停止通道预留有效请求时，递增引擎 `stop_epoch`，关闭旧运动写入门。每个运动携带请求中的 `stop_epoch`；引擎在与底盘驱动或机械臂目标写入共用的短命令状态锁内，把它与当前 epoch 比对。停止通道先递增 epoch 并使两个运动租期失效，再采样并保持两个设备。屏障前已解析或排队、但之后才到达引擎的运动不能写目标：日志已预留则返回并保留 `command_interrupted`，**新键**在预留前拒绝则返回 `stop_fenced`。停止确认后才到达的延迟**新帧**也带旧令牌，必须返回 `stop_fenced`；相同旧键的重发按上面的 R05 规则返回原日志结果。若运动先进入短写入段，停止等待它退出，随后覆盖目标；覆盖后才能确认。成功停止后，不得出现屏障前延迟写入。EOS 在非锁存控制停止后明确准入的新运动携带已证明的新令牌，可以执行；紧急关闭时由 EOS 关闭新准入。套接字只有所有者可用，自身不授予执行器权限。
 
 相机在短命令状态锁内取得有界、不可变的场景／数据快照，随后在独立有界工作线程与渲染上下文中渲染，不占用该锁。停止取消排队拍摄，并屏蔽进行中拍摄的负载发布。如果 EGL/JPEG 无法中断，停止仍须到达引擎；拍摄可报 `device_unavailable` 或断开，EOS 在外层期限后强制回收子进程。子进程不得让仍可访问已销毁模型／数据的工作线程脱离管理。受管理子进程 GUI 不可用时须启动失败、清理套接字且不公告 `strict-stop-v1`。子进程崩溃、引擎卡住或停止日志满时，EOS 记录未知停止；IsOS/EOS 保留可见故障事件，不宣称完成安全停止。
 
 成功停止响应元数据示例（仍有原来的帧头）：
 
 ```json
-{"version":"2.0.0","id":"stop-req-1","ok":true,"accepted":true,"base_stop":"stopped","arm_stop":"stopped","stop_epoch":"1","timestamp_ns":100000000,"sequence":50}
+{"version":"2.0.0","id":"stop-req-1","ok":true,"accepted":true,"base_stop":"stopped","arm_stop":"stopped","generation_id":"00112233445566778899aabbccddeeff","stop_epoch":"1","timestamp_ns":100000000,"sequence":50}
 ```
 
 部分证明示例；EOS 仍须在有界升级后终止并回收子进程，整体结果为未知：
 
 ```json
-{"version":"2.0.0","id":"stop-req-2","ok":false,"accepted":false,"base_stop":"stopped","arm_stop":"unknown","stop_epoch":"2","error":{"code":"stop_outcome_unknown","message":"arm stop outcome unknown"},"timestamp_ns":102000000,"sequence":51}
+{"version":"2.0.0","id":"stop-req-2","ok":false,"accepted":false,"base_stop":"stopped","arm_stop":"unknown","generation_id":"00112233445566778899aabbccddeeff","stop_epoch":"2","error":{"code":"stop_outcome_unknown","message":"arm stop outcome unknown"},"timestamp_ns":102000000,"sequence":51}
 ```
 
 R06 设计与负面样本见[固定用例](../../../tests/fixtures/strict_stop_lane/README.md)。实现、独立审查和跨所有者的物理安全停止验收尚未完成。
