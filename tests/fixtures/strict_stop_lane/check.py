@@ -9,14 +9,14 @@ ROOT = Path(__file__).resolve().parents[3]
 data = json.loads(Path(__file__).with_name("cases.json").read_text(encoding="utf-8"))
 cases = data["cases"]
 ids = [case["id"] for case in cases]
-assert len(cases) == 47 and len(ids) == len(set(ids))
+assert len(cases) == 48 and len(ids) == len(set(ids))
 assert data["wire_version"] == "2.0.0"
 assert data["feature"] == "strict-stop-v1"
 assert data["stop_deadline_ms"] == 1000
 assert data["ingress_deadline_ms"] == 250
 assert data["ingress_slots"] == 8
 assert data["stop_socket_suffix"] == ".stop"
-assert data["stop_ingress_slots"] == 2
+assert data["stop_ingress_slots"] == 3
 assert data["reserved_stop_slots"] == 1
 for case in cases:
     assert case["mode"] in {
@@ -35,6 +35,7 @@ required = {
     "move-identical-replay-after-stop", "move-conflicting-epoch-after-stop",
     "move-stale-new-key-after-stop", "stop-preempts-eight-partial-main-frames",
     "stop-preempts-two-partial-stop-frames", "managed-stop-health-proof",
+    "queued-partial-frame-accept-deadline",
     "managed-stop-socket-path-overlength", "managed-stop-socket-bind-failure",
     "managed-health-generation-match", "move-old-child-generation-rejected",
     "stop-old-child-generation-rejected",

@@ -7,7 +7,7 @@
   "normal_work_slots": 32,
   "ingress_slots": 8,
   "stop_socket_suffix": ".stop",
-  "stop_ingress_slots": 2,
+  "stop_ingress_slots": 3,
   "reserved_stop_slots": 1,
   "cases": [
     {"id":"direct-v2-feature-absent","mode":"direct","expect":{"strict_stop_feature":false,"legacy_listeners":true}},
@@ -25,6 +25,7 @@
     {"id":"stop-preempts-partial-frame","mode":"concurrent","block":"slow_partial_frame","expect":{"ingress_slot_released_within_ms":250,"stop_within_ms":1000}},
     {"id":"stop-preempts-eight-partial-main-frames","mode":"concurrent","fill_main_ingress_slots":8,"socket":"companion_stop","expect":{"stop_classified_without_main_slot":true,"stop_within_ms":1000}},
     {"id":"stop-preempts-two-partial-stop-frames","mode":"concurrent","fill_stop_ingress_slots":2,"socket":"companion_stop","expect":{"connect_to_classification_at_most_ms":500,"execution_within_ms":1000}},
+    {"id":"queued-partial-frame-accept-deadline","mode":"concurrent","fill_stop_ingress_slots":3,"socket":"companion_stop","expect":{"queued_frame_deadline_from_accept_ms":250,"connection_closed":true}},
     {"id":"stop-preempts-normal-capacity","mode":"capacity","fill_normal_work_slots":32,"expect":{"stop_lane_reserved":true,"no_extra_normal_release":true}},
     {"id":"movement-ledger-full-stop-reserved","mode":"capacity","fill_movement_keys":65536,"expect":{"stop_lane_reserved":true}},
     {"id":"stop-ledger-full-unknown","mode":"capacity","fill_stop_keys":4096,"expect":{"code":"command_capacity","eos_stop":"unknown"}},
