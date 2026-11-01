@@ -1,6 +1,6 @@
 # 构建与运行
 
-**集成路径的首次使用：** 先按下文构建并测试模拟器；按 [backend_cn.md](backend_cn.md) 安装或链接精确且已验证的包；在 IsosUI 预览 `sim-hardware` 并选择场景；验证并 Apply 一个图修订；运行 IsOS 并等待 EOS 与模拟器健康；只使用 EOS 声明的控制和观察；随后在 IsOS Logs 先找当前运行的首条就绪或失败事件，再按节点/关联 ID 筛选；最后通过 IsOS 停止部署。本文后面的独立启动器和定时评测是可选开发流程。参见[包契约](interfaces/package_cn.md)、[套接字契约](interfaces/socket_cn.md)、[目标算法](design_cn.md)和[实现 TODO](todo_cn.md)。选择器元数据、共享关联日志和完整停止协调属于目标行为，不是当前保证。
+**集成路径的首次使用：** 先按下文构建并测试模拟器；按 [backend_cn.md](backend_cn.md) 安装或链接精确且已验证的包；通过 IsOS 预览 `sim-hardware` 并选择场景；Validate 并 Apply 一个图修订；运行 IsOS 并等待 EOS 与模拟器的严格健康检查；查看只读相机、底盘、机械臂状态和 IsOS Logs 中当前运行的首条就绪或失败事件；最后通过 IsOS 停止部署。受管理的底盘及机械臂运动须等待 R06 证明物理停止后才可用。本文后面的独立启动器和定时评测是另一开发流程。参见[包契约](interfaces/package_cn.md)、[套接字契约](interfaces/socket_cn.md)、[设计](design_cn.md#r05-跨所有者验收)和[实现 TODO](todo_cn.md)。
 
 [English](../../docs/mujoco/usage.md) · [v2 后端](backend_cn.md)
 
@@ -29,7 +29,7 @@ ctest --test-dir build --output-on-failure
 
 直接运行需要绝对路径的机器人套接字、评测套接字和场景。测试当前 EOS v2 适配器协议时，另传互不相同的绝对 `--v2-socket` 路径。`--manual-step` 初始暂停；否则模拟器按 2 毫秒物理步长实时推进。评测 `Reset` 也会暂停，以便确定性步进。
 
-不带 `--managed-strict-socket` 的直接启动保留旧套接字 `2.0.0` 模式：现有帧客户端可以省略或重用 `node`、`command_id`，历史 gRPC 执行器监听器仍可用。它供旧集成使用，不能使受管理的 IsOS 图合格。严格标志由 EOS 根据已验证生成配置选择，不是图设置或独立启动脚本的默认值。模拟器现已实现该标志及健康特性；EOS 还须加入配套的严格启动和就绪检查，集成部署才能宣称 R05 合格。详见[套接字契约](interfaces/socket_cn.md)。
+不带 `--managed-strict-socket` 的直接启动保留旧套接字 `2.0.0` 模式：现有帧客户端可以省略或重用 `node`、`command_id`，历史 gRPC 执行器监听器仍可用。它供旧集成使用，不能使受管理的 IsOS 图合格。严格标志由 EOS 根据已验证生成配置选择，不是图设置或独立启动脚本的默认值。EOS 现已带该标志启动已验证子进程，并对每个已声明设备核对严格健康检查；限定范围的 R05 回放记录在[设计](design_cn.md#r05-跨所有者验收)。详见[套接字契约](interfaces/socket_cn.md)。
 
 ```sh
 build/eos-mujoco-sim \
@@ -53,15 +53,15 @@ isos pkg link island/mujoco-sim 0.1.1 /absolute/path/to/mujoco-v2-bundle --manif
 isos pkg node-sets
 ```
 
-用 `isos build eos`、`isos version select eos <selector>`、`isos build isosui` 和 `isos version select isosui <selector>` 构建并显式选择版本。同一 EOS 提交有多个构建时，用源码指纹选择唯一收据。`isos init` 创建配置后退出。在一个终端运行 `isos serve`，于 Graph 工作台预览 `sim-hardware` 节点集，指定场景和仅所有者可访问的套接字，再 Validate 与 Apply。该预设添加 EOS 持有的模拟器进程、三个通用硬件适配器、dispatcher 绑定和有类型连接；已有图会保留至操作员显式应用新修订。
+用 `isos build eos`、`isos version select eos <selector>`、`isos build isosui` 和 `isos version select isosui <selector>` 构建并显式选择版本。同一 EOS 提交有多个构建时，用源码指纹选择唯一收据。`isos init` 创建配置后退出。在一个终端运行 `isos serve`，用 `isos pkg preview-set` 或 IsOS API 预览 `sim-hardware` 节点集，指定场景和仅所有者可访问的套接字，再通过按修订检查的 IsOS 接口 Validate 与 Apply。IsosUI 目录编辑器属于后续 U01 工作台门禁。该预设添加 EOS 持有的模拟器进程、三个通用硬件适配器、dispatcher 绑定和有类型连接；已有图会保留至操作员显式应用新修订。
 
-**P02 包目录与 IsOS 首次使用目标。** 构建工具现已输出 `0.1.0` 目录描述符和七节点 `@v0.1` 预设，参数为稳定的 `scene`、`camera_device`、`base_device` 和 `manipulator_device`。用 `python3 tools/build-backend-bundle.py --build-dir build-p02 --output <空目录>` 构建并检查包；`backend-v2.json` 含两个场景 ID、标签、profile 和 SHA-256，以及三台设备的描述和场景支持列表。P01 验证精确的 `island/mujoco-sim@0.1.1` 收据后，IsOS 配套 P02/P03 切片须展示可用 ID、依当前已保存修订 Validate 与 Apply 所选场景和设备，并保留不可用的已保存 ID 供修复。修改场景生成新的已保存修订，必须 Restart 才能替换 EOS 持有的子进程。详见 [P02 包契约](interfaces/package_cn.md#p02-描述符扩展)和[负面样本](../../tests/fixtures/scene_catalog/negative-cases.json)。
+**P02 包目录与 IsOS 选择。** 构建工具现已输出 `0.1.0` 目录描述符和七节点 `@v0.1` 预设，参数为稳定的 `scene`、`camera_device`、`base_device` 和 `manipulator_device`。用 `python3 tools/build-backend-bundle.py --build-dir build-p02 --output <空目录>` 构建并检查包；`backend-v2.json` 含两个场景 ID、标签、profile 和 SHA-256，以及三台设备的描述和场景支持列表。P01 验证精确的 `island/mujoco-sim@0.1.1` 收据后，IsOS P02/P03 切片现已展示可用 ID、依当前已保存修订 Validate 与 Apply 所选场景和设备，并保留不可用的已保存 ID 供修复。修改场景生成新的已保存修订，必须 Restart 才能替换 EOS 持有的子进程。详见 [P02 包契约](interfaces/package_cn.md#p02-描述符扩展)和[负面样本](../../tests/fixtures/scene_catalog/negative-cases.json)。
 
-另一终端运行 `isos run` 启动已应用部署。IsOS 启动前检查精确的软件包、资源、场景、MuJoCo 库、EOS 程序、套接字与端口；EOS 将模拟器作为直接子进程，并在终止前停止已准入执行器。`isos deployment stop` 只停止部署，`isos stop` 停止管理器、API、UI、部署和独立服务。EGIA 只通过 EOS 的正常代理接口行动，不连接私有评测套接字。模型类服务管理器独立于此硬件图。
+另一终端运行 `isos run` 启动已应用部署。IsOS 启动前检查精确的软件包、资源、场景、MuJoCo 库、EOS 程序、套接字与端口；EOS 将模拟器作为直接子进程。R06 须证明物理停止顺序，才能启用受管理运动。`isos deployment stop` 只停止部署，`isos stop` 停止管理器、API、UI、部署和独立服务。EGIA 只通过 EOS 的正常代理接口行动，不连接私有评测套接字。模型类服务管理器独立于此硬件图。
 
-**R05 管理模式首次使用目标：** Apply 后，EOS 以严格模式启动已验证子进程，对图中每台相机、底盘和机械臂设备探测 `health`，并等待 `version:"2.0.0"`、回显请求 ID、`ok:true`、`accepted:true` 以及包含 `strict-socket-v1` 的 `features`。操作员把套接字文件或进程启动日志视为进度，而非就绪。特性缺失、设备错误、相机渲染失败或子进程退出都使后端不可用；调用 EOS primitive 前先看当前运行的首条失败事件。就绪后用一个命令 ID 调用已声明的 EOS 底盘或机械臂 primitive，查看关联的 EOS 结果和模拟器事件；结果不确定的已下发命令不得重发。模拟器现已提供该严格健康证明。EOS 严格客户端集成及负面就绪测试完成前，本段完整部署流程仍不能作为已实现路径回放。
+**R05 管理模式就绪，限定范围验收通过：** Apply 后，EOS 以严格模式启动已验证子进程，对图中每台相机、底盘和机械臂设备探测 `health`，要求 `version:"2.0.0"`、回显请求 ID、`ok:true`、`accepted:true` 以及包含 `strict-socket-v1` 的 `features`。套接字文件或进程启动日志只表示进度，不表示就绪。特性缺失、设备错误、相机渲染失败或子进程退出都使后端不可用；先看当前运行的首条失败事件。固定版本跨所有者回放已验证 pick-place 和 navigation 两个场景的这一路径以及只读拍摄和观察。MuJoCo 在实时 EOS 目录中只公开 `safety.estop`；在 R06 实现物理终端停止屏障前，`base.velocity` 与 `arm.movej` 不可用。本次 R05 首次使用回放不应尝试受管理运动。详见[验收证据](design_cn.md#r05-跨所有者验收)。
 
-在 EOS 集成前验证模拟器所有者切片：在私有目录运行 `build/eos-mujoco-sim --managed-strict-socket --v2-socket /absolute/private/run/strict.sock --scene "$PWD/assets/scene.xml"`，再发送 `node:"base-0"` 的分帧 `health` 请求。响应必须回显 ID，并包含 `ok:true`、`accepted:true` 与 `strict-socket-v1`。受管理启动拒绝 `--socket` 和 `--benchmark-socket`；不带标志的直接启动继续支持两者。运行 `ctest --test-dir build -R 'strict-socket|strict-capacity|v2-socket' --output-on-failure` 可回放所有者检查，包括完整保留容量。
+直接验证模拟器所有者切片：在私有目录运行 `build/eos-mujoco-sim --managed-strict-socket --v2-socket /absolute/private/run/strict.sock --scene "$PWD/assets/scene.xml"`，再发送 `node:"base-0"` 的分帧 `health` 请求。响应必须回显 ID，并包含 `ok:true`、`accepted:true` 与 `strict-socket-v1`。受管理启动拒绝 `--socket` 和 `--benchmark-socket`；不带标志的直接启动继续支持两者。运行 `ctest --test-dir build -R 'strict-socket|strict-capacity|v2-socket' --output-on-failure` 可回放所有者检查，包括完整保留容量。
 
 发生 P02 目录故障时，先查看场景/设备的不可用原因与第一条包或 Apply 失败事件，再修改草稿。已链接资源变化时，按 P01 收据规则显式重新链接。缺少 `MUJOCO_ROOT` 库会阻止启动就绪，场景/profile 不匹配会阻止 Apply。这些失败均保留图与运行中子进程此前的修订。
 

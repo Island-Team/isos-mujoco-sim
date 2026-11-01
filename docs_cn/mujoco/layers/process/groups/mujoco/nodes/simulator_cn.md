@@ -2,7 +2,7 @@
 
 [English](../../../../../../../docs/mujoco/layers/process/groups/mujoco/nodes/simulator.md) · [目录](../../../../../catalog/README_cn.md) · [包字段](../../../../../interfaces/package_cn.md) · [套接字契约](../../../../../interfaces/socket_cn.md)
 
-**目标设计，尚未发布。** 位置为 `core=eos`、`layer=process`、`group=mujoco`；所有读取器支持后，新注册类型 ID 才使用 `@v0.1`。现有 `@v1.0` 别名维持既有安全行为。注册的 `NodeType.description`：“作为 EOS 拥有的子进程启动一个已验证 MuJoCo 场景，只提供图中声明的仿真设备。”实例 `description` 独立记录本部署的用途。字段类型、默认值、校验和兼容规则以[包描述符](../../../../../interfaces/package_cn.md)、IsOS 图契约和 EOS 节点配置契约为准。
+**0.x 目标，尚未发布。** 位置为 `core=eos`、`layer=process`、`group=mujoco`；新注册类型使用 `@v0.1`，`@v1.0` 别名保留供旧图读取。R05 严格子进程就绪通过限定范围的跨所有者验收；R06 物理停止及受管理运动仍待完成。注册的 `NodeType.description`：“作为 EOS 拥有的子进程启动一个已验证 MuJoCo 场景，只提供图中声明的仿真设备。”实例 `description` 独立记录本部署的用途。字段类型、默认值、校验和兼容规则以[包描述符](../../../../../interfaces/package_cn.md)、IsOS 图契约和 EOS 节点配置契约为准。
 
 ## 首次使用行为
 
@@ -10,7 +10,7 @@
 2. IsOS 校验 `sim-hardware` 预览并应用修订。EOS 不修改图，解析已编译的 `mujoco-v2` 适配器并直接启动经验证的模拟器子进程。
 3. 套接字健康及声明设备检查通过后节点才就绪。相机、底盘和机械臂适配器是独立的 EOS 节点实例；此进程节点不能绕过 dispatcher 准入。
 4. 失败时状态保留不可用节点及原因。日志先显示本次运行第一条就绪/故障事件，再按节点路径和关联 ID 过滤。
-5. 停止时 EOS 先关闭准入并停止已准入执行器，再终止并回收子进程。未获确认的停止记录为故障，不能标为成功关闭。
+5. R06 必须先关闭准入并在物理上停止已准入执行器，再终止并回收子进程。未获确认的停止必须记录为故障，不能标为成功关闭；R05 清理回放没有下发受管理运动。
 
 ## 算法与兼容
 
