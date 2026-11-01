@@ -1,5 +1,6 @@
 {
   "schema_version": "2.0.0",
+  "catalog_version": "0.1.0",
   "package": { "id": "island/mujoco-sim", "version": "0.1.1" },
   "entrypoint": "bin/eos-mujoco-sim",
   "protocol": "mujoco-v2",

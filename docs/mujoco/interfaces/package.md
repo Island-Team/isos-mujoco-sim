@@ -23,10 +23,11 @@ The current descriptor has no human scene/device descriptions, scene profile or 
 
 ## P02 descriptor extension — target design, not implemented
 
-The following fields are additive within descriptor schema `2.0.0`. `scenes[].id` and `devices.<kind>` remain the stable values stored in graph settings; paths, XML markers and hashes are package metadata only. The new package candidate requires all metadata below, while an already verified historical descriptor without it remains readable for its legacy graph behavior. IsOS does not synthesize new-graph options from an old descriptor.
+The following fields are additive within descriptor schema `2.0.0`. `scenes[].id` and `devices.<kind>` remain the stable values stored in graph settings; paths, XML markers and hashes are package metadata only. `catalog_version:"0.1.0"` is the sole target discriminator. When it is present, every scene must supply `label`, `description`, `profile` and `sha256`, and `device_catalog` must be complete. When absent, none of those target fields may appear anywhere; that exact old shape is legacy-only. Any partial mix fails as `mujoco_catalog_incomplete`; an unknown catalog version fails as `mujoco_catalog_unsupported`, both before option publication. An already verified historical descriptor without metadata remains readable for its legacy graph behavior, but IsOS does not synthesize new-graph options from it. This decision is made from the descriptor's shape and exact discriminator, never from a filename or a guessed package version.
 
 | Field | JSON type / unit | Purpose and owner | Default, validation and compatibility |
 | --- | --- | --- | --- |
+| `catalog_version` | string / — | Select P02 metadata rules; MuJoCo package | Absent only for complete legacy shape; present value must be exactly `0.1.0` with all target fields. Partial or unknown versions fail closed. |
 | `scenes[].id` | nonblank slug / — | Stable scene selector; MuJoCo package | Required unique within the exact release; current IDs are `pick-place` and `navigation`; never a path. |
 | `scenes[].label` | nonblank string / — | Operator display; MuJoCo package | Required for a P02 candidate; legacy catalog display may fall back to `id` without changing bytes. |
 | `scenes[].description` | nonblank string / — | Scene purpose and visible task; MuJoCo package | Required for a P02 candidate; no graph field or runtime authority. |
@@ -41,7 +42,7 @@ The following fields are additive within descriptor schema `2.0.0`. `scenes[].id
 
 `runtime.mujoco_version`, `runtime.environment_variable` and `runtime.library` keep their existing meanings. IsOS checks the declared `3.16.0` library under `MUJOCO_ROOT` before Apply and Run and reports an unavailable reason when it is absent or incompatible; the package does not bundle the library. A file with the expected name alone is not a claim of ABI compatibility: the launch/readiness boundary must establish the actual loaded version before reporting ready. P01 verifies the exact release receipt, all payload bytes and path containment first. P02 checks semantic scene/profile and device-map consistency against that verified handle. Changing a binary, scene XML, referenced asset or contributed sidecar under a fixed `0.1.1` pin invalidates the P01 receipt; publish a new package version for intentional changes.
 
-The P02 target descriptor is frozen in [`tests/fixtures/scene_catalog/target-descriptor.json`](../../../tests/fixtures/scene_catalog/target-descriptor.json). Its two SHA-256 values name the repository's current scene XML bytes. The fixture is a design target, not a presently emitted bundle.
+The P02 target descriptor is frozen in [`target-descriptor.json`](../../../tests/fixtures/scene_catalog/target-descriptor.json); [`legacy-descriptor.json`](../../../tests/fixtures/scene_catalog/legacy-descriptor.json) freezes the exact old shape. The target's two SHA-256 values name the repository's current scene XML bytes. These fixtures define a design boundary, not a presently emitted target bundle.
 
 ## P02 contribution and graph boundary — target design, not implemented
 
@@ -53,10 +54,28 @@ The P02 set declares stable `scene`, `camera_device`, `base_device`, `manipulato
 
 P03 owns the generic `GET`/`POST /node-options` grouping by `(node_path,setting)`, selected-value echo and unavailable-option presentation. This package supplies selector declarations and verified catalog metadata; it does not define an HTTP envelope. R05 owns strict socket feature negotiation, request `node`/operation validation and command deduplication. A P02 catalog entry is not evidence that the current socket enforces device IDs.
 
+## P02 diagnostics — target design, not implemented
+
+IsOS retains the P01 diagnostic shape `{code,path,message,id,version,stage}` and its HTTP 422 admission result. P02 adds the stable `code` values below. `stage` is `descriptor` for direct package metadata checks and `admission` for a selected graph setting or external library check. A direct install/link/verify operation has `path:""` as P01 requires; the frozen fixture's `mutation.path` identifies the descriptor field being tested. During Validate, Apply, Run or Restart, `path` is the exact graph JSON Pointer in the table, with instance IDs taken from the candidate graph. The examples use the `sim-hardware` preset's `simulator` and `arm` IDs; a base device fault points to the corresponding `drive` adapter setting. A malformed catalog is rejected during package verification before a graph setting can be selected; its graph-time path is the process `package` pin. Messages are bounded corrective text, never a raw XML parse error, local path or environment value. An unrelated installed package cannot block a graph that does not pin it.
+
+| Failure | Stable code | Graph-time `path` | Stage |
+| --- | --- | --- | --- |
+| Target discriminator absent with any target field, or present with any missing field | `mujoco_catalog_incomplete` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/package` | `descriptor` |
+| Unsupported `catalog_version` value | `mujoco_catalog_unsupported` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/package` | `descriptor` |
+| Duplicate/blank scene ID, blank description, unsupported profile literal or invalid scene declaration after P01 containment | `mujoco_scene_invalid` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/settings/scene` | `descriptor` |
+| Declared profile differs from the sole supported marker or required model elements | `mujoco_scene_profile_mismatch` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/settings/scene` | `admission` |
+| Declared scene SHA-256 differs from verified XML bytes | `mujoco_scene_digest_mismatch` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/settings/scene` | `admission` |
+| Selected scene ID not in the verified catalog | `mujoco_scene_unavailable` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/settings/scene` | `admission` |
+| Duplicate/blank device ID, mismatched map/catalog kind or ID, invalid scene-support list | `mujoco_device_invalid` | `/cores/eos/layers/hardware/groups/manipulator/nodes/arm/adapter/settings/device_id` | `descriptor` |
+| Selected device ID absent, wrong kind or unsupported in selected scene | `mujoco_device_unavailable` | `/cores/eos/layers/hardware/groups/manipulator/nodes/arm/adapter/settings/device_id` | `admission` |
+| Required MuJoCo library absent or version/ABI incompatible | `mujoco_library_unavailable` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/package` | `admission` |
+
+For a descriptor-only check, the `path` is empty even when the table shows the corresponding graph-time field. P01's `package_changed` at `payload` and `package_unsafe_path` at the containing stage take precedence over every P02 code. In particular, a linked scene modified after verification yields `package_changed`; a symlinked scene path yields `package_unsafe_path`. A package candidate with intact P01 payload bytes but a wrong declared scene digest yields `mujoco_scene_digest_mismatch` in P02 semantic checking before receipt publication. P03 presents an unavailable option using these bounded causes, but the HTTP option envelope remains IsOS-owned. The complete mutation and expected `{code,path,stage}` tuples are frozen in [`negative-cases.json`](../../../tests/fixtures/scene_catalog/negative-cases.json).
+
 Example target descriptor excerpt (the full fixture has both scenes and all three devices):
 
 ```json
-{"schema_version":"2.0.0","package":{"id":"island/mujoco-sim","version":"0.1.1"},"scenes":[{"id":"pick-place","label":"Pick and place","description":"Reach, grasp and place an object","profile":"eos_benchmark_pick_place_v1","path":"assets/scene.xml","sha256":"6c677b07597ddf3d18cf7b30dddd407a09d1c53086d61c919592d16723d32aea"}],"devices":{"camera":"cam-0","base":"base-0","manipulator":"arm-0"}}
+{"schema_version":"2.0.0","catalog_version":"0.1.0","package":{"id":"island/mujoco-sim","version":"0.1.1"},"scenes":[{"id":"pick-place","label":"Pick and place","description":"Reach, grasp and place an object","profile":"eos_benchmark_pick_place_v1","path":"assets/scene.xml","sha256":"6c677b07597ddf3d18cf7b30dddd407a09d1c53086d61c919592d16723d32aea"}],"devices":{"camera":"cam-0","base":"base-0","manipulator":"arm-0"}}
 ```
 
 For a selected `navigation` scene whose XML declares `eos_benchmark_pick_place_v1`, IsOS reports scene/profile mismatch at the process `settings.scene` path and leaves saved and active revisions unchanged. If `arm-0` is missing from `navigation`'s declared device support, the manipulator option is unavailable with a bounded reason and Apply fails at its adapter setting. If `MUJOCO_ROOT` lacks the required library, the package remains installed but the selected scene cannot become ready. The current implementation's generic errors precede these P02-specific diagnostics.

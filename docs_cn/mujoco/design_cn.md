@@ -16,11 +16,11 @@
 
 构建工具保留人工定义的稳定场景 ID，从打包的 XML 字节导出其校验值，并根据引擎支持的相机、底盘与机械臂模型元素核对设备目录。确定性样本固定预期 profile 标记、三台设备 ID 和包拥有的进程类型。声明的标记不等于 XML 中唯一标记、模型缺少设备所需元素或场景/设备 ID 重复时，构建或候选包失败。真实 MuJoCo 引擎加载与重放测试证明 XML 仍可运行；仅文本级 XML 检查不足以证明模型兼容。
 
-IsOS 先运行 P01 收据与路径验证，再解析精确验证过的描述符。它比较所选场景 ID、声明的 profile 和 XML 哈希，核对设备 ID、类别与场景，且在发布图或启动前检查外部库。可修复的草稿显示不可用选项；Apply 拒绝不可用的所选值。Run 与 Restart 再次验证；已链接载荷变化要求显式重新链接，不能静默更新运行中图。场景编辑使用 IsOS 修订 compare-and-swap，只有保存新修订并 Restart 后才进入 EOS。
+IsOS 先运行 P01 收据与路径验证，再解析精确验证过的描述符。精确的 `catalog_version:"0.1.0"` 判别字段要求完整场景和设备元数据；缺失时必须是完整旧结构。部分混合在发布选项前失败。IsOS 比较所选场景 ID、声明的 profile 和 XML 哈希，核对设备 ID、类别与场景，且在发布图或启动前检查外部库。可修复的草稿显示不可用选项；Apply 用契约规定的稳定 `{code,path,stage}` 诊断拒绝不可用的所选值。Run 与 Restart 再次验证；已链接载荷变化要求显式重新链接，不能静默更新运行中图。场景编辑使用 IsOS 修订 compare-and-swap，只有保存新修订并 Restart 后才进入 EOS。
 
 新的 `sim-hardware` 预设在 EOS core 中有七个节点，并使用 IsOS 初始图已有的 dispatcher control 节点。硬件节点采用 EOS 通用 `@v0.1` 注册类型和精确锁定包的 `mujoco-v2` 适配器；MuJoCo 只贡献进程类型。此前验证过的旧 sidecar 仍按旧图行为可读；新的 `0.1.0` 图不包含旧 `@v1.0` 类型或未注册的 IsOS Vision 类型。P03 拥有通用 `(node_path,setting)` 选项分组与 UI 回显。R05 拥有受管理套接字的设备/操作校验；当前套接字忽略 `node`，因此 P02 元数据本身不能证明命令路由安全。详见 [P02 包契约](interfaces/package_cn.md#p02-描述符扩展目标设计尚未实现)与[固定样本](../../tests/fixtures/scene_catalog/README.md)。
 
-设计审查样本检查解析三个 JSON 文件、核对包与类型标识、对仓库中的两个场景 XML 求哈希、验证声明的 profile 标记与设备/场景关系，并检查相对 Markdown 链接。重现命令记于 `logs/test/20261101-p02-design/fixture-doc-check.log`；`python3 tests/node_contributions.py` 与 `python3 tests/release.py` 仍是当前 sidecar 的基线检查。本设计轮不声称 P02 运行合格；CMake/CTest 和 IsOS 干净主目录准入属于实现切片。
+设计审查样本检查解析四个 JSON 文件、核对目标/旧格式判别结构和固定诊断组合、对仓库中的两个场景 XML 求哈希、验证声明的 profile 标记与设备/场景关系，并检查相对 Markdown 链接。完整输出记于 `logs/test/20261101-p02-design/fixture-doc-check.log`；`python3 tests/node_contributions.py` 与 `python3 tests/release.py` 仍是当前 sidecar 的基线检查。本设计轮不声称 P02 运行合格；CMake/CTest 和 IsOS 干净主目录准入属于实现切片。
 
 ## 目标命令与日志算法
 

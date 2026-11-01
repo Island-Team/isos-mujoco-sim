@@ -23,10 +23,11 @@
 
 ## P02 描述符扩展——目标设计，尚未实现
 
-以下字段在描述符 schema `2.0.0` 内追加。`scenes[].id` 和 `devices.<kind>` 保持为图设置中的稳定值；路径、XML 标记和哈希只属于包元数据。新包候选必须提供下列元数据；缺少这些字段的已验证旧描述符仍按旧图行为读取。IsOS 不从旧描述符推导新图选项。
+以下字段在描述符 schema `2.0.0` 内追加。`scenes[].id` 和 `devices.<kind>` 保持为图设置中的稳定值；路径、XML 标记和哈希只属于包元数据。`catalog_version:"0.1.0"` 是唯一目标格式判别字段。存在时，每个场景都必须提供 `label`、`description`、`profile` 和 `sha256`，且 `device_catalog` 必须完整。缺失时，任意位置均不能出现这些目标字段；只有这个精确旧结构属于 legacy。部分混合在发布选项前以 `mujoco_catalog_incomplete` 拒绝；未知 catalog 版本以 `mujoco_catalog_unsupported` 拒绝。缺少元数据的已验证旧描述符仍按旧图行为读取，但 IsOS 不从中推导新图选项。判别仅基于精确字段与结构，不依据文件名或猜测包版本。
 
 | 字段 | JSON 类型／单位 | 用途与所有者 | 默认、验证和兼容 |
 | --- | --- | --- | --- |
+| `catalog_version` | 字符串／— | 选择 P02 元数据规则；MuJoCo 包 | 仅完整旧结构可缺失；存在时必须精确为 `0.1.0` 且所有目标字段齐备。部分或未知版本关闭失败。 |
 | `scenes[].id` | 非空 slug／— | 稳定场景选择值；MuJoCo 包 | 精确版本内唯一；当前为 `pick-place` 与 `navigation`；不是路径。 |
 | `scenes[].label` | 非空字符串／— | 操作员显示；MuJoCo 包 | P02 候选必填；旧目录显示可回退为 ID，不修改原字节。 |
 | `scenes[].description` | 非空字符串／— | 场景用途与可见任务；MuJoCo 包 | P02 候选必填；不构成图字段或运行权限。 |
@@ -41,7 +42,7 @@
 
 `runtime.mujoco_version`、`runtime.environment_variable` 和 `runtime.library` 保持原义。IsOS 在 Apply 和 Run 前检查 `MUJOCO_ROOT` 下所声明的 `3.16.0` 库；缺失或不兼容时返回不可用原因。包不内置该库。文件名符合要求并不自动证明 ABI 兼容；启动/就绪边界须在报告 ready 前确定实际加载的版本。P01 先验证精确发布收据、全部载荷字节和路径包含关系；P02 再以该已验证句柄检查场景/profile 与设备映射语义。固定 `0.1.1` 锁定下修改程序、场景 XML、引用资源或贡献 sidecar 会使 P01 收据失效；有意修改须发布新包版本。
 
-P02 目标描述符固定于 [`tests/fixtures/scene_catalog/target-descriptor.json`](../../../tests/fixtures/scene_catalog/target-descriptor.json)，两个 SHA-256 对应仓库当前场景 XML 字节。它是设计样本，当前构建工具尚未输出。
+P02 目标描述符固定于 [`target-descriptor.json`](../../../tests/fixtures/scene_catalog/target-descriptor.json)；[`legacy-descriptor.json`](../../../tests/fixtures/scene_catalog/legacy-descriptor.json) 固定精确旧结构。目标中的两个 SHA-256 对应仓库当前场景 XML 字节。这些是设计边界样本，当前构建工具尚未输出目标包。
 
 ## P02 声明与图边界——目标设计，尚未实现
 
@@ -53,10 +54,28 @@ P02 节点集声明稳定参数 `scene`、`camera_device`、`base_device`、`man
 
 P03 拥有通用 `GET`/`POST /node-options` 按 `(node_path,setting)` 分组、所选值回显与不可用选项呈现。本包提供选择器声明和已验证目录元数据，不定义 HTTP 包装。R05 拥有严格套接字特性协商、请求 `node`/操作校验与命令去重。P02 目录项不能证明当前套接字已经检查设备 ID。
 
+## P02 诊断——目标设计，尚未实现
+
+IsOS 保留 P01 诊断结构 `{code,path,message,id,version,stage}` 和 HTTP 422 准入结果。P02 新增下列稳定 `code`。直接包元数据检查的 `stage` 为 `descriptor`，所选图设置或外部库检查为 `admission`。按 P01 要求，直接 install/link/verify 的 `path:""`；固定样本的 `mutation.path` 标出受测描述符字段。Validate、Apply、Run 或 Restart 的 `path` 为表中精确的图 JSON Pointer，实例 ID 取自候选图。例子使用 `sim-hardware` 预设的 `simulator` 与 `arm` ID；底盘设备故障指向对应的 `drive` 适配器设置。格式不完整在选择设置前的包验证阶段即遭拒；若在图准入时发现，其路径指向进程的 `package` 锁定。消息是有界的修复提示，不包含原始 XML 解析错误、本地路径或环境值。未被图锁定的无关安装包不能阻止该图。
+
+| 故障 | 稳定 code | 图准入时的 `path` | Stage |
+| --- | --- | --- | --- |
+| 缺少判别字段却带任何目标字段，或判别字段存在但字段不全 | `mujoco_catalog_incomplete` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/package` | `descriptor` |
+| `catalog_version` 值不受支持 | `mujoco_catalog_unsupported` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/package` | `descriptor` |
+| 场景 ID 重复/空白、描述空白、profile 字面值不受支持或 P01 路径检查之后的场景声明无效 | `mujoco_scene_invalid` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/settings/scene` | `descriptor` |
+| 声明的 profile 与唯一受支持标记或所需模型元素不符 | `mujoco_scene_profile_mismatch` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/settings/scene` | `admission` |
+| 声明的场景 SHA-256 与已验证 XML 字节不符 | `mujoco_scene_digest_mismatch` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/settings/scene` | `admission` |
+| 所选场景 ID 不在已验证目录中 | `mujoco_scene_unavailable` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/settings/scene` | `admission` |
+| 设备 ID 重复/空白，映射与目录类别或 ID 不符，场景支持列表无效 | `mujoco_device_invalid` | `/cores/eos/layers/hardware/groups/manipulator/nodes/arm/adapter/settings/device_id` | `descriptor` |
+| 所选设备不存在、类别错误或所选场景不支持 | `mujoco_device_unavailable` | `/cores/eos/layers/hardware/groups/manipulator/nodes/arm/adapter/settings/device_id` | `admission` |
+| 所需 MuJoCo 库缺失或版本/ABI 不兼容 | `mujoco_library_unavailable` | `/cores/eos/layers/process/groups/mujoco/nodes/simulator/package` | `admission` |
+
+仅检查描述符时，即使表中列出相应的图字段，`path` 仍为空。P01 在 `payload` 阶段的 `package_changed` 和相应阶段的 `package_unsafe_path` 优先于所有 P02 代码。特别地，链接后的场景发生修改返回 `package_changed`；场景路径出现符号链接返回 `package_unsafe_path`。载荷字节符合 P01 但声明的场景哈希错误的候选包，在收据发布前的 P02 语义检查返回 `mujoco_scene_digest_mismatch`。P03 用这些有界原因呈现不可用选项，HTTP 选项包装仍归 IsOS。完整变异与预期 `{code,path,stage}` 组合固定于 [`negative-cases.json`](../../../tests/fixtures/scene_catalog/negative-cases.json)。
+
 目标描述符示例摘录（完整样本含两个场景、三台设备）：
 
 ```json
-{"schema_version":"2.0.0","package":{"id":"island/mujoco-sim","version":"0.1.1"},"scenes":[{"id":"pick-place","label":"Pick and place","description":"Reach, grasp and place an object","profile":"eos_benchmark_pick_place_v1","path":"assets/scene.xml","sha256":"6c677b07597ddf3d18cf7b30dddd407a09d1c53086d61c919592d16723d32aea"}],"devices":{"camera":"cam-0","base":"base-0","manipulator":"arm-0"}}
+{"schema_version":"2.0.0","catalog_version":"0.1.0","package":{"id":"island/mujoco-sim","version":"0.1.1"},"scenes":[{"id":"pick-place","label":"Pick and place","description":"Reach, grasp and place an object","profile":"eos_benchmark_pick_place_v1","path":"assets/scene.xml","sha256":"6c677b07597ddf3d18cf7b30dddd407a09d1c53086d61c919592d16723d32aea"}],"devices":{"camera":"cam-0","base":"base-0","manipulator":"arm-0"}}
 ```
 
 若所选 `navigation` 场景的 XML 却声明 `eos_benchmark_pick_place_v1`，IsOS 在进程的 `settings.scene` 路径报告场景/profile 不匹配，已保存及已激活修订不变。若 `navigation` 的设备支持列表缺少 `arm-0`，机械臂选项不可用并附有有界原因，Apply 在其适配器设置处失败。若 `MUJOCO_ROOT` 缺少所需库，包可以保留安装，但所选场景不能就绪。当前实现仅提供较泛化的错误，尚无上述 P02 诊断。
