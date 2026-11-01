@@ -2,7 +2,7 @@
 
 [中文](../../../docs_cn/mujoco/interfaces/socket_cn.md) · [Package descriptor](package.md) · [Design](../design.md)
 
-**Ownership, identity and status.** This package owns the simulator socket protocol; EOS owns the client adapter and direct-child lifecycle. The existing wire protocol is `2.0.0`; its number is a compatibility identity and does not set the package or graph release version. The simulator currently implements the framed Unix socket and operations below. R05 managed mode enforces `node` device identity, `command_id` deduplication and stable errors. R06 bounded preemptive stop progress remains open. EOS is the sole robot-side caller through its internal `mujoco-v2` adapter family; EGIA and IsosUI call EOS, never this socket. Benchmark RPC is separate and evaluator-only. The old gRPC simulator socket is documented as a retained legacy side chain in [simulator.md](simulator.md).
+**Ownership, identity and status.** This package owns the simulator socket protocol; EOS owns the client adapter and direct-child lifecycle. The existing wire protocol is `2.0.0`; its number is a compatibility identity and does not set the package or graph release version. The simulator currently implements the framed Unix socket and operations below. R05 managed mode enforces `node` device identity, `command_id` deduplication and stable errors. R06 has an owner implementation candidate; independent review and integrated qualification remain open. EOS is the sole robot-side caller through its internal `mujoco-v2` adapter family; EGIA and IsosUI call EOS, never this socket. Benchmark RPC is separate and evaluator-only. The old gRPC simulator socket is documented as a retained legacy side chain in [simulator.md](simulator.md).
 
 ## Frame and common fields
 
@@ -124,4 +124,4 @@ Partial proof example; EOS treats the overall outcome as unknown and still termi
 {"version":"2.0.0","id":"stop-req-2","ok":false,"accepted":false,"base_stop":"stopped","arm_stop":"unknown","generation_id":"00112233445566778899aabbccddeeff","stop_epoch":"2","error":{"code":"stop_outcome_unknown","message":"arm stop outcome unknown"},"timestamp_ns":102000000,"sequence":51}
 ```
 
-R06 design and negative fixture coverage is [frozen here](../../../tests/fixtures/strict_stop_lane/README.md). Implementation, independent review and cross-owner physical safe-stop qualification remain required before this target is reported as current behavior.
+R06 design and negative fixture coverage is [frozen here](../../../tests/fixtures/strict_stop_lane/README.md). The MuJoCo owner implementation candidate passes 21/21 CTest cases on this branch; [design evidence and reproducible commands](../design.md#r06-stop-lane-design-target) record its scope. Independent implementation review and cross-owner physical safe-stop qualification remain required before EOS may advertise movement or this target is reported as an integrated behavior.

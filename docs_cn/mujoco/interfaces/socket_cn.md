@@ -2,7 +2,7 @@
 
 [English](../../../docs/mujoco/interfaces/socket.md) · [包描述符](package_cn.md) · [设计](../design_cn.md)
 
-**所有权、标识与状态。** 本包拥有模拟器套接字协议；EOS 拥有客户端适配器和直接子进程生命周期。 现有线协议为 `2.0.0`；它是兼容性标识，不决定包或图的发布版本。模拟器已实现下述分帧 Unix 套接字和操作。R05 管理模式已实现 `node` 设备身份检查、`command_id` 去重与稳定错误码；R06 有界抢占停止仍待实现。EOS 通过内部 `mujoco-v2` 适配器系列作为唯一机器人侧调用方；EGIA、IsosUI 只调用 EOS。Benchmark RPC 独立且仅供评测器使用。旧 gRPC 模拟器套接字是保留的历史侧链，见英文 [simulator.md](../../../docs/mujoco/interfaces/simulator.md)。
+**所有权、标识与状态。** 本包拥有模拟器套接字协议；EOS 拥有客户端适配器和直接子进程生命周期。 现有线协议为 `2.0.0`；它是兼容性标识，不决定包或图的发布版本。模拟器已实现下述分帧 Unix 套接字和操作。R05 管理模式已实现 `node` 设备身份检查、`command_id` 去重与稳定错误码；R06 已有所有者实现候选；独立审查及集成验收仍未完成。EOS 通过内部 `mujoco-v2` 适配器系列作为唯一机器人侧调用方；EGIA、IsosUI 只调用 EOS。Benchmark RPC 独立且仅供评测器使用。旧 gRPC 模拟器套接字是保留的历史侧链，见英文 [simulator.md](../../../docs/mujoco/interfaces/simulator.md)。
 
 ## 帧与通用字段
 
@@ -125,4 +125,4 @@ EOS 从 IsOS 获得已验证的程序、场景和套接字，直接启动子进�
 {"version":"2.0.0","id":"stop-req-2","ok":false,"accepted":false,"base_stop":"stopped","arm_stop":"unknown","generation_id":"00112233445566778899aabbccddeeff","stop_epoch":"2","error":{"code":"stop_outcome_unknown","message":"arm stop outcome unknown"},"timestamp_ns":102000000,"sequence":51}
 ```
 
-R06 设计与负面样本见[固定用例](../../../tests/fixtures/strict_stop_lane/README.md)。实现、独立审查和跨所有者的物理安全停止验收尚未完成。
+R06 设计与负面样本见[固定用例](../../../tests/fixtures/strict_stop_lane/README.md)。本分支的 MuJoCo 所有者实现候选通过 21/21 项 CTest；[设计证据与可复现命令](../design_cn.md#r06-停止通道设计目标)记录其范围。EOS 公开运动或将目标视为集成现状之前，仍需独立实现审查与跨所有者物理安全停止验收。
