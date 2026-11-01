@@ -2,6 +2,7 @@
 """Check the packaged node set before IsOS performs full graph admission."""
 
 from pathlib import Path
+import json
 import re
 import sys
 import unittest
@@ -27,9 +28,10 @@ class NodeContributionTests(unittest.TestCase):
     node_set = contract["node_sets"][0]
     refs = {node["ref"] for node in node_set["nodes"]}
     self.assertEqual(refs, {"simulator", "front", "drive", "arm", "base-velocity",
-                            "arm-movej", "camera-gate", "vision"})
+                            "arm-movej", "camera-gate"})
     contributed_types = {node_type["id"] for node_type in contract["node_types"]}
-    self.assertEqual(contributed_types, {"eos.process.mujoco@v1.0"})
+    self.assertEqual(contributed_types,
+                     {"eos.process.mujoco@v1.0", "eos.process.mujoco@v0.1"})
     declared = set(node_set["parameters"])
     for node in node_set["nodes"]:
       if node["profile"]["node_type"] in contributed_types:
@@ -41,19 +43,15 @@ class NodeContributionTests(unittest.TestCase):
         for parameter in re.findall(r"\$\{([^}]+)\}", value):
           self.assertIn(parameter, declared)
 
-  def test_vision_uses_a_typed_gate_with_an_editable_default_source(self) -> None:
+  def test_new_graph_uses_generic_types_and_no_unregistered_ui_type(self) -> None:
     nodes = {node["ref"]: node for node in contributions()["node_sets"][0]["nodes"]}
     gate = nodes["camera-gate"]
-    vision = nodes["vision"]
     self.assertEqual(gate["profile"]["inputs"]["frame"],
                      {"node": "@front", "output": "frame"})
-    self.assertEqual(vision["profile"]["inputs"]["preview"],
-                     {"node": "@camera-gate", "output": "preview"})
     self.assertEqual((gate["core"], gate["layer"], gate["group"]),
                      ("eos", "interface", "gate"))
-    self.assertEqual((vision["core"], vision["layer"], vision["group"]),
-                     ("isos", "ui", "panel"))
-    self.assertEqual(vision["profile"]["node_type"], "isos.ui.vision@v1.0")
+    self.assertEqual(gate["profile"]["node_type"], "eos.interface.camera_gate@v0.1")
+    self.assertNotIn("vision", nodes)
 
   def test_each_device_uses_one_package_pinned_adapter_and_typed_binding(self) -> None:
     contract = contributions()
@@ -67,11 +65,15 @@ class NodeContributionTests(unittest.TestCase):
       self.assertEqual((node["core"], node["layer"], node["group"]),
                        ("eos", "hardware", kind))
       profile = node["profile"]
-      self.assertEqual(profile["node_type"], f"eos.hardware.{kind}@v1.0")
+      self.assertEqual(profile["node_type"], f"eos.hardware.{kind}@v0.1")
       self.assertNotIn("package", profile)
       self.assertEqual(profile["adapter"]["type"], family["id"])
       self.assertEqual(profile["adapter"]["package"],
                        {"id": "island/mujoco-sim", "version": "0.1.1"})
+      selected = {"front": "camera_device", "drive": "base_device",
+                  "arm": "manipulator_device"}[ref]
+      self.assertEqual(profile["adapter"]["settings"]["device_id"], f"${{{selected}}}")
+      self.assertEqual(profile["adapter"]["settings"]["simulator_node"], f"${{{selected}}}")
     for device, binding, primitive in (("drive", "base-velocity", "base.velocity"),
                                        ("arm", "arm-movej", "arm.movej")):
       self.assertEqual(nodes[device]["profile"]["inputs"]["command"],
@@ -86,6 +88,25 @@ class NodeContributionTests(unittest.TestCase):
         self.assertTrue(port["description"])
         self.assertIn(port["data_class"],
                       {"image", "observation", "command", "event", "state", "opaque"})
+
+  def test_target_contribution_matches_frozen_projection(self) -> None:
+    expected = json.loads((Path(__file__).resolve().parent /
+                           "fixtures/scene_catalog/expected-contribution.json").read_text())
+    contract = contributions()
+    types = {entry["id"]: entry for entry in contract["node_types"]}
+    current = types[expected["process_type"]["id"]]
+    self.assertEqual((current["core"], current["layer"], current["group"]),
+                     (expected["process_type"]["core"], expected["process_type"]["layer"],
+                      expected["process_type"]["group"]))
+    self.assertTrue(current["description"].strip())
+    self.assertEqual(next(setting for setting in current["settings"] if setting["name"] == "scene")["selector"],
+                     expected["process_type"]["scene_selector"])
+    node_set = contract["node_sets"][0]
+    self.assertEqual(node_set["id"], expected["node_set"]["id"])
+    self.assertEqual({name: item.get("default") for name, item in node_set["parameters"].items()},
+                     expected["node_set"]["parameters"])
+    self.assertEqual([node["profile"]["node_type"] for node in node_set["nodes"]],
+                     expected["node_set"]["types"])
 
 
 if __name__ == "__main__":

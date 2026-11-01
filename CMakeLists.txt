@@ -64,3 +64,5 @@ add_test(NAME scene-view-check-navigation COMMAND bash "${CMAKE_CURRENT_SOURCE_D
 set_tests_properties(scene-view-check-navigation PROPERTIES ENVIRONMENT "MUJOCO_ROOT=${MUJOCO_ROOT}")
 add_test(NAME v2-socket COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/v2.py" $<TARGET_FILE:eos-mujoco-sim> "${CMAKE_CURRENT_SOURCE_DIR}/assets/scene.xml")
 add_test(NAME gui-unavailable COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/gui_fail.py" $<TARGET_FILE:eos-mujoco-sim> "${CMAKE_CURRENT_SOURCE_DIR}/assets/scene.xml")
+add_test(NAME scene-catalog COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/scene_catalog.py")
+add_test(NAME bundle-catalog COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/bundle_catalog.py" $<TARGET_FILE:eos-mujoco-sim>)
