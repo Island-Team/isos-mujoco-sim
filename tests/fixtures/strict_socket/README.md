@@ -1,0 +1,5 @@
+# R05 strict socket design fixtures
+
+`cases.json` freezes the target behavior owned by the [MuJoCo socket contract](../../../docs/mujoco/interfaces/socket.md). These are design cases, not claims that the current C++ server passes. The implementation test may use different harness names but must cover every case and preserve the IDs in its evidence report. `strict_frame` cases describe raw frames; `strict_sequence` and `strict_concurrent` cases require one real engine release counter or equivalent mock. The capacity cases must prove that no old key can be evicted during one child generation. The EOS cases belong in the dependent EOS topic branch, not in this repository's socket server.
+
+Direct mode without the strict flag remains wire `2.0.0` and keeps the historical gRPC and benchmark listeners. Managed mode must reject both listener flags and expose only the framed strict socket. R05 proves identity, kind, finite bounds, deduplication and fail-closed readiness. R06 separately proves preemptive stop, independent base/arm acknowledgment and termination/reap order. No fixture here grants actuator authority to a graph wire or benchmark caller.

@@ -2,7 +2,7 @@
 
 [English](../../../docs/mujoco/interfaces/package.md) · [套接字](socket_cn.md) · [包发布](../package-release_cn.md)
 
-**所有权与状态。** 本仓库拥有 MuJoCo 专用 `backend-v2.json` 描述符和 schema v4 `release.json` 中的 `node_contributions`。IsOS 拥有通用发布清单 schema、[已验证收据与包准入](https://github.com/Island-Team/isos/blob/master/docs_cn/isos/interfaces/package-verification_cn.md)、图修订和 `/node-options` 响应。`tools/build-backend-bundle.py` 已输出 P02 目录和 `@v0.1` 声明；IsOS 的语义准入及通用 P03 选项 API 属于独立实现切片。即使新图格式为 `0.1.0`，描述符 schema、协议和套接字线协议 `2.0.0` 仍是独立兼容性标识。
+**所有权与状态。** 本仓库拥有 MuJoCo 专用 `backend-v2.json` 描述符和 schema v4 `release.json` 中的 `node_contributions`。IsOS 拥有通用发布清单 schema、[已验证收据与包准入](https://github.com/Island-Team/isos/blob/master/docs_cn/isos/interfaces/package-verification_cn.md)、图修订和 `/node-options` 响应。`tools/build-backend-bundle.py` 已输出 P02 目录和 `@v0.1` 声明；IsOS 的语义准入及通用 P03 选项 API 已在其所有者仓库实现；固定版本的 R05 回放验证了本包的实际使用。即使新图格式为 `0.1.0`，描述符 schema、协议和套接字线协议 `2.0.0` 仍是独立兼容性标识。
 
 ## 当前描述符字段
 
@@ -52,7 +52,7 @@ P02 描述符固定于 [`target-descriptor.json`](../../../tests/fixtures/scene_
 
 P02 节点集声明稳定参数 `scene`、`camera_device`、`base_device`、`manipulator_device` 和仅所有者可访问的 `socket`。默认场景为 `pick-place`，三个设备默认值为 `cam-0`、`base-0`、`arm-0`。预览与 Apply 要求所选 ID 属于精确验证过的描述符、符合硬件类别和所选场景，并通过整图准入。图保存 ID 和精确包锁定。IsOS 拥有组合及修订 compare-and-swap；改选场景生成新的已保存修订，仅在 Restart 后作用于子进程。不能原地修改运行中模拟器的场景。
 
-P03 拥有通用 `GET`/`POST /node-options` 按 `(node_path,setting)` 分组、所选值回显与不可用选项呈现。本包提供选择器声明和已验证目录元数据，不定义 HTTP 包装。R05 拥有严格套接字特性协商、请求 `node`/操作校验与命令去重。P02 目录项不能证明当前套接字已经检查设备 ID。
+P03 拥有通用 `GET`/`POST /node-options` 按 `(node_path,setting)` 分组、所选值回显与不可用选项呈现。本包提供选择器声明和已验证目录元数据，不定义 HTTP 包装。R05 拥有严格套接字特性协商、请求 `node`/操作校验与命令去重。P02 目录项本身不能证明套接字强制检查设备 ID；R05 严格健康与设备/操作测试为受管理启动提供该证明。
 
 ## P02 诊断与 IsOS 准入目标
 
@@ -84,4 +84,4 @@ IsOS 保留 P01 诊断结构 `{code,path,message,id,version,stage}` 和 HTTP 422
 
 ## 历史声明的兼容性
 
-历史已验证 sidecar 仅贡献 `eos.process.mujoco@v1.0`，缺少进程类型描述与选择器，且使用固定设备 ID 组合 `1.0.0` 图。读取方可为旧 sidecar 提供仅供目录显示的描述默认值，而不改变验证过的字节。当前构建工具同时输出两个进程类型及 `@v0.1` 七节点预设；IsOS 需先接受并验证新描述符，才能将该预设发布为图选项。其他包资源以后可使用 P03 选项机制；本版本不定义 `egia.tensor` 执行。
+历史已验证 sidecar 仅贡献 `eos.process.mujoco@v1.0`，缺少进程类型描述与选择器，且使用固定设备 ID 组合 `1.0.0` 图。读取方可为旧 sidecar 提供仅供目录显示的描述默认值，而不改变验证过的字节。当前构建工具同时输出两个进程类型及 `@v0.1` 七节点预设；IsOS 先接受并验证新描述符，再把该预设发布为图选项。其他包资源以后可使用 P03 选项机制；本版本不定义 `egia.tensor` 执行。

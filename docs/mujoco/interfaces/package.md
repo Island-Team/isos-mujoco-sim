@@ -2,7 +2,7 @@
 
 [中文](../../../docs_cn/mujoco/interfaces/package_cn.md) · [Socket](socket.md) · [Package release](../package-release.md)
 
-**Owner and status.** This repository owns the MuJoCo-specific `backend-v2.json` descriptor and `node_contributions` in its schema v4 `release.json`. IsOS owns the general release-manifest schema, [verified receipt and package admission](https://github.com/Island-Team/isos/blob/master/docs/isos/interfaces/package-verification.md), graph revision, and `/node-options` response. `tools/build-backend-bundle.py` emits the P02 catalog and `@v0.1` contribution; IsOS semantic admission and the generic P03 option API are separate implementation slices. `backend-v2.json`, schema `2.0.0`, protocol name `mujoco-v2`, and socket wire `2.0.0` remain compatibility identities when the authored graph format is `0.1.0`.
+**Owner and status.** This repository owns the MuJoCo-specific `backend-v2.json` descriptor and `node_contributions` in its schema v4 `release.json`. IsOS owns the general release-manifest schema, [verified receipt and package admission](https://github.com/Island-Team/isos/blob/master/docs/isos/interfaces/package-verification.md), graph revision, and `/node-options` response. `tools/build-backend-bundle.py` emits the P02 catalog and `@v0.1` contribution; IsOS semantic admission and the generic P03 option API are implemented in their owner repository; the pinned R05 replay verifies their use with this package. `backend-v2.json`, schema `2.0.0`, protocol name `mujoco-v2`, and socket wire `2.0.0` remain compatibility identities when the authored graph format is `0.1.0`.
 
 ## Current descriptor fields
 
@@ -52,7 +52,7 @@ The `sim-hardware` new-graph node set is a draft template for `0.1.0`, not execu
 
 The P02 set declares stable `scene`, `camera_device`, `base_device`, `manipulator_device` and owner-only `socket` parameters. The default scene is `pick-place`; the three device defaults are `cam-0`, `base-0`, `arm-0`. Preview and Apply require the selected IDs to be present in the exact verified descriptor, match hardware kind and selected scene, and pass graph-wide admission. The graph stores IDs and the exact package pin. IsOS owns composition and revision compare-and-swap, so changing the scene produces a new saved revision; it reaches the child only after Restart. No scene change mutates a running simulator in place.
 
-P03 owns the generic `GET`/`POST /node-options` grouping by `(node_path,setting)`, selected-value echo and unavailable-option presentation. This package supplies selector declarations and verified catalog metadata; it does not define an HTTP envelope. R05 owns strict socket feature negotiation, request `node`/operation validation and command deduplication. A P02 catalog entry is not evidence that the current socket enforces device IDs.
+P03 owns the generic `GET`/`POST /node-options` grouping by `(node_path,setting)`, selected-value echo and unavailable-option presentation. This package supplies selector declarations and verified catalog metadata; it does not define an HTTP envelope. R05 owns strict socket feature negotiation, request `node`/operation validation and command deduplication. A P02 catalog entry alone is not socket enforcement evidence; the R05 strict health and device-operation tests provide that proof for managed launch.
 
 ## P02 diagnostics and IsOS admission target
 
@@ -84,4 +84,4 @@ The general `release.json` fields (`id`, `version`, digest, architecture, source
 
 ## Historical contribution compatibility
 
-Historical verified sidecars contributed only `eos.process.mujoco@v1.0`, had no process-type description or selector, and composed a `1.0.0` graph with fixed device IDs. Old sidecars may receive a catalog-only description fallback from their readers, without changed verified bytes. The current builder emits both process identities and the `@v0.1` seven-node preset; IsOS must accept and verify the new descriptor before it can publish this preset as a graph option. Package assets may use the same P03 option mechanism later; this release defines no `egia.tensor` execution.
+Historical verified sidecars contributed only `eos.process.mujoco@v1.0`, had no process-type description or selector, and composed a `1.0.0` graph with fixed device IDs. Old sidecars may receive a catalog-only description fallback from their readers, without changed verified bytes. The current builder emits both process identities and the `@v0.1` seven-node preset; IsOS accepts and verifies the new descriptor before publishing this preset as a graph option. Package assets may use the same P03 option mechanism later; this release defines no `egia.tensor` execution.
