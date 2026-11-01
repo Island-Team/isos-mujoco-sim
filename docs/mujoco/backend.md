@@ -33,6 +33,8 @@ The default is headless. A desktop with an accessible `DISPLAY` is required;
 an unavailable display makes the simulator fail at startup. The independent
 `tools/scene-view.sh` viewer remains a static scene preview.
 
+**R05 target, not current behavior:** an EOS-managed strict child accepts only the framed v2 socket; it rejects the historical gRPC robot socket and benchmark socket, because either listener could change the shared engine outside Dispatcher. A separate direct launch retains those sockets for legacy clients and trusted evaluation. See the [owning socket contract](interfaces/socket.md).
+
 The v2 socket uses an eight-byte little-endian frame header followed by JSON
 metadata and an optional JPEG payload. Metadata is capped at 64 KiB; payload
 is capped at 8 MiB. The request must include `version: "2.0.0"`, a string

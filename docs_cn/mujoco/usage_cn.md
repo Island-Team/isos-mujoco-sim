@@ -29,6 +29,8 @@ ctest --test-dir build --output-on-failure
 
 直接运行需要绝对路径的机器人套接字、评测套接字和场景。测试当前 EOS v2 适配器协议时，另传互不相同的绝对 `--v2-socket` 路径。`--manual-step` 初始暂停；否则模拟器按 2 毫秒物理步长实时推进。评测 `Reset` 也会暂停，以便确定性步进。
 
+不带 `--managed-strict-socket` 的直接启动保留旧套接字 `2.0.0` 模式：现有帧客户端可以省略或重用 `node`、`command_id`，历史 gRPC 执行器监听器仍可用。它供旧集成使用，不能使受管理的 IsOS 图合格。严格标志由 EOS 根据已验证生成配置选择，不是图设置或独立启动脚本的默认值。该标志与特性响应属于 **R05 目标设计，当前尚未实现**；详见[套接字契约](interfaces/socket_cn.md)。
+
 ```sh
 build/eos-mujoco-sim \
   --socket /tmp/eos-simulator.sock \
@@ -57,13 +59,17 @@ isos pkg node-sets
 
 另一终端运行 `isos run` 启动已应用部署。IsOS 启动前检查精确的软件包、资源、场景、MuJoCo 库、EOS 程序、套接字与端口；EOS 将模拟器作为直接子进程，并在终止前停止已准入执行器。`isos deployment stop` 只停止部署，`isos stop` 停止管理器、API、UI、部署和独立服务。EGIA 只通过 EOS 的正常代理接口行动，不连接私有评测套接字。模型类服务管理器独立于此硬件图。
 
+**R05 管理模式首次使用目标：** Apply 后，EOS 以严格模式启动已验证子进程，对图中每台相机、底盘和机械臂设备探测 `health`，并等待 `version:"2.0.0"`、回显请求 ID、`ok:true`、`accepted:true` 以及包含 `strict-socket-v1` 的 `features`。操作员把套接字文件或进程启动日志视为进度，而非就绪。特性缺失、设备错误或子进程退出都使后端不可用；调用 EOS primitive 前先看当前运行的首条失败事件。就绪后用一个命令 ID 调用已声明的 EOS 底盘或机械臂 primitive，查看关联的 EOS 结果和模拟器事件；结果不确定的已下发命令不得重发。当前实现尚无此严格健康证明；R05 必须先通过负面样本才能把本段作为已实现流程回放。
+
 发生 P02 目录故障时，先查看场景/设备的不可用原因与第一条包或 Apply 失败事件，再修改草稿。已链接资源变化时，按 P01 收据规则显式重新链接。缺少 `MUJOCO_ROOT` 库会阻止启动就绪，场景/profile 不匹配会阻止 Apply。这些失败均保留图与运行中子进程此前的修订。
+
+检查结果和当前运行日志后，通过 `isos deployment stop` 停止。R05 增加严格身份和传输重发保护；R06 仍需证明专用停止通道、底盘/机械臂分别确认，以及在终止和回收模拟器前完成物理停止。R06 通过前，仅凭 `accepted:true` 停止响应不能证明安全停止已确认。
 
 v2 图中的模拟器节点可以在 `settings.env` 设置 `MUJOCO_GUI=1`，以同一模拟器引擎打开实时 X11 视图；独立启动脚本的 `--gui` 只是静态场景查看器。节点与套接字契约见 [backend_cn.md](backend_cn.md)。
 
 ## 定时评测与验证
 
-先启动模拟器和 EOS/EGIA 代理，再由可信评测器连接私有 benchmark 套接字。下例以种子 42 重置，实时运行 30 秒后暂停，并输出一个 JSON 评分对象：
+这是 EOS 管理严格部署之外的独立直接启动旧版评测流程。先启动带私有 benchmark 套接字的模拟器，连接目标评测器或旧代理测试工具。R05 受管理子进程不提供 benchmark 监听器，因为 Reset 与 Step 能绕过 Dispatcher 更改引擎状态。下例以种子 42 重置，实时运行 30 秒后暂停，并输出一个 JSON 评分对象：
 
 ```sh
 build/benchmark-eval --benchmark-socket /absolute/path/to/benchmark.sock --task navigation --seed 42 --duration-s 30

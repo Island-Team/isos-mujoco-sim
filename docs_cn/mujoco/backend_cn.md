@@ -24,6 +24,8 @@ isos pkg link island/mujoco-sim 0.1.1 /absolute/path/to/mujoco-v2-bundle --manif
 
 v2 Unix 套接字帧以八字节小端长度头开头，后接 JSON 元数据和可选 JPEG 负载。元数据上限为 64 KiB，负载上限为 8 MiB。请求包含 `version: "2.0.0"`、字符串 `id`、`node` 和 `op`；响应回显 ID 与版本，并返回 `ok` 或 `error.message`。
 
+**R05 目标，当前尚未实现：** EOS 管理的严格子进程只接受帧格式 v2 套接字，拒绝历史 gRPC 机器人套接字与 benchmark 套接字，因为任一监听器都可能绕过 Dispatcher 改变共享引擎。独立直接启动仍为旧客户端与可信评测保留这些套接字。详见[所有者套接字契约](interfaces/socket_cn.md)。
+
 | 操作 | 请求字段 | 响应字段 |
 | --- | --- | --- |
 | `health` | 通用字段 | `accepted: bool` |
