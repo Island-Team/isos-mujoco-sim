@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <deque>
 #include <filesystem>
@@ -30,7 +31,12 @@ class V2Server {
   void Work(bool stop_lane);
   void StopWork();
   void CancelActiveCapture();
-  void HandleStrict(int fd, bool stop_lane);
+  void HandleStrict(int fd, bool stop_lane, std::chrono::steady_clock::time_point ingress_deadline);
+  struct QueuedConnection {
+    int fd;
+    std::chrono::steady_clock::time_point accepted_at;
+    std::chrono::steady_clock::time_point ingress_deadline;
+  };
   struct StopJob {
     std::uint64_t epoch;
     std::promise<StopProof> result;
@@ -44,7 +50,7 @@ class V2Server {
   std::atomic_int pending_stop_jobs_{0};
   bool stop_inhibited_ = false;
   std::atomic_bool stop_unknown_latched_{false};
-  std::deque<int> normal_queue_, stop_queue_;
+  std::deque<QueuedConnection> normal_queue_, stop_queue_;
   std::vector<std::thread> normal_workers_, stop_workers_;
   std::size_t normal_outstanding_ = 0, stop_outstanding_ = 0;
   std::atomic_int normal_ingress_{0};

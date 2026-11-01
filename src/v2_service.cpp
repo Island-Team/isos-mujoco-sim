@@ -60,7 +60,7 @@ bool ReadAllUntil(int fd, void* buffer, size_t length,
     bytes += count;
     length -= static_cast<size_t>(count);
   }
-  return true;
+  return std::chrono::steady_clock::now() <= deadline;
 }
 bool WriteAll(int fd, const void* buffer, size_t length) {
   const auto* bytes = static_cast<const unsigned char*>(buffer);
@@ -278,7 +278,8 @@ void Handle(int fd, SimEngine& engine) {
 }
 }  // namespace
 
-void V2Server::HandleStrict(int fd, bool stop_lane) {
+void V2Server::HandleStrict(int fd, bool stop_lane,
+                            std::chrono::steady_clock::time_point ingress_deadline) {
   if (!stop_lane && normal_ingress_.fetch_add(1) >= 8) {
     normal_ingress_.fetch_sub(1);
     return;
@@ -290,7 +291,6 @@ void V2Server::HandleStrict(int fd, bool stop_lane) {
     }
   } ingress{stop_lane ? nullptr : &normal_ingress_};
   unsigned char header[8];
-  const auto ingress_deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(250);
   if (!ReadAllUntil(fd, header, sizeof(header), ingress_deadline)) return;
   const auto metadata_size = Decode32(header);
   if (!metadata_size || metadata_size > kMaxMetadata || Decode32(header + 4)) return;
@@ -677,7 +677,7 @@ V2Server::V2Server(const std::filesystem::path& socket, SimEngine& engine,
   }
   if (managed_strict_socket_) {
     for (int i = 0; i < 32; ++i) normal_workers_.emplace_back([this] { Work(false); });
-    for (int i = 0; i < 2; ++i) stop_workers_.emplace_back([this] { Work(true); });
+    for (int i = 0; i < 3; ++i) stop_workers_.emplace_back([this] { Work(true); });
     stop_executor_ = std::thread([this] { StopWork(); });
     stop_worker_ = std::thread([this] { Run(stop_listener_, true); });
   }
@@ -706,6 +706,7 @@ void V2Server::Run(int listener, bool stop_lane) {
   while (!stopping_.load()) {
     const int fd = ::accept4(listener, nullptr, nullptr, SOCK_CLOEXEC);
     if (fd < 0) continue;
+    const auto accepted_at = std::chrono::steady_clock::now();
     if (managed_strict_socket_) {
       bool queued = false;
       {
@@ -714,7 +715,7 @@ void V2Server::Run(int listener, bool stop_lane) {
         auto& queue = stop_lane ? stop_queue_ : normal_queue_;
         if (outstanding < (stop_lane ? 10u : 32u)) {
           ++outstanding;
-          queue.push_back(fd);
+          queue.push_back({fd, accepted_at, accepted_at + std::chrono::milliseconds(250)});
           queued = true;
         }
       }
@@ -733,7 +734,7 @@ void V2Server::Run(int listener, bool stop_lane) {
 }
 void V2Server::Work(bool stop_lane) {
   while (true) {
-    int fd = -1;
+    QueuedConnection connection{};
     {
       std::unique_lock lock(queue_mutex_);
       queue_ready_.wait(lock, [&] {
@@ -741,13 +742,13 @@ void V2Server::Work(bool stop_lane) {
       });
       auto& queue = stop_lane ? stop_queue_ : normal_queue_;
       if (queue.empty()) return;
-      fd = queue.front();
+      connection = queue.front();
       queue.pop_front();
     }
     timeval timeout{2, 0};
-    ::setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
-    HandleStrict(fd, stop_lane);
-    ::close(fd);
+    ::setsockopt(connection.fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+    HandleStrict(connection.fd, stop_lane, connection.ingress_deadline);
+    ::close(connection.fd);
     {
       std::lock_guard lock(queue_mutex_);
       --(stop_lane ? stop_outstanding_ : normal_outstanding_);
