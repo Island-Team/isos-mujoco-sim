@@ -208,7 +208,7 @@ bool SimEngine::Reset(std::uint64_t seed, std::string* error) {
   collision_active_ = false;
   collisions_ = 0;
   sequence_ = 0;
-  stop_epoch_ = 0;
+  stop_epoch_.store(0);
   ++interruption_epoch_;
   mj_forward(model_, data_);
   return true;
@@ -383,7 +383,7 @@ CommandResult SimEngine::Execute(const Command& c,
                                  std::optional<std::uint64_t> expected_stop_epoch) {
   std::unique_lock lock(mutex_);
   if (!model_) return {false, "unavailable"};
-  if (expected_stop_epoch && *expected_stop_epoch != stop_epoch_)
+  if (expected_stop_epoch && *expected_stop_epoch != stop_epoch_.load())
     return {false, "command_interrupted"};
   if (c.type == Command::Type::Halt) {
     halted_ = true;
@@ -598,10 +598,14 @@ CommandResult SimEngine::Execute(const Command& c,
   } else
     return {false, "unsupported"};
   if (arm) {
+    if (expected_stop_epoch && *expected_stop_epoch != stop_epoch_.load())
+      return {false, "command_interrupted"};
     for (int i = 0; i < 6; ++i) target_joint_[i] = target[i];
     auto epoch = interruption_epoch_;
     double start = data_->time;
     while (data_->time - start < timeout) {
+      if (expected_stop_epoch && *expected_stop_epoch != stop_epoch_.load())
+        return {false, "command_interrupted"};
       if (interruption_epoch_ != epoch) return {false, "interrupted"};
       StepLocked(10);
       bool done = true;
@@ -617,15 +621,18 @@ CommandResult SimEngine::Execute(const Command& c,
   }
   return {false, "unsupported"};
 }
-std::uint64_t SimEngine::StopEpoch() const {
-  std::lock_guard lock(mutex_);
-  return stop_epoch_;
+std::uint64_t SimEngine::StopEpoch() const { return stop_epoch_.load(); }
+std::uint64_t SimEngine::ReserveManagedStopEpoch() {
+  auto prior = stop_epoch_.load();
+  while (prior != UINT64_MAX) {
+    if (stop_epoch_.compare_exchange_weak(prior, prior + 1)) return prior + 1;
+  }
+  throw std::overflow_error("stop epoch exhausted");
 }
-StopProof SimEngine::ManagedStop() {
+StopProof SimEngine::ManagedStop(std::uint64_t reserved_epoch) {
   std::lock_guard lock(mutex_);
   StopProof proof;
-  if (stop_epoch_ == UINT64_MAX) return proof;
-  proof.stop_epoch = ++stop_epoch_;
+  proof.stop_epoch = reserved_epoch;
   ++interruption_epoch_;
   if (!model_ || !data_) return proof;
   base_drive_active_ = false;
@@ -651,11 +658,12 @@ CameraFrame SimEngine::RenderCamera(std::optional<std::uint64_t> expected_stop_e
   std::uint64_t capture_epoch = 0;
   {
     std::lock_guard lock(mutex_);
-    if (!model_ || render_failed_ || (expected_stop_epoch && *expected_stop_epoch != stop_epoch_))
+    if (!model_ || render_failed_ ||
+        (expected_stop_epoch && *expected_stop_epoch != stop_epoch_.load()))
       return frame;
     frame.sequence = sequence_;
     frame.timestamp_ns = static_cast<std::int64_t>(data_->time * 1e9);
-    capture_epoch = stop_epoch_;
+    capture_epoch = stop_epoch_.load();
   }
   if (!render_state_) {
     auto* r = new RenderState();
@@ -721,7 +729,7 @@ CameraFrame SimEngine::RenderCamera(std::optional<std::uint64_t> expected_stop_e
   auto* r = render_state_;
   {
     std::lock_guard lock(mutex_);
-    if (capture_epoch != stop_epoch_) return {};
+    if (capture_epoch != stop_epoch_.load()) return {};
     mj_copyData(r->data, model_, data_);
     frame.sequence = sequence_;
     frame.timestamp_ns = static_cast<std::int64_t>(data_->time * 1e9);

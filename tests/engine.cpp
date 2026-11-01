@@ -94,7 +94,7 @@ int main(int argc, char** argv) {
   const auto arm_proof = engine.ManagedStop();
   managed_worker.join();
   if (!arm_proof.base_stopped || !arm_proof.arm_stopped || arm_proof.stop_epoch != 2 ||
-      interrupted_arm.accepted || interrupted_arm.error_code != "interrupted")
+      interrupted_arm.accepted || interrupted_arm.error_code != "command_interrupted")
     return Fail("managed stop did not preempt active arm motion");
   engine.Reset(42, &error);
   eos_mujoco::Command far{};

@@ -26,7 +26,8 @@ class StrictLedger {
   };
 
   Reservation Reserve(const std::string& node, const std::string& command_id, bool stop,
-                      const std::string& fingerprint, bool epoch_current = true) {
+                      const std::string& fingerprint, bool epoch_current = true,
+                      bool slot_available = true) {
     const Key key{node, command_id};
     auto& table = stop ? stops_ : movements_;
     const auto& other = stop ? movements_ : stops_;
@@ -38,6 +39,7 @@ class StrictLedger {
               found->second.result};
     }
     if (!stop && !epoch_current) return {Admission::Stale, {}};
+    if (!slot_available) return {Admission::Capacity, {}};
     if (table.size() >= (stop ? 4096u : 65536u)) return {Admission::Capacity, {}};
     table.emplace(key, Entry{fingerprint, {}});
     return {Admission::New, {}};

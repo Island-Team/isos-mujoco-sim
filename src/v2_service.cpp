@@ -308,7 +308,8 @@ void V2Server::HandleStrict(int fd, bool stop_lane) {
   Set(&reply, "id", String(request, "id"));
   Set(&reply, "ok", true);
   Snapshot snapshot;
-  if (String(request, "op") != "stop") snapshot = engine_.GetSnapshot();
+  if (String(request, "op") != "stop" && String(request, "op") != "health")
+    snapshot = engine_.GetSnapshot();
   Set(&reply, "timestamp_ns", snapshot.simulation_time_s * 1e9);
   Set(&reply, "sequence", static_cast<double>(snapshot.sequence));
   const auto fail = [&](const char* code, const char* message) {
@@ -395,7 +396,8 @@ void V2Server::HandleStrict(int fd, bool stop_lane) {
     return;
   }
   if (op == "camera_capture") {
-    const auto frame = engine_.RenderCamera(engine_.StopEpoch());
+    const auto capture_epoch = engine_.StopEpoch();
+    const auto frame = engine_.RenderCamera(capture_epoch);
     if (frame.jpeg.empty() || frame.width <= 0 || frame.height <= 0 || frame.width > 4096 ||
         frame.height > 4096 || frame.jpeg.size() > kMaxPayload) {
       fail("device_unavailable", "camera render unavailable");
@@ -412,10 +414,31 @@ void V2Server::HandleStrict(int fd, bool stop_lane) {
     if (!google::protobuf::util::MessageToJsonString(reply, &encoded).ok() ||
         encoded.size() > kMaxMetadata)
       return;
+    std::lock_guard publication_lock(publication_mutex_);
+    if (capture_epoch != engine_.StopEpoch()) {
+      fail("device_unavailable", "camera capture crossed stop fence");
+      return;
+    }
+    {
+      std::lock_guard capture_lock(capture_fd_mutex_);
+      active_capture_fd_ = ::dup(fd);
+    }
+    if (active_capture_fd_ < 0 || capture_epoch != engine_.StopEpoch()) {
+      std::lock_guard capture_lock(capture_fd_mutex_);
+      if (active_capture_fd_ >= 0) ::close(active_capture_fd_);
+      active_capture_fd_ = -1;
+      fail("device_unavailable", "camera capture crossed stop fence");
+      return;
+    }
     Encode32(static_cast<std::uint32_t>(encoded.size()), header);
     Encode32(static_cast<std::uint32_t>(frame.jpeg.size()), header + 4);
     WriteAll(fd, header, sizeof(header)) && WriteAll(fd, encoded.data(), encoded.size()) &&
         WriteAll(fd, frame.jpeg.data(), frame.jpeg.size());
+    {
+      std::lock_guard capture_lock(capture_fd_mutex_);
+      ::close(active_capture_fd_);
+      active_capture_fd_ = -1;
+    }
     return;
   }
   if (!BoundedId(request, "command_id")) {
@@ -484,19 +507,28 @@ void V2Server::HandleStrict(int fd, bool stop_lane) {
   }
   const auto fingerprint = Fingerprint(op, values, count) + (stop ? "" : ":epoch=" + epoch_token);
   StrictLedger::Reservation reservation;
-  std::optional<StopProof> admitted_stop;
-  bool stop_engine_error = false;
+  std::future<StopProof> stop_future;
+  std::uint64_t reserved_stop_epoch = 0;
   const auto stop_started = frame_ready;
   {
     std::lock_guard lock(ledger_mutex_);
-    reservation = ledger_.Reserve(node, command_id, stop, fingerprint,
-                                  stop || requested_epoch == engine_.StopEpoch());
+    reservation =
+        ledger_.Reserve(node, command_id, stop, fingerprint,
+                        stop || (!stop_inhibited_ && requested_epoch == engine_.StopEpoch()),
+                        !stop || pending_stop_jobs_.load() < 8);
     if (stop && reservation.admission == StrictLedger::Admission::New) {
-      try {
-        admitted_stop = engine_.ManagedStop();
-      } catch (...) {
-        stop_engine_error = true;
+      stop_inhibited_ = true;
+      reserved_stop_epoch = engine_.ReserveManagedStopEpoch();
+      CancelActiveCapture();
+      auto job = std::make_shared<StopJob>();
+      job->epoch = reserved_stop_epoch;
+      stop_future = job->result.get_future();
+      pending_stop_jobs_.fetch_add(1);
+      {
+        std::lock_guard queue_lock(stop_jobs_mutex_);
+        stop_jobs_.push_back(std::move(job));
       }
+      stop_jobs_ready_.notify_one();
     }
   }
   if (reservation.admission == StrictLedger::Admission::Conflict) {
@@ -539,15 +571,21 @@ void V2Server::HandleStrict(int fd, bool stop_lane) {
   std::uint64_t result_sequence = snapshot.sequence;
   try {
     if (op == "stop") {
-      if (stop_engine_error || !admitted_stop) throw std::runtime_error("stop failed");
-      const auto& proof = *admitted_stop;
-      base_stop = proof.base_stopped ? "stopped" : "unknown";
-      arm_stop = proof.arm_stopped ? "stopped" : "unknown";
-      result_epoch = std::to_string(proof.stop_epoch);
-      result_timestamp = proof.snapshot.simulation_time_s * 1e9;
-      result_sequence = proof.snapshot.sequence;
-      accepted = proof.base_stopped && proof.arm_stopped &&
-                 std::chrono::steady_clock::now() - stop_started <= std::chrono::seconds(1);
+      const auto deadline = stop_started + std::chrono::seconds(1);
+      base_stop = arm_stop = "unknown";
+      result_epoch = std::to_string(reserved_stop_epoch);
+      if (stop_future.wait_until(deadline) == std::future_status::ready) {
+        const auto proof = stop_future.get();
+        base_stop = proof.base_stopped ? "stopped" : "unknown";
+        arm_stop = proof.arm_stopped ? "stopped" : "unknown";
+        result_timestamp = proof.snapshot.simulation_time_s * 1e9;
+        result_sequence = proof.snapshot.sequence;
+        if (proof.base_stopped && proof.arm_stopped &&
+            publication_mutex_.try_lock_until(deadline)) {
+          accepted = std::chrono::steady_clock::now() <= deadline && !stop_unknown_latched_.load();
+          publication_mutex_.unlock();
+        }
+      }
       error_code = "stop_outcome_unknown";
       error_message = "base or arm stop outcome unknown";
       if (!accepted && base_stop == "stopped" && arm_stop == "stopped")
@@ -572,11 +610,18 @@ void V2Server::HandleStrict(int fd, bool stop_lane) {
     error_message = stop ? "base or arm stop outcome unknown" : "engine outcome uncertain";
     if (stop) {
       base_stop = arm_stop = "unknown";
-      result_epoch = std::to_string(engine_.StopEpoch());
+      result_epoch = std::to_string(reserved_stop_epoch);
     }
   }
   {
     std::lock_guard lock(ledger_mutex_);
+    if (stop) {
+      if (!accepted)
+        stop_unknown_latched_.store(true);
+      else if (!stop_unknown_latched_.load() && pending_stop_jobs_.load() == 0 &&
+               engine_.StopEpoch() == reserved_stop_epoch)
+        stop_inhibited_ = false;
+    }
     ledger_.Finish(node, command_id, stop, accepted, error_code, error_message, result_timestamp,
                    result_sequence, base_stop, arm_stop, result_epoch);
   }
@@ -633,6 +678,7 @@ V2Server::V2Server(const std::filesystem::path& socket, SimEngine& engine,
   if (managed_strict_socket_) {
     for (int i = 0; i < 32; ++i) normal_workers_.emplace_back([this] { Work(false); });
     for (int i = 0; i < 2; ++i) stop_workers_.emplace_back([this] { Work(true); });
+    stop_executor_ = std::thread([this] { StopWork(); });
     stop_worker_ = std::thread([this] { Run(stop_listener_, true); });
   }
   worker_ = std::thread([this] { Run(listener_, false); });
@@ -650,6 +696,8 @@ V2Server::~V2Server() {
   queue_ready_.notify_all();
   for (auto& worker : normal_workers_) worker.join();
   for (auto& worker : stop_workers_) worker.join();
+  stop_jobs_ready_.notify_all();
+  if (stop_executor_.joinable()) stop_executor_.join();
   std::error_code ignored;
   std::filesystem::remove(socket_, ignored);
   if (managed_strict_socket_) std::filesystem::remove(stop_socket_, ignored);
@@ -705,5 +753,29 @@ void V2Server::Work(bool stop_lane) {
       --(stop_lane ? stop_outstanding_ : normal_outstanding_);
     }
   }
+}
+void V2Server::StopWork() {
+  while (true) {
+    std::shared_ptr<StopJob> job;
+    {
+      std::unique_lock lock(stop_jobs_mutex_);
+      stop_jobs_ready_.wait(lock, [&] { return stopping_.load() || !stop_jobs_.empty(); });
+      if (stop_jobs_.empty()) return;
+      job = std::move(stop_jobs_.front());
+      stop_jobs_.pop_front();
+    }
+    try {
+      auto proof = engine_.ManagedStop(job->epoch);
+      pending_stop_jobs_.fetch_sub(1);
+      job->result.set_value(std::move(proof));
+    } catch (...) {
+      pending_stop_jobs_.fetch_sub(1);
+      job->result.set_exception(std::current_exception());
+    }
+  }
+}
+void V2Server::CancelActiveCapture() {
+  std::lock_guard lock(capture_fd_mutex_);
+  if (active_capture_fd_ >= 0) ::shutdown(active_capture_fd_, SHUT_RDWR);
 }
 }  // namespace eos_mujoco

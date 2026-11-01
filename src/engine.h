@@ -76,7 +76,9 @@ class SimEngine {
   bool Reset(std::uint64_t seed, std::string* error);
   CommandResult Execute(const Command& command,
                         std::optional<std::uint64_t> expected_stop_epoch = std::nullopt);
-  StopProof ManagedStop();
+  StopProof ManagedStop(std::uint64_t reserved_epoch);
+  StopProof ManagedStop() { return ManagedStop(ReserveManagedStopEpoch()); }
+  std::uint64_t ReserveManagedStopEpoch();
   std::uint64_t StopEpoch() const;
   Snapshot GetSnapshot() const;
   CameraFrame RenderCamera(std::optional<std::uint64_t> expected_stop_epoch = std::nullopt);
@@ -105,7 +107,8 @@ class SimEngine {
   int ee_site_id_ = -1, camera_id_ = -1, object_free_joint_id_ = -1;
   int left_pad_id_ = -1, right_pad_id_ = -1;
   int goal_site_id_ = -1;
-  std::uint64_t sequence_ = 0, interruption_epoch_ = 0, stop_epoch_ = 0;
+  std::uint64_t sequence_ = 0, interruption_epoch_ = 0;
+  std::atomic<std::uint64_t> stop_epoch_{0};
   std::atomic_bool active_motion_{false};
   double base_drive_[3]{}, base_hold_[3]{}, target_joint_[6]{}, gripper_target_ = 0;
   double base_drive_until_s_ = 0;  // 0 keeps legacy gRPC drive behavior.
