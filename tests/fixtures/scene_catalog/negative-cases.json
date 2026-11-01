@@ -1,0 +1,17 @@
+{
+  "contract": "P02 scene/device catalog target; P01 package verification runs first",
+  "cases": [
+    { "id": "duplicate-scene-id", "mutation": "repeat scenes[0].id", "expected": "reject descriptor before preview" },
+    { "id": "blank-scene-description", "mutation": "set scenes[0].description to whitespace", "expected": "reject P02 candidate catalog" },
+    { "id": "scene-profile-mismatch", "mutation": "set scenes[1].profile to eos_benchmark_pick_place_v1", "expected": "reject scene semantics before Apply" },
+    { "id": "scene-digest-mismatch", "mutation": "change scenes[1].sha256", "expected": "reject selected scene before Apply and Run" },
+    { "id": "unknown-scene-id", "mutation": "select scene absent from scenes[]", "expected": "unavailable selection; unchanged saved and active revisions" },
+    { "id": "duplicate-device-id", "mutation": "set devices.base to cam-0", "expected": "reject descriptor before preview" },
+    { "id": "device-map-mismatch", "mutation": "set device_catalog[1].id to other-base", "expected": "reject descriptor before preview" },
+    { "id": "device-scene-unsupported", "mutation": "remove navigation from device_catalog[2].scene_ids", "expected": "unavailable manipulator in navigation; Apply blocked" },
+    { "id": "missing-mujoco-library", "mutation": "remove runtime.library beneath MUJOCO_ROOT", "expected": "installed package remains visible; Apply and Run blocked with library reason" },
+    { "id": "linked-asset-changed", "mutation": "change an assets/ file after link", "expected": "P01 package_changed before P02 option authority or child launch" },
+    { "id": "linked-scene-symlink", "mutation": "replace a scene path component with a symlink", "expected": "P01 package_unsafe_path before P02 option authority" },
+    { "id": "stale-scene-revision", "mutation": "Apply a different selected scene against an old revision", "expected": "revision conflict; running child retains prior scene" }
+  ]
+}
