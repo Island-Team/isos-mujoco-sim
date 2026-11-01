@@ -1,6 +1,6 @@
 # Documentation map
 
-**First read:** [Build and run](usage.md) → [Package and node contract](interfaces/package.md) → [EOS-owned socket contract](interfaces/socket.md) → [Design and algorithms](design.md) → [Implementation TODO](todo.md). Current behavior and target design are labelled in each page.
+**First read:** [Build and run](usage.md) → [Core/layer/group/node catalog](catalog/README.md) → [Package and node contract](interfaces/package.md) → [MuJoCo-owned socket contract](interfaces/socket.md) → [Design and algorithms](design.md) → [Implementation TODO](todo.md). Current behavior and target design are labelled in each page.
 
 [中文](../../docs_cn/mujoco/doc_index_cn.md)
 

@@ -2,7 +2,7 @@
 
 **Status:** The scene engine and the framed socket are implemented. The 0.x integrated target below still needs EOS/IsOS version-aware graph support, selector metadata, socket ownership/deduplication, and complete stop coordination. Product release `0.1.1` does not make socket protocol `2.0.0` a product release.
 
-The owner contracts are [package descriptor and contributions](interfaces/package.md), [EOS-owned socket](interfaces/socket.md), and [benchmark RPC](interfaces/benchmark.md). This design describes the algorithms rather than redefining their payloads.
+The owner contracts are [package descriptor and contributions](interfaces/package.md), [MuJoCo-owned socket](interfaces/socket.md), and [benchmark RPC](interfaces/benchmark.md). This design describes the algorithms rather than redefining their payloads.
 
 ## Target activation algorithm
 
