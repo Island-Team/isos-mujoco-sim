@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <map>
 #include <string>
 #include <utility>
@@ -14,6 +15,8 @@ class StrictLedger {
     bool accepted = false;
     std::string error_code;
     std::string error_message;
+    double timestamp_ns = 0;
+    std::uint64_t sequence = 0;
   };
   enum class Admission { New, Prior, Conflict, InProgress, Capacity };
   struct Reservation {
@@ -39,12 +42,15 @@ class StrictLedger {
   }
 
   void Finish(const std::string& node, const std::string& command_id, bool stop, bool accepted,
-              std::string error_code, std::string error_message) {
+              std::string error_code, std::string error_message, double timestamp_ns,
+              std::uint64_t sequence) {
     auto& table = stop ? stops_ : movements_;
     auto& result = table.at(Key{node, command_id}).result;
     result.accepted = accepted;
     result.error_code = std::move(error_code);
     result.error_message = std::move(error_message);
+    result.timestamp_ns = timestamp_ns;
+    result.sequence = sequence;
     result.complete = true;
   }
 

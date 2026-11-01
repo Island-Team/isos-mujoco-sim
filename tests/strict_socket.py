@@ -126,6 +126,8 @@ def main():
                                 **base)
             assert first["ok"] and first["accepted"] and second["accepted"]
             assert second["id"] == "second"
+            assert (second["timestamp_ns"], second["sequence"]) == (
+                first["timestamp_ns"], first["sequence"])
             zero, _ = request(path, "base_move", "base-0", "zero-canonical",
                               linear_x_m_s=-0.0, linear_y_m_s=0,
                               angular_z_rad_s=0, valid_for_ms=200)
@@ -156,6 +158,8 @@ def main():
             assert stopped["ok"] and stopped["accepted"]
             duplicate, _ = request(path, "stop", "base-0", "stop-1", "stop-again")
             assert duplicate["accepted"] and duplicate["id"] == "stop-again"
+            assert (duplicate["timestamp_ns"], duplicate["sequence"]) == (
+                stopped["timestamp_ns"], stopped["sequence"])
             arm_stop, _ = request(path, "stop", "arm-0", "arm-stop-1")
             assert arm_stop["ok"] and arm_stop["accepted"]
             # A malformed frame has no trusted correlation ID and must not release.

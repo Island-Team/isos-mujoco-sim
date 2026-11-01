@@ -59,7 +59,7 @@ isos pkg node-sets
 
 另一终端运行 `isos run` 启动已应用部署。IsOS 启动前检查精确的软件包、资源、场景、MuJoCo 库、EOS 程序、套接字与端口；EOS 将模拟器作为直接子进程，并在终止前停止已准入执行器。`isos deployment stop` 只停止部署，`isos stop` 停止管理器、API、UI、部署和独立服务。EGIA 只通过 EOS 的正常代理接口行动，不连接私有评测套接字。模型类服务管理器独立于此硬件图。
 
-**R05 管理模式首次使用目标：** Apply 后，EOS 以严格模式启动已验证子进程，对图中每台相机、底盘和机械臂设备探测 `health`，并等待 `version:"2.0.0"`、回显请求 ID、`ok:true`、`accepted:true` 以及包含 `strict-socket-v1` 的 `features`。操作员把套接字文件或进程启动日志视为进度，而非就绪。特性缺失、设备错误或子进程退出都使后端不可用；调用 EOS primitive 前先看当前运行的首条失败事件。就绪后用一个命令 ID 调用已声明的 EOS 底盘或机械臂 primitive，查看关联的 EOS 结果和模拟器事件；结果不确定的已下发命令不得重发。模拟器现已提供该严格健康证明。EOS 严格客户端集成及负面就绪测试完成前，本段完整部署流程仍不能作为已实现路径回放。
+**R05 管理模式首次使用目标：** Apply 后，EOS 以严格模式启动已验证子进程，对图中每台相机、底盘和机械臂设备探测 `health`，并等待 `version:"2.0.0"`、回显请求 ID、`ok:true`、`accepted:true` 以及包含 `strict-socket-v1` 的 `features`。操作员把套接字文件或进程启动日志视为进度，而非就绪。特性缺失、设备错误、相机渲染失败或子进程退出都使后端不可用；调用 EOS primitive 前先看当前运行的首条失败事件。就绪后用一个命令 ID 调用已声明的 EOS 底盘或机械臂 primitive，查看关联的 EOS 结果和模拟器事件；结果不确定的已下发命令不得重发。模拟器现已提供该严格健康证明。EOS 严格客户端集成及负面就绪测试完成前，本段完整部署流程仍不能作为已实现路径回放。
 
 在 EOS 集成前验证模拟器所有者切片：在私有目录运行 `build/eos-mujoco-sim --managed-strict-socket --v2-socket /absolute/private/run/strict.sock --scene "$PWD/assets/scene.xml"`，再发送 `node:"base-0"` 的分帧 `health` 请求。响应必须回显 ID，并包含 `ok:true`、`accepted:true` 与 `strict-socket-v1`。受管理启动拒绝 `--socket` 和 `--benchmark-socket`；不带标志的直接启动继续支持两者。运行 `ctest --test-dir build -R 'strict-socket|strict-capacity|v2-socket' --output-on-failure` 可回放所有者检查，包括完整保留容量。
 

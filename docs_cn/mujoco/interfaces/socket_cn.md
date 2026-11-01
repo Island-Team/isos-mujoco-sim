@@ -10,7 +10,7 @@
 
 **R05 管理模式：** IsOS 生成配置标识 EOS 管理的后端所用 P01 已验证包程序、场景和已应用图修订。EOS 从这种管理关系推导并传入 `--managed-strict-socket`；人工编写的图没有模式开关。该标志要求 `--v2-socket`，并拒绝 `--socket` 与 `--benchmark-socket`：这个受管理子进程既不能提供历史 `eos.simulator.v1.SimulatorService` 执行器监听器，也不能提供 benchmark 重置/步进监听器；EOS Dispatcher 是唯一执行器路线。独立的可信评测器可在受管理部署之外直接启动模拟器。不带标志的直接启动保留现有 `2.0.0` 帧格式及忽略 `node`、`command_id` 的行为，也保留历史 gRPC 与 benchmark 套接字；它是旧套接字模式，不能满足已应用 IsOS 图的就绪条件。这是启动策略，不是新线协议身份。未来若不兼容地改动帧格式或直接启动默认行为，必须使用新协议身份。
 
-严格模式的成功 `health` 响应包含 `features:["strict-socket-v1"]` 和 `accepted:true`；旧直接模式不包含 `strict-socket-v1`。EOS 必须核对版本、回显的请求 ID、`ok`、`accepted` 和精确特性，之后才能宣告后端或任何 MuJoCo 适配器就绪；仅连接成功不足以证明就绪。特性缺失、畸形或自相矛盾时拒绝就绪，并终止、回收未就绪子进程。所有严格校验和历史监听器关闭前，子进程不得公告此特性。
+严格模式的成功 `health` 响应包含 `features:["strict-socket-v1"]` 和 `accepted:true`；旧直接模式不包含 `strict-socket-v1`。相机健康还会尝试真实渲染；EGL 或 JPEG 渲染失败时返回不带该特性的 `device_unavailable`。EOS 必须核对版本、回显的请求 ID、`ok`、`accepted` 和精确特性，之后才能宣告后端或任何 MuJoCo 适配器就绪；仅连接成功不足以证明就绪。特性缺失、畸形或自相矛盾时拒绝就绪，并终止、回收未就绪子进程。所有严格校验和历史监听器关闭前，子进程不得公告此特性。
 
 受管理子进程从包拥有的 P02 目录 `tools/scene_catalog.py` 编译稳定设备 ID 与场景支持表，再与已加载 MuJoCo 模型的 profile 核对。模型提供六个命名关节的范围。EOS 必须传入已验证的场景路径，并核对已应用图选中的设备映射；子进程不能仅凭套接字请求推断图路径。
 
@@ -33,7 +33,7 @@
 
 严格校验顺序为：帧界限/JSON 解析、线协议版本和有界 `id`、已知 `op`、精确 `node` 与类别、必需的 `command_id`、有类型有限数字与场景限制，最后是幂等表和引擎下发。第一处失败决定稳定错误码：`invalid_request`、`unsupported_version`、`unsupported_operation`、`node_mismatch`、`invalid_command_id`、`invalid_movement`、`out_of_range`、`command_id_conflict`、`command_in_progress`、`command_capacity` 或 `device_unavailable`。畸形、截断或超限的帧可直接断开，因为其 `id` 不可信。`ok:false` 始终优先于 `accepted`，不代表物理完成。有界响应回显已解析的请求 `id`，无二进制负载。
 
-严格模式中的运动与 `stop` 在调用引擎前原子保留 `(node,command_id)`。指纹由操作名与规范化有类型值构成：解析为相等 `f64` 值的不同 JSON 数字写法视为相同，包括 `-0` 与 `0`；数组次序有意义。请求 `id` 只用于传输关联，不属于指纹。相同重发以新请求 `id` 回显旧操作结果，不再次下发；同一有效键搭配不同指纹返回 `command_id_conflict`。并发相同重发可在有界期限内等待原请求，或返回 `command_in_progress`，绝不执行两次。已下发但结果不明时，存为不确定状态，绝不报告准入成功。每个键、指纹和终态/不确定结果均保留到子进程代际结束；不能通过按时过期或驱逐使同一子进程内的重发再次执行。运动表上限 65,536 条，另为停止表保留 4,096 条，使运动表已满不能占用停止容量。容量耗尽时下发前返回 `command_capacity` 并报告可处理故障；停止表也耗尽时拒绝新停止身份，EOS 须记录停止结果未知，并按 R06 升级处理。进程内去重不能取代 EOS 持久 Dispatcher 日志：子进程重启后，EOS 绝不自动重试结果不确定的已下发命令。
+严格模式中的运动与 `stop` 在调用引擎前原子保留 `(node,command_id)`。指纹由操作名与规范化有类型值构成：解析为相等 `f64` 值的不同 JSON 数字写法视为相同，包括 `-0` 与 `0`；数组次序有意义。请求 `id` 只用于传输关联，不属于指纹。相同重发仅更换回显的请求 `id`，保留原操作结果的 `timestamp_ns` 与 `sequence`，不再次下发；同一有效键搭配不同指纹返回 `command_id_conflict`。并发相同重发可在有界期限内等待原请求，或返回 `command_in_progress`，绝不执行两次。已下发但结果不明时，存为不确定状态，绝不报告准入成功。每个键、指纹和终态/不确定结果均保留到子进程代际结束；不能通过按时过期或驱逐使同一子进程内的重发再次执行。运动表上限 65,536 条，另为停止表保留 4,096 条，使运动表已满不能占用停止容量。容量耗尽时下发前返回 `command_capacity` 并报告可处理故障；停止表也耗尽时拒绝新停止身份，EOS 须记录停止结果未知，并按 R06 升级处理。进程内去重不能取代 EOS 持久 Dispatcher 日志：子进程重启后，EOS 绝不自动重试结果不确定的已下发命令。
 
 ## 操作
 

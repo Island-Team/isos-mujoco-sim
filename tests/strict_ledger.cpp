@@ -11,11 +11,12 @@ int main() {
   assert(ledger.Reserve("base-0", "uncertain-1", false, "base_move:0.2").admission ==
          StrictLedger::Admission::InProgress);
   ledger.Finish("base-0", "uncertain-1", false, false, "device_unavailable",
-                "movement outcome uncertain");
+                "movement outcome uncertain", 1234, 56);
   const auto replay = ledger.Reserve("base-0", "uncertain-1", false, "base_move:0.2");
   assert(replay.admission == StrictLedger::Admission::Prior);
   assert(!replay.result.accepted && replay.result.complete);
   assert(replay.result.error_message == "movement outcome uncertain");
+  assert(replay.result.timestamp_ns == 1234 && replay.result.sequence == 56);
   assert(ledger.Reserve("base-0", "uncertain-1", false, "base_move:0.3").admission ==
          StrictLedger::Admission::Conflict);
   assert(ledger.Reserve("base-0", "uncertain-1", true, "stop").admission ==

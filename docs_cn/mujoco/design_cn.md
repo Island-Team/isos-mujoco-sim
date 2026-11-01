@@ -36,6 +36,8 @@ IsOS 先运行 P01 收据与路径验证，再解析精确验证过的描述符�
 
 **R05 模拟器实现证据：** 在 Linux x86_64、GCC 13.3 和 MuJoCo 3.16.0 环境，执行 `cmake -S . -B build -DMUJOCO_ROOT=/home/ashex/mujoco-3.16.0-linux-x86_64/mujoco-3.16.0`、`cmake --build build -j4` 和 `ctest --test-dir build --output-on-failure`。16 项 CTest 全部通过，包含真实严格套接字启动/负面请求、65,536 个运动键、4,096 个预留停止键、不确定结果保留，以及旧 v2/gRPC/benchmark 兼容。固定设计、目录/声明/发布检查、Python 编译和 `git diff --check` 均通过。完整输出见忽略的 `logs/test/20261102-r05-strict-impl/gates.log`。C++ 设备表由包拥有的 P02 目录生成，与已加载引擎 profile 取交集；引擎检查已加载关节范围。EOS 严格客户端启动/就绪、不确定命令不重放及 R06 抢占停止仍需配套切片。
 
+**R05 实现审查修复：** 重复运动/停止响应保留原来的 `timestamp_ns`、`sequence`、准入与错误，仅更换传输 `id`。真实双客户端重发测试核对两个响应，并证明后续重复请求不会重启物理底盘租期。严格相机健康在公告特性前渲染一帧；测试专用 EGL 预加载强制失败并验证 `device_unavailable`。最终门禁命令和结果见忽略的 `logs/test/20261102-r05-strict-review-fixes/gates.log`。
+
 [English](../../docs/mujoco/design.md) · [使用指南](usage_cn.md)
 
 一个模拟器进程在启动时加载一个场景。引擎持有 MuJoCo 模型与数据、带种子的确定性重置、固定步长物理计算、机器人命令目标、遥测、相机渲染和场景评分。EOS 面向机器人的接口与可信评测接口共享引擎，但发布不同的信息。评测器可以重置、步进、读取真实状态与评分；代理只能通过 EOS 使用已声明的观察和动作。

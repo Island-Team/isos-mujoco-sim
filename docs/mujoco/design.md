@@ -36,6 +36,8 @@ Emit a sanitized JSONL event once for startup identity (package, scene ID, proto
 
 **R05 simulator implementation evidence:** On Linux x86_64 with GCC 13.3 and MuJoCo 3.16.0, run `cmake -S . -B build -DMUJOCO_ROOT=/home/ashex/mujoco-3.16.0-linux-x86_64/mujoco-3.16.0`, `cmake --build build -j4`, and `ctest --test-dir build --output-on-failure`. All 16 CTest cases pass, including real strict socket launch/negative requests, 65,536 movement keys, 4,096 reserved stop keys, uncertain-result retention and legacy v2/gRPC/benchmark compatibility. `python3 tests/fixtures/strict_socket/check.py`, catalog/contribution/release checks, Python compilation and `git diff --check` pass. Complete output is in ignored `logs/test/20261102-r05-strict-impl/gates.log`. The C++ device table is generated from the package-owned P02 catalog and intersected with the loaded engine profile; the engine checks loaded joint ranges. EOS strict-client launch/readiness, EOS uncertain-command non-replay and R06 preemptive stop require their companion slices.
 
+**R05 implementation review fixes:** Duplicate motion/stop responses retain their original `timestamp_ns`, `sequence`, admission and error; only the transport `id` changes. A live two-client replay test compares both responses and proves that a late duplicate does not restart the physical base lease. Strict camera health renders a frame before advertising its feature; a test-only EGL preload forces failure and verifies `device_unavailable`. The final gate commands and results are in ignored `logs/test/20261102-r05-strict-review-fixes/gates.log`.
+
 [中文](../../docs_cn/mujoco/design_cn.md)
 
 [Package overview](README.md) · [Benchmark tasks](benchmarks.md)

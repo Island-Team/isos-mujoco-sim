@@ -284,6 +284,14 @@ void V2Server::HandleStrict(int fd) {
     return;
   }
   if (op == "health") {
+    if (node == "cam-0") {
+      const auto frame = engine_.RenderCamera();
+      if (frame.jpeg.empty() || frame.width <= 0 || frame.height <= 0 || frame.width > 4096 ||
+          frame.height > 4096 || frame.jpeg.size() > kMaxPayload) {
+        fail("device_unavailable", "camera render unavailable");
+        return;
+      }
+    }
     Set(&reply, "accepted", true);
     (*reply.mutable_fields())["features"].mutable_list_value()->add_values()->set_string_value(
         "strict-socket-v1");
@@ -395,6 +403,8 @@ void V2Server::HandleStrict(int fd) {
     return;
   }
   if (reservation.admission == StrictLedger::Admission::Prior) {
+    Set(&reply, "timestamp_ns", reservation.result.timestamp_ns);
+    Set(&reply, "sequence", static_cast<double>(reservation.result.sequence));
     Set(&reply, "accepted", reservation.result.accepted);
     if (!reservation.result.accepted)
       RejectStrict(&reply, reservation.result.error_code.c_str(),
@@ -425,7 +435,8 @@ void V2Server::HandleStrict(int fd) {
     error_code = "device_unavailable";
     error_message = "engine outcome uncertain";
   }
-  ledger_.Finish(node, command_id, stop, accepted, error_code, error_message);
+  ledger_.Finish(node, command_id, stop, accepted, error_code, error_message,
+                 snapshot.simulation_time_s * 1e9, snapshot.sequence);
   Set(&reply, "accepted", accepted);
   if (!accepted) RejectStrict(&reply, error_code.c_str(), error_message.c_str());
   SendReply(fd, reply);
