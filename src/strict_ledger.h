@@ -17,15 +17,17 @@ class StrictLedger {
     std::string error_message;
     double timestamp_ns = 0;
     std::uint64_t sequence = 0;
+    std::string base_stop, arm_stop, stop_epoch;
   };
-  enum class Admission { New, Prior, Conflict, InProgress, Capacity };
+  enum class Admission { New, Prior, Conflict, InProgress, Capacity, Stale };
   struct Reservation {
     Admission admission;
     Result result;
   };
 
   Reservation Reserve(const std::string& node, const std::string& command_id, bool stop,
-                      const std::string& fingerprint) {
+                      const std::string& fingerprint, bool epoch_current = true,
+                      bool slot_available = true) {
     const Key key{node, command_id};
     auto& table = stop ? stops_ : movements_;
     const auto& other = stop ? movements_ : stops_;
@@ -36,6 +38,8 @@ class StrictLedger {
       return {found->second.result.complete ? Admission::Prior : Admission::InProgress,
               found->second.result};
     }
+    if (!stop && !epoch_current) return {Admission::Stale, {}};
+    if (!slot_available) return {Admission::Capacity, {}};
     if (table.size() >= (stop ? 4096u : 65536u)) return {Admission::Capacity, {}};
     table.emplace(key, Entry{fingerprint, {}});
     return {Admission::New, {}};
@@ -43,7 +47,8 @@ class StrictLedger {
 
   void Finish(const std::string& node, const std::string& command_id, bool stop, bool accepted,
               std::string error_code, std::string error_message, double timestamp_ns,
-              std::uint64_t sequence) {
+              std::uint64_t sequence, std::string base_stop = {}, std::string arm_stop = {},
+              std::string stop_epoch = {}) {
     auto& table = stop ? stops_ : movements_;
     auto& result = table.at(Key{node, command_id}).result;
     result.accepted = accepted;
@@ -51,6 +56,9 @@ class StrictLedger {
     result.error_message = std::move(error_message);
     result.timestamp_ns = timestamp_ns;
     result.sequence = sequence;
+    result.base_stop = std::move(base_stop);
+    result.arm_stop = std::move(arm_stop);
+    result.stop_epoch = std::move(stop_epoch);
     result.complete = true;
   }
 
