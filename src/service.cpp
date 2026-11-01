@@ -325,7 +325,7 @@ void Serve(const std::filesystem::path& simulator_socket,
            const std::filesystem::path& benchmark_socket,
            const std::filesystem::path& v2_socket,
            const std::filesystem::path& scene, const std::atomic_bool& stop,
-           bool manual_step, bool gui) {
+           bool manual_step, bool gui, bool managed_strict_socket) {
   SimEngine engine(scene.string());
   std::string error;
   if (!engine.Load(&error))
@@ -337,14 +337,18 @@ void Serve(const std::filesystem::path& simulator_socket,
   std::mutex clock_mutex;
   SimulatorEndpoint simulator(engine, halted);
   BenchmarkEndpoint benchmark(engine, halted, paused, clock_mutex);
-  auto simulator_server = StartServer(simulator_socket, &simulator);
+  std::unique_ptr<grpc::Server> simulator_server;
   std::unique_ptr<V2Server> v2_server;
   std::unique_ptr<GuiWindow> live_window;
   std::unique_ptr<grpc::Server> benchmark_server;
   try {
-    benchmark_server = StartServer(benchmark_socket, &benchmark);
+    if (!managed_strict_socket) {
+      simulator_server = StartServer(simulator_socket, &simulator);
+      benchmark_server = StartServer(benchmark_socket, &benchmark);
+    }
     if (!v2_socket.empty())
-      v2_server = std::make_unique<V2Server>(v2_socket, engine);
+      v2_server = std::make_unique<V2Server>(v2_socket, engine,
+                                             managed_strict_socket);
     if (gui) live_window = std::make_unique<GuiWindow>(engine);
     std::atomic_bool ticker_stop{false};
     std::thread ticker([&] {
@@ -367,16 +371,16 @@ void Serve(const std::filesystem::path& simulator_socket,
   } catch (...) {
     if (benchmark_server) benchmark_server->Shutdown();
     v2_server.reset();
-    simulator_server->Shutdown();
+    if (simulator_server) simulator_server->Shutdown();
     std::error_code ignored;
     std::filesystem::remove(benchmark_socket, ignored);
     std::filesystem::remove(simulator_socket, ignored);
     throw;
   }
-  benchmark_server->Shutdown();
+  if (benchmark_server) benchmark_server->Shutdown();
   live_window.reset();
   v2_server.reset();
-  simulator_server->Shutdown();
+  if (simulator_server) simulator_server->Shutdown();
   std::error_code ignored;
   std::filesystem::remove(benchmark_socket, ignored);
   std::filesystem::remove(simulator_socket, ignored);

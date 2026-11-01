@@ -26,8 +26,7 @@ struct Command {
     GripperStop,
     Halt
   } type;
-  std::array<double, 7>
-      values{};  // XYZ+quaternion, six joints, or base x/y/yaw.
+  std::array<double, 7> values{};  // XYZ+quaternion, six joints, or base x/y/yaw.
   bool close = false;
   double force_n = 0;
 };
@@ -39,8 +38,7 @@ struct Snapshot {
   std::array<double, 6> joint_positions_rad{}, joint_velocities_rad_s{};
   std::array<double, 3> ee_position{}, ee_linear_velocity{};
   std::array<double, 4> ee_orientation_xyzw{0, 0, 0, 1};
-  std::array<double, 3> base_pose{}, base_velocity{}, object_position{},
-      pinch_position{};
+  std::array<double, 3> base_pose{}, base_velocity{}, object_position{}, pinch_position{};
   std::array<std::array<double, 2>, 2> obstacle_positions{};
   bool arm_contact = false;
   std::string object_held_id;
@@ -76,6 +74,8 @@ class SimEngine {
   Score GetScore() const;
   void Step(int steps);
   bool MotionActive() const { return active_motion_.load(); }
+  std::string SceneProfile() const;
+  bool JointTargetsInRange(const std::array<double, 6>& targets) const;
 
  private:
   enum class BenchmarkProfile { PickPlace, Navigation };
@@ -97,8 +97,7 @@ class SimEngine {
   int goal_site_id_ = -1;
   std::uint64_t sequence_ = 0, interruption_epoch_ = 0;
   std::atomic_bool active_motion_{false};
-  double base_drive_[3]{}, base_hold_[3]{}, target_joint_[6]{},
-      gripper_target_ = 0;
+  double base_drive_[3]{}, base_hold_[3]{}, target_joint_[6]{}, gripper_target_ = 0;
   double base_drive_until_s_ = 0;  // 0 keeps legacy gRPC drive behavior.
   bool base_drive_active_ = false, halted_ = false, collision_active_ = false;
   int collisions_ = 0;

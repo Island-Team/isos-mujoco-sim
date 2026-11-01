@@ -1,6 +1,6 @@
 # 场景运行与集成
 
-**状态：** 场景引擎、分帧套接字和包拥有的 P02 场景/设备目录已实现。EOS 与 IsOS 已有 M1 多版本图读取器；IsOS P02 语义准入、P03 选项解析器、R05 严格套接字和完整停止协调属于独立工作。产品版本 `0.1.1` 不代表套接字协议 `2.0.0` 是产品发布版本。
+**状态：** 场景引擎、分帧套接字和包拥有的 P02 场景/设备目录已实现。EOS 与 IsOS 已有 M1 多版本图读取器；IsOS P02 语义准入、P03 选项解析器、MuJoCo R05 严格套接字已实现；EOS 严格客户端集成与 R06 停止协调仍是独立工作。产品版本 `0.1.1` 不代表套接字协议 `2.0.0` 是产品发布版本。
 
 所有者契约见[包描述符与声明](interfaces/package_cn.md)、[EOS 持有的套接字](interfaces/socket_cn.md)和[评测 RPC](../../docs/mujoco/interfaces/benchmark.md)。本页描述算法，不重复负载定义。
 
@@ -24,15 +24,17 @@ IsOS 先运行 P01 收据与路径验证，再解析精确验证过的描述符�
 
 ## 目标命令与日志算法
 
-**R05 目标设计——尚未实现。** [套接字契约](interfaces/socket_cn.md)拥有精确的标志、健康字段、边界、错误码及保留期。IsOS 生成配置为 EOS 管理的启动选择已验证包和场景。EOS 根据管理关系推导 `--managed-strict-socket`，而不是从图可写设置读取。严格模式拒绝历史 gRPC `SimulatorService` 与 benchmark 套接字参数；否则 `SimulatorService.Execute` 会成为绕过 Dispatcher 的第二条执行器路线，而 benchmark Reset/Step 也能改变同一引擎状态。可信评测器使用独立直接启动。不带标志的直接启动保留线协议 `2.0.0` 下现有的旧帧、gRPC 和 benchmark 行为。
+**R05 模拟器实现。** [套接字契约](interfaces/socket_cn.md)拥有精确的标志、健康字段、边界、错误码及保留期。IsOS 生成配置为 EOS 管理的启动选择已验证包和场景。EOS 根据管理关系推导 `--managed-strict-socket`，而不是从图可写设置读取。严格模式拒绝历史 gRPC `SimulatorService` 与 benchmark 套接字参数；否则 `SimulatorService.Execute` 会成为绕过 Dispatcher 的第二条执行器路线，而 benchmark Reset/Step 也能改变同一引擎状态。可信评测器使用独立直接启动。不带标志的直接启动保留线协议 `2.0.0` 下现有的旧帧、gRPC 和 benchmark 行为。
 
-严格就绪须端到端核对，不能仅依赖连接成功。EOS 探测图中每个已声明的场景设备，检查协议版本、回显请求 ID、正面的 `ok` 与 `accepted`，以及响应特性列表中的 `strict-socket-v1`。模拟器只有能执行精确设备/操作匹配、有限的有类型运动限制与有界 ID 后，才绑定严格帧监听器。子进程遗漏或矛盾地公告特性时，EOS 拒绝并回收。目前 `BackendChild::wait_ready` 仅检查套接字连接，当前适配器健康检查接受任何成功响应；两者都是 R05 实现入口。
+严格就绪须端到端核对，不能仅依赖连接成功。EOS 探测图中每个已声明的场景设备，检查协议版本、回显请求 ID、正面的 `ok` 与 `accepted`，以及响应特性列表中的 `strict-socket-v1`。模拟器只有能执行精确设备/操作匹配、有限的有类型运动限制与有界 ID 后，才绑定严格帧监听器。子进程遗漏或矛盾地公告特性时，EOS 拒绝并回收。EOS 的 `BackendChild::wait_ready` 与适配器健康仍是严格客户端配套入口；发布就绪前必须核对精确特性。
 
-对于有效运动或 `stop`，服务在调用引擎前保留 `(node,command_id)`，整个子进程代际都记录规范化的有类型操作指纹和结果。相同传输重发以新传输请求 ID 返回旧结果；冲突返回 `command_id_conflict`。并发重复请求不能下发两次。固定的运动容量与预留停止容量拒绝新命令，不能驱逐键；也不能因 TTL 过期而允许同一子进程内重放。有界进程内保留不能代替 EOS 的持久 Dispatcher 日志：断线、超时或重启后，结果不确定的已下发命令保持未知，EOS 要从新观察核对或要求新的显式准入。当前服务忽略 `node` 与 `command_id`，并串行接受连接；R05 不声称停止可抢占。R06 必须增加专用有界停止通道和分别确认，才能在终止/回收子进程前声称安全停止。
+对于有效运动或 `stop`，服务在调用引擎前保留 `(node,command_id)`，整个子进程代际都记录规范化的有类型操作指纹和结果。相同传输重发以新传输请求 ID 返回旧结果；冲突返回 `command_id_conflict`。并发重复请求不能下发两次。固定的运动容量与预留停止容量拒绝新命令，不能驱逐键；也不能因 TTL 过期而允许同一子进程内重放。有界进程内保留不能代替 EOS 的持久 Dispatcher 日志：断线、超时或重启后，结果不确定的已下发命令保持未知，EOS 要从新观察核对或要求新的显式准入。受管理服务校验 `node` 与 `command_id`，并串行接受连接；R05 不声称停止可抢占。R06 必须增加专用有界停止通道和分别确认，才能在终止/回收子进程前声称安全停止。
 
 启动时只记录一次含包、场景 ID、协议和 `run_id` 的净化 JSONL 事件；随后在就绪变化、命令准入/结果、套接字故障和关闭时记录。不记录图像字节、任意环境变量或每个高频观察。首次使用者先看当前运行的首条就绪/失败事件，再按规范 `node_path` 和 `correlation_id` 筛选。共享事件格式、轮转和游标读取由 IsOS 定义；本包提供来源 `mujoco` 及自身事件码。
 
-**R05 设计证据：** [31 个固定用例](../../tests/fixtures/strict_socket/cases.json)覆盖直接启动兼容、严格启动隔离、健康证明、设备/操作匹配、有类型边界、重复/冲突/容量、畸形帧和 EOS 不重放。2026-11-02 执行 `python3 tests/fixtures/strict_socket/check.py`、`python3 tests/scene_catalog.py`、`python3 tests/node_contributions.py`、`python3 tests/release.py` 与 `git diff --check` 均通过；完整命令和输出见被 Git 忽略的 `logs/test/20261102-r05-strict-design/design-check.log`。这些只验证设计样本和已有目录/发布行为，不证明尚未实现的严格套接字运行时行为。
+**R05 设计证据：** [31 个固定用例](../../tests/fixtures/strict_socket/cases.json)覆盖直接启动兼容、严格启动隔离、健康证明、设备/操作匹配、有类型边界、重复/冲突/容量、畸形帧和 EOS 不重放。2026-11-02 执行 `python3 tests/fixtures/strict_socket/check.py`、`python3 tests/scene_catalog.py`、`python3 tests/node_contributions.py`、`python3 tests/release.py` 与 `git diff --check` 均通过；完整命令和输出见被 Git 忽略的 `logs/test/20261102-r05-strict-design/design-check.log`。这些记录设计门；运行时验证和配套 EOS 严格客户端资格验证另见下文。
+
+**R05 模拟器实现证据：** 在 Linux x86_64、GCC 13.3 和 MuJoCo 3.16.0 环境，执行 `cmake -S . -B build -DMUJOCO_ROOT=/home/ashex/mujoco-3.16.0-linux-x86_64/mujoco-3.16.0`、`cmake --build build -j4` 和 `ctest --test-dir build --output-on-failure`。16 项 CTest 全部通过，包含真实严格套接字启动/负面请求、65,536 个运动键、4,096 个预留停止键、不确定结果保留，以及旧 v2/gRPC/benchmark 兼容。固定设计、目录/声明/发布检查、Python 编译和 `git diff --check` 均通过。完整输出见忽略的 `logs/test/20261102-r05-strict-impl/gates.log`。C++ 设备表由包拥有的 P02 目录生成，与已加载引擎 profile 取交集；引擎检查已加载关节范围。EOS 严格客户端启动/就绪、不确定命令不重放及 R06 抢占停止仍需配套切片。
 
 [English](../../docs/mujoco/design.md) · [使用指南](usage_cn.md)
 

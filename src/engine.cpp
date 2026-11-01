@@ -37,6 +37,27 @@ struct RenderState {
   mjrContext render{};
 };
 SimEngine::SimEngine(std::string path) : scene_path_(std::move(path)) {}
+
+std::string SimEngine::SceneProfile() const {
+  std::lock_guard lock(mutex_);
+  return profile_ == BenchmarkProfile::Navigation
+             ? "eos_benchmark_navigation_v1"
+             : "eos_benchmark_pick_place_v1";
+}
+
+bool SimEngine::JointTargetsInRange(
+    const std::array<double, 6>& targets) const {
+  std::lock_guard lock(mutex_);
+  if (!model_ || !data_) return false;
+  for (int i = 0; i < 6; ++i) {
+    const int joint = joint_ids_[i];
+    if (joint < 0 || !std::isfinite(targets[i]) ||
+        targets[i] < model_->jnt_range[2 * joint] ||
+        targets[i] > model_->jnt_range[2 * joint + 1])
+      return false;
+  }
+  return true;
+}
 SimEngine::~SimEngine() {
   std::lock_guard lock(mutex_);
   if (render_state_) {

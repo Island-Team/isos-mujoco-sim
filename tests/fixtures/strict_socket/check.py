@@ -49,4 +49,4 @@ for relative in (
         assert token in text, (relative, token)
 
 print(f"R05 design matrix: {len(cases)} unique cases; JSON and EN/CN markers valid")
-print("Behavioral cases are pending implementation and independent review")
+print("This checks the frozen design matrix; CTest exercises simulator behavior")
