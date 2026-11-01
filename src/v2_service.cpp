@@ -2,6 +2,8 @@
 
 #include <google/protobuf/struct.pb.h>
 #include <google/protobuf/util/json_util.h>
+#include <poll.h>
+#include <sys/random.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/un.h>
@@ -10,10 +12,13 @@
 #include <algorithm>
 #include <array>
 #include <cerrno>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <iomanip>
+#include <limits>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -33,6 +38,24 @@ bool ReadAll(int fd, void* buffer, size_t length) {
   auto* bytes = static_cast<unsigned char*>(buffer);
   while (length) {
     const auto count = ::read(fd, bytes, length);
+    if (count <= 0) return false;
+    bytes += count;
+    length -= static_cast<size_t>(count);
+  }
+  return true;
+}
+bool ReadAllUntil(int fd, void* buffer, size_t length,
+                  std::chrono::steady_clock::time_point deadline) {
+  auto* bytes = static_cast<unsigned char*>(buffer);
+  while (length) {
+    const auto left = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          deadline - std::chrono::steady_clock::now())
+                          .count();
+    if (left <= 0) return false;
+    pollfd event{fd, POLLIN, 0};
+    if (::poll(&event, 1, static_cast<int>(left)) <= 0) return false;
+    const auto count = ::recv(fd, bytes, length, MSG_DONTWAIT);
+    if (count < 0 && (errno == EINTR || errno == EAGAIN)) continue;
     if (count <= 0) return false;
     bytes += count;
     length -= static_cast<size_t>(count);
@@ -122,6 +145,32 @@ std::string Fingerprint(const std::string& op, const std::array<double, 7>& valu
   stream << op;
   for (int i = 0; i < count; ++i)
     stream << ':' << std::setprecision(17) << (values[i] == 0 ? 0.0 : values[i]);
+  return stream.str();
+}
+bool CanonicalEpoch(const std::string& token, std::uint64_t* parsed) {
+  if (token.empty() || token.size() > 20 || (token.size() > 1 && token[0] == '0')) return false;
+  std::uint64_t value = 0;
+  for (char digit : token) {
+    if (digit < '0' || digit > '9' ||
+        value > (std::numeric_limits<std::uint64_t>::max() - (digit - '0')) / 10)
+      return false;
+    value = value * 10 + (digit - '0');
+  }
+  *parsed = value;
+  return true;
+}
+std::string NewGenerationId() {
+  std::array<unsigned char, 16> random{};
+  size_t filled = 0;
+  while (filled < random.size()) {
+    const auto count = ::getrandom(random.data() + filled, random.size() - filled, 0);
+    if (count < 0 && errno == EINTR) continue;
+    if (count <= 0) throw std::runtime_error("generation_random_unavailable");
+    filled += static_cast<size_t>(count);
+  }
+  std::ostringstream stream;
+  stream << std::hex << std::setfill('0');
+  for (unsigned char byte : random) stream << std::setw(2) << static_cast<unsigned>(byte);
   return stream.str();
 }
 void Handle(int fd, SimEngine& engine) {
@@ -229,20 +278,37 @@ void Handle(int fd, SimEngine& engine) {
 }
 }  // namespace
 
-void V2Server::HandleStrict(int fd) {
+void V2Server::HandleStrict(int fd, bool stop_lane) {
+  if (!stop_lane && normal_ingress_.fetch_add(1) >= 8) {
+    normal_ingress_.fetch_sub(1);
+    return;
+  }
+  struct IngressGuard {
+    std::atomic_int* count;
+    ~IngressGuard() {
+      if (count) count->fetch_sub(1);
+    }
+  } ingress{stop_lane ? nullptr : &normal_ingress_};
   unsigned char header[8];
-  if (!ReadAll(fd, header, sizeof(header))) return;
+  const auto ingress_deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(250);
+  if (!ReadAllUntil(fd, header, sizeof(header), ingress_deadline)) return;
   const auto metadata_size = Decode32(header);
   if (!metadata_size || metadata_size > kMaxMetadata || Decode32(header + 4)) return;
   std::string body(metadata_size, '\0');
-  if (!ReadAll(fd, body.data(), body.size())) return;
+  if (!ReadAllUntil(fd, body.data(), body.size(), ingress_deadline)) return;
   Struct request;
   if (!google::protobuf::util::JsonStringToMessage(body, &request).ok()) return;
+  const auto frame_ready = std::chrono::steady_clock::now();
+  if (ingress.count) {
+    ingress.count->fetch_sub(1);
+    ingress.count = nullptr;
+  }
   Struct reply;
   Set(&reply, "version", "2.0.0");
   Set(&reply, "id", String(request, "id"));
   Set(&reply, "ok", true);
-  const auto snapshot = engine_.GetSnapshot();
+  Snapshot snapshot;
+  if (String(request, "op") != "stop") snapshot = engine_.GetSnapshot();
   Set(&reply, "timestamp_ns", snapshot.simulation_time_s * 1e9);
   Set(&reply, "sequence", static_cast<double>(snapshot.sequence));
   const auto fail = [&](const char* code, const char* message) {
@@ -258,6 +324,10 @@ void V2Server::HandleStrict(int fd) {
     return;
   }
   const auto op = String(request, "op");
+  if (stop_lane && op != "health" && op != "stop") {
+    fail("unsupported_operation", "stop lane accepts only health and stop");
+    return;
+  }
   const char* kind = OperationKind(op);
   if (!kind) {
     fail("unsupported_operation", "unsupported operation");
@@ -266,7 +336,7 @@ void V2Server::HandleStrict(int fd) {
   const auto node = String(request, "node");
   bool matched = false;
   for (const auto& device : kSceneDevices) {
-    if (node == device.id && engine_.SceneProfile() == device.profile &&
+    if (node == device.id && scene_profile_ == device.profile &&
         (std::strcmp(kind, "") == 0 || kind == std::string(device.kind) ||
          (std::strcmp(kind, "actuator") == 0 && (std::strcmp(device.kind, "base") == 0 ||
                                                  std::strcmp(device.kind, "manipulator") == 0)))) {
@@ -284,6 +354,10 @@ void V2Server::HandleStrict(int fd) {
     return;
   }
   if (op == "health") {
+    if (stop_lane && node != "base-0" && node != "arm-0") {
+      fail("node_mismatch", "stop lane health requires an actuator node");
+      return;
+    }
     if (node == "cam-0") {
       const auto frame = engine_.RenderCamera();
       if (frame.jpeg.empty() || frame.width <= 0 || frame.height <= 0 || frame.width > 4096 ||
@@ -295,6 +369,10 @@ void V2Server::HandleStrict(int fd) {
     Set(&reply, "accepted", true);
     (*reply.mutable_fields())["features"].mutable_list_value()->add_values()->set_string_value(
         "strict-socket-v1");
+    if (stop_lane || node != "cam-0")
+      (*reply.mutable_fields())["features"].mutable_list_value()->add_values()->set_string_value(
+          "strict-stop-v1");
+    Set(&reply, "generation_id", generation_id_);
     SendReply(fd, reply);
     return;
   }
@@ -317,7 +395,7 @@ void V2Server::HandleStrict(int fd) {
     return;
   }
   if (op == "camera_capture") {
-    const auto frame = engine_.RenderCamera();
+    const auto frame = engine_.RenderCamera(engine_.StopEpoch());
     if (frame.jpeg.empty() || frame.width <= 0 || frame.height <= 0 || frame.width > 4096 ||
         frame.height > 4096 || frame.jpeg.size() > kMaxPayload) {
       fail("device_unavailable", "camera render unavailable");
@@ -389,7 +467,38 @@ void V2Server::HandleStrict(int fd) {
   }
   const auto command_id = String(request, "command_id");
   const bool stop = op == "stop";
-  const auto reservation = ledger_.Reserve(node, command_id, stop, Fingerprint(op, values, count));
+  const auto requested_generation = String(request, "generation_id");
+  if ((!stop || stop_lane || Field(request, "generation_id")) &&
+      requested_generation != generation_id_) {
+    fail("stale_generation", "request generation does not match this child");
+    return;
+  }
+  std::uint64_t requested_epoch = 0;
+  std::string epoch_token;
+  if (!stop) {
+    epoch_token = String(request, "stop_epoch");
+    if (!CanonicalEpoch(epoch_token, &requested_epoch)) {
+      fail("stop_fenced", "movement requires a canonical stop epoch");
+      return;
+    }
+  }
+  const auto fingerprint = Fingerprint(op, values, count) + (stop ? "" : ":epoch=" + epoch_token);
+  StrictLedger::Reservation reservation;
+  std::optional<StopProof> admitted_stop;
+  bool stop_engine_error = false;
+  const auto stop_started = frame_ready;
+  {
+    std::lock_guard lock(ledger_mutex_);
+    reservation = ledger_.Reserve(node, command_id, stop, fingerprint,
+                                  stop || requested_epoch == engine_.StopEpoch());
+    if (stop && reservation.admission == StrictLedger::Admission::New) {
+      try {
+        admitted_stop = engine_.ManagedStop();
+      } catch (...) {
+        stop_engine_error = true;
+      }
+    }
+  }
   if (reservation.admission == StrictLedger::Admission::Conflict) {
     fail("command_id_conflict", "command_id has conflicting operation");
     return;
@@ -402,10 +511,20 @@ void V2Server::HandleStrict(int fd) {
     fail("command_capacity", "command retention capacity reached");
     return;
   }
+  if (reservation.admission == StrictLedger::Admission::Stale) {
+    fail("stop_fenced", "movement stop epoch is stale");
+    return;
+  }
   if (reservation.admission == StrictLedger::Admission::Prior) {
     Set(&reply, "timestamp_ns", reservation.result.timestamp_ns);
     Set(&reply, "sequence", static_cast<double>(reservation.result.sequence));
     Set(&reply, "accepted", reservation.result.accepted);
+    if (stop) {
+      Set(&reply, "base_stop", reservation.result.base_stop);
+      Set(&reply, "arm_stop", reservation.result.arm_stop);
+      Set(&reply, "generation_id", generation_id_);
+      Set(&reply, "stop_epoch", reservation.result.stop_epoch);
+    }
     if (!reservation.result.accepted)
       RejectStrict(&reply, reservation.result.error_code.c_str(),
                    reservation.result.error_message.c_str());
@@ -415,29 +534,61 @@ void V2Server::HandleStrict(int fd) {
   bool accepted = false;
   std::string error_code = "device_unavailable";
   std::string error_message = "engine outcome uncertain";
+  std::string base_stop, arm_stop, result_epoch;
+  double result_timestamp = snapshot.simulation_time_s * 1e9;
+  std::uint64_t result_sequence = snapshot.sequence;
   try {
     if (op == "stop") {
-      const auto base = engine_.Execute(Command{Command::Type::BaseStop});
-      const auto arm = engine_.Execute(Command{Command::Type::ArmStop});
-      accepted = base.accepted && arm.accepted;
-      error_message = "stop failed or outcome uncertain";
+      if (stop_engine_error || !admitted_stop) throw std::runtime_error("stop failed");
+      const auto& proof = *admitted_stop;
+      base_stop = proof.base_stopped ? "stopped" : "unknown";
+      arm_stop = proof.arm_stopped ? "stopped" : "unknown";
+      result_epoch = std::to_string(proof.stop_epoch);
+      result_timestamp = proof.snapshot.simulation_time_s * 1e9;
+      result_sequence = proof.snapshot.sequence;
+      accepted = proof.base_stopped && proof.arm_stopped &&
+                 std::chrono::steady_clock::now() - stop_started <= std::chrono::seconds(1);
+      error_code = "stop_outcome_unknown";
+      error_message = "base or arm stop outcome unknown";
+      if (!accepted && base_stop == "stopped" && arm_stop == "stopped")
+        base_stop = arm_stop = "unknown";
     } else {
-      const auto outcome = engine_.Execute(command);
+      const auto outcome = engine_.Execute(command, requested_epoch);
       accepted = outcome.accepted;
-      error_code = outcome.error_code == "out_of_range" ? "out_of_range" : "device_unavailable";
-      error_message =
-          accepted ? ""
-                   : (outcome.error_code == "out_of_range" ? "movement exceeds loaded scene limits"
-                                                           : "movement outcome uncertain");
+      error_code =
+          (outcome.error_code == "command_interrupted" || outcome.error_code == "interrupted")
+              ? "command_interrupted"
+          : outcome.error_code == "out_of_range" ? "out_of_range"
+                                                 : "device_unavailable";
+      error_message = accepted
+                          ? ""
+                          : (error_code == "command_interrupted" ? "movement crossed the stop fence"
+                             : error_code == "out_of_range" ? "movement exceeds loaded scene limits"
+                                                            : "movement outcome uncertain");
     }
   } catch (...) {
     accepted = false;
-    error_code = "device_unavailable";
-    error_message = "engine outcome uncertain";
+    error_code = stop ? "stop_outcome_unknown" : "device_unavailable";
+    error_message = stop ? "base or arm stop outcome unknown" : "engine outcome uncertain";
+    if (stop) {
+      base_stop = arm_stop = "unknown";
+      result_epoch = std::to_string(engine_.StopEpoch());
+    }
   }
-  ledger_.Finish(node, command_id, stop, accepted, error_code, error_message,
-                 snapshot.simulation_time_s * 1e9, snapshot.sequence);
+  {
+    std::lock_guard lock(ledger_mutex_);
+    ledger_.Finish(node, command_id, stop, accepted, error_code, error_message, result_timestamp,
+                   result_sequence, base_stop, arm_stop, result_epoch);
+  }
+  Set(&reply, "timestamp_ns", result_timestamp);
+  Set(&reply, "sequence", static_cast<double>(result_sequence));
   Set(&reply, "accepted", accepted);
+  if (stop) {
+    Set(&reply, "base_stop", base_stop);
+    Set(&reply, "arm_stop", arm_stop);
+    Set(&reply, "generation_id", generation_id_);
+    Set(&reply, "stop_epoch", result_epoch);
+  }
   if (!accepted) RejectStrict(&reply, error_code.c_str(), error_message.c_str());
   SendReply(fd, reply);
 }
@@ -445,44 +596,114 @@ void V2Server::HandleStrict(int fd) {
 V2Server::V2Server(const std::filesystem::path& socket, SimEngine& engine,
                    bool managed_strict_socket)
     : socket_(socket), engine_(engine), managed_strict_socket_(managed_strict_socket) {
+  scene_profile_ = engine_.SceneProfile();
   std::filesystem::create_directories(socket_.parent_path());
-  if (socket_.string().size() >= sizeof(sockaddr_un::sun_path))
-    throw std::invalid_argument("v2 socket path is too long");
-  listener_ = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
-  if (listener_ < 0) throw std::runtime_error("cannot create v2 socket");
-  sockaddr_un address{};
-  address.sun_family = AF_UNIX;
-  std::strcpy(address.sun_path, socket_.c_str());
-  std::error_code ignored;
-  std::filesystem::remove(socket_, ignored);
-  if (::bind(listener_, reinterpret_cast<sockaddr*>(&address), sizeof(address)) < 0 ||
-      ::chmod(socket_.c_str(), S_IRUSR | S_IWUSR) < 0 || ::listen(listener_, 16) < 0) {
-    ::close(listener_);
-    std::filesystem::remove(socket_, ignored);
-    throw std::runtime_error("cannot bind or secure v2 socket");
+  if (managed_strict_socket_) {
+    stop_socket_ = socket_.string() + ".stop";
+    generation_id_ = NewGenerationId();
   }
-  worker_ = std::thread([this] { Run(); });
+  if (socket_.string().size() >= sizeof(sockaddr_un::sun_path) ||
+      (managed_strict_socket_ && stop_socket_.string().size() >= sizeof(sockaddr_un::sun_path)))
+    throw std::invalid_argument("socket_path_too_long");
+  const auto bind_listener = [](const std::filesystem::path& path) {
+    const int listener = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+    if (listener < 0) throw std::runtime_error("cannot create v2 socket");
+    sockaddr_un address{};
+    address.sun_family = AF_UNIX;
+    std::strcpy(address.sun_path, path.c_str());
+    std::error_code ignored;
+    std::filesystem::remove(path, ignored);
+    if (::bind(listener, reinterpret_cast<sockaddr*>(&address), sizeof(address)) < 0 ||
+        ::chmod(path.c_str(), S_IRUSR | S_IWUSR) < 0 || ::listen(listener, 16) < 0) {
+      ::close(listener);
+      std::filesystem::remove(path, ignored);
+      throw std::runtime_error("cannot bind or secure v2 socket");
+    }
+    return listener;
+  };
+  listener_ = bind_listener(socket_);
+  try {
+    if (managed_strict_socket_) stop_listener_ = bind_listener(stop_socket_);
+  } catch (...) {
+    ::close(listener_);
+    std::error_code ignored;
+    std::filesystem::remove(socket_, ignored);
+    throw;
+  }
+  if (managed_strict_socket_) {
+    for (int i = 0; i < 32; ++i) normal_workers_.emplace_back([this] { Work(false); });
+    for (int i = 0; i < 2; ++i) stop_workers_.emplace_back([this] { Work(true); });
+    stop_worker_ = std::thread([this] { Run(stop_listener_, true); });
+  }
+  worker_ = std::thread([this] { Run(listener_, false); });
 }
 V2Server::~V2Server() {
   stopping_.store(true);
   ::shutdown(listener_, SHUT_RDWR);
   ::close(listener_);
+  if (stop_listener_ >= 0) {
+    ::shutdown(stop_listener_, SHUT_RDWR);
+    ::close(stop_listener_);
+  }
   if (worker_.joinable()) worker_.join();
+  if (stop_worker_.joinable()) stop_worker_.join();
+  queue_ready_.notify_all();
+  for (auto& worker : normal_workers_) worker.join();
+  for (auto& worker : stop_workers_) worker.join();
   std::error_code ignored;
   std::filesystem::remove(socket_, ignored);
+  if (managed_strict_socket_) std::filesystem::remove(stop_socket_, ignored);
 }
-void V2Server::Run() {
+void V2Server::Run(int listener, bool stop_lane) {
   while (!stopping_.load()) {
-    const int fd = ::accept4(listener_, nullptr, nullptr, SOCK_CLOEXEC);
+    const int fd = ::accept4(listener, nullptr, nullptr, SOCK_CLOEXEC);
     if (fd < 0) continue;
+    if (managed_strict_socket_) {
+      bool queued = false;
+      {
+        std::lock_guard lock(queue_mutex_);
+        auto& outstanding = stop_lane ? stop_outstanding_ : normal_outstanding_;
+        auto& queue = stop_lane ? stop_queue_ : normal_queue_;
+        if (outstanding < (stop_lane ? 10u : 32u)) {
+          ++outstanding;
+          queue.push_back(fd);
+          queued = true;
+        }
+      }
+      if (queued)
+        queue_ready_.notify_all();
+      else
+        ::close(fd);
+      continue;
+    }
     timeval timeout{2, 0};
     ::setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
     ::setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
-    if (managed_strict_socket_)
-      HandleStrict(fd);
-    else
-      Handle(fd, engine_);
+    Handle(fd, engine_);
     ::close(fd);
+  }
+}
+void V2Server::Work(bool stop_lane) {
+  while (true) {
+    int fd = -1;
+    {
+      std::unique_lock lock(queue_mutex_);
+      queue_ready_.wait(lock, [&] {
+        return stopping_.load() || !(stop_lane ? stop_queue_ : normal_queue_).empty();
+      });
+      auto& queue = stop_lane ? stop_queue_ : normal_queue_;
+      if (queue.empty()) return;
+      fd = queue.front();
+      queue.pop_front();
+    }
+    timeval timeout{2, 0};
+    ::setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+    HandleStrict(fd, stop_lane);
+    ::close(fd);
+    {
+      std::lock_guard lock(queue_mutex_);
+      --(stop_lane ? stop_outstanding_ : normal_outstanding_);
+    }
   }
 }
 }  // namespace eos_mujoco
