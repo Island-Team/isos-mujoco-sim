@@ -1,6 +1,6 @@
 # 文档导航
 
-**首次阅读顺序：** [构建与运行](usage_cn.md) → [包与节点契约](interfaces/package_cn.md) → [EOS 持有的套接字契约](interfaces/socket_cn.md) → [设计与算法](design_cn.md) → [实现 TODO](todo_cn.md)。每页标记当前行为和目标设计。
+**首次阅读顺序：** [构建与运行](usage_cn.md) → [core/layer/group/node 目录](catalog/README_cn.md) → [包与节点契约](interfaces/package_cn.md) → [MuJoCo 持有的套接字契约](interfaces/socket_cn.md) → [设计与算法](design_cn.md) → [实现 TODO](todo_cn.md)。每页标记当前行为和目标设计。
 
 [English](../../docs/mujoco/doc_index.md)
 
