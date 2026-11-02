@@ -33,7 +33,7 @@ The default is headless. A desktop with an accessible `DISPLAY` is required;
 an unavailable display makes the simulator fail at startup. The independent
 `tools/scene-view.sh` viewer remains a static scene preview.
 
-**R05 scoped qualification:** an EOS-managed strict child accepts only the framed v2 socket and rejects the historical gRPC robot and benchmark sockets. A separate direct launch retains those sockets for legacy clients and trusted evaluation. The pinned IsOS → EOS → MuJoCo replay proved strict health for the declared camera, base and arm in both scenes, read-only capture and observations, and child/socket cleanup. Managed movement remains unavailable until the R06 terminal stop fence is implemented and qualified. See the [owning socket contract](interfaces/socket.md) and [R05 evidence](design.md#r05-cross-owner-qualification).
+**R05 scoped qualification:** an EOS-managed strict child accepts only the framed v2 socket and rejects the historical gRPC robot and benchmark sockets. A separate direct launch retains those sockets for legacy clients and trusted evaluation. The pinned IsOS → EOS → MuJoCo replay proved strict health for the declared camera, base and arm in both scenes, read-only capture and observations, and child/socket cleanup. The R06 owner stop fence merged, and scoped cross-owner movement and stop replay passed; broader R06 failure qualification remains open. See the [owning socket contract](interfaces/socket.md) and [R05 evidence](design.md#r05-cross-owner-qualification).
 
 The v2 socket uses an eight-byte little-endian frame header followed by JSON
 metadata and an optional JPEG payload. Metadata is capped at 64 KiB; payload
@@ -53,7 +53,7 @@ or `error.message`. Operations refer to the live state:
 
 `timestamp_ns` is simulated time in nanoseconds and `sequence` is the engine
 step count. Values are finite and movement bounds are enforced by the engine.
-The v2 socket is owner-only (`0600`) and removed on normal shutdown. IsOS verifies the package and passes the executable and scene to EOS. EOS starts the simulator as its direct child and connects its hardware adapters as socket clients. R06 must prove physical stop before termination and reap; R05 cleanup alone is not that proof.
+The v2 socket is owner-only (`0600`) and removed on normal shutdown. IsOS verifies the package and passes the executable and scene to EOS. EOS starts the simulator as its direct child and connects its hardware adapters as socket clients. The scoped R06 replay proved physical stop before termination and reap for both scenes; R05 cleanup alone did not prove that.
 
 ## Verification
 
