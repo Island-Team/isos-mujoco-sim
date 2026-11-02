@@ -4,7 +4,7 @@
 
 **状态：**所有者实现候选稿；跨仓库发布证据尚未完成。仿真器拥有场景加载、确定性复位、物理、渲染、私有套接字及基准评分。EOS 拥有机器人侧路由。基准真实状态不得通过 EOS、EGIA 或界面暴露。
 
-**Q03 所有者初始基线（2026-11-03）：**已实现 `tests/q03_socket_bench.py`、私有 `benchmark-reset` 工具及失败路径单元测试。此处是本机直接套接字证据，不等同于跨仓库安装重放或发布批准。初次完整输出保留在 Git 忽略的 `logs/test/20261103-q03-mujoco/`；复审所用的当前二进制、逐请求原始样本、子进程日志、软件包和哈希保存在 `logs/test/20261103-q03-mujoco-review-final/`。
+**Q03 所有者初始基线（2026-11-03）：**已实现 `tests/q03_socket_bench.py`、私有 `benchmark-reset` 工具及失败路径单元测试。此处是本机直接套接字证据，不等同于跨仓库安装重放或发布批准。初次完整输出保留在 Git 忽略的 `logs/test/20261103-q03-mujoco/`；最终渲染器探针软件包保存在 `logs/test/20261103-q03-mujoco-review-final/`；无碰撞的逐请求原始样本及六份子进程日志保存在 `logs/test/20261103-q03-mujoco-review-final-2/`。
 
 ## 固定输入与所有者检查
 
@@ -31,8 +31,8 @@ python3 tests/fixtures/strict_socket/check.py
 python3 tests/fixtures/strict_stop_lane/check.py
 python3 tests/node_contributions.py
 python3 tools/build-backend-bundle.py --build-dir build-q03 --output logs/test/20261103-q03-mujoco-review-final/bundle
-python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco-review-final/pick-place.json
-python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scenes/navigation/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco-review-final/navigation.json
+python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco-review-final-2/pick-place.json
+python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scenes/navigation/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco-review-final-2/navigation.json
 ```
 
 格式修正后，全部 CTest 为 25/25，定向测试为 16/16；R05、R06 静态用例矩阵分别通过 31、48 项，节点贡献检查通过。初次格式检查在三个原有文件中出现 86 项诊断：`tests/smoke.cpp`、`src/service.cpp`、`src/gui.cpp`。单独的纯格式提交已修正，最终受 Git 跟踪的 C++ 格式检查通过。最终软件包为 `mujoco-sim-v0.1.1-linux-x86_64.tar.gz`，SHA-256 为 `05a9346db26f43510c1986ff7431038ae29197ac85300a2f1efd1211f3458fe6`。跨仓库 IsOS→EOS 安装重放仍待完成。
@@ -41,9 +41,9 @@ python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q
 
 | 场景 | 操作 | 成功／失败 | 吞吐量 | 中位数 | p99 |
 | --- | --- | ---: | ---: | ---: | ---: |
-| 抓取放置 | `base_observe` | 600/0 | 16,506 次／秒 | 0.059 毫秒 | 0.097 毫秒 |
-| 抓取放置 | `camera_capture` | 60/0 | 744 帧／秒 | 1.283 毫秒 | 3.026 毫秒 |
-| 导航 | `base_observe` | 600/0 | 17,622 次／秒 | 0.054 毫秒 | 0.086 毫秒 |
-| 导航 | `camera_capture` | 60/0 | 758 帧／秒 | 1.214 毫秒 | 2.507 毫秒 |
+| 抓取放置 | `base_observe` | 600/0 | 17,549 次／秒 | 0.054 毫秒 | 0.089 毫秒 |
+| 抓取放置 | `camera_capture` | 60/0 | 716 帧／秒 | 1.261 毫秒 | 2.961 毫秒 |
+| 导航 | `base_observe` | 600/0 | 18,033 次／秒 | 0.053 毫秒 | 0.074 毫秒 |
+| 导航 | `camera_capture` | 60/0 | 731 帧／秒 | 1.262 毫秒 | 2.453 毫秒 |
 
-吞吐量为成功次数除以各进程对应操作组的测量总时长。中位数取成功样本排序后的中点，p99 用最近秩。相同日志目录中的较早尝试结果不同，可能受到本机负载影响；此基线不设性能目标，也不作跨主机推断。每次重复分别记录成功的 `Reset(seed=42)`、观察到的 JPEG 探针尺寸，以及全部样本状态、字节数和超时标记。失败请求记录零个已接受的有效负载字节，摘要单独统计超时。可选的子进程日志在上下文创建后记录运行时 EGL 供应商与 GL 渲染器；套接字响应提供观察到的 JPEG 尺寸。数字只代表仿真器私有套接字。
+吞吐量为成功次数除以各进程对应操作组的测量总时长。中位数取成功样本排序后的中点，p99 用最近秩。相同日志目录中的较早尝试结果不同，可能受到本机负载影响；此基线不设性能目标，也不作跨主机推断。每次重复分别记录成功的 `Reset(seed=42)`、观察到的 JPEG 探针尺寸，以及全部样本状态、字节数和超时标记。失败请求记录零个已接受的有效负载字节，摘要单独统计超时。可选的子进程日志在上下文创建后记录运行时 EGL 供应商与 GL 渲染器；套接字响应提供观察到的 JPEG 尺寸。日志文件名使用基准输出文件名，确保两个均名为 `scene.xml` 的场景各有独立日志。前一次运行因场景文件同名覆盖了子进程日志；其原始样本仍保留，但子进程日志由本次运行取代。数字只代表仿真器私有套接字。

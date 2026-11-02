@@ -110,6 +110,10 @@ def read_renderer_probe(child_log_path):
     return {"egl_vendor": matches[0][0].strip(), "gl_renderer": matches[0][1].strip()}
 
 
+def simulator_log_path(output, repetition):
+    return output.parent / f"{output.stem}-run{repetition}-simulator.log"
+
+
 def run_once(args, repetition):
     with tempfile.TemporaryDirectory(prefix="q03-mujoco-") as directory:
         root = Path(directory)
@@ -119,7 +123,7 @@ def run_once(args, repetition):
                    "--v2-socket", str(paths["v2"]), "--scene", str(args.scene),
                    "--manual-step"]
         environment = {**os.environ, "MUJOCO_GUI": "0", "MUJOCO_RENDERER_PROBE": "1"}
-        child_log_path = args.json.parent / f"{args.scene.stem}-{repetition}-simulator.log"
+        child_log_path = simulator_log_path(args.json, repetition)
         with child_log_path.open("w") as child_log:
             process = subprocess.Popen(command, stdout=child_log, stderr=subprocess.STDOUT, env=environment)
             result = {"repetition": repetition, "command": command,

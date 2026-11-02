@@ -131,6 +131,14 @@ class BenchTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "renderer probe"):
                 bench.read_renderer_probe(path)
 
+    def test_simulator_log_names_are_distinct_for_same_scene_basename(self):
+        directory = Path("/tmp/q03-evidence")
+        pick_place = bench.simulator_log_path(directory / "pick-place.json", 0)
+        navigation = bench.simulator_log_path(directory / "navigation.json", 0)
+        self.assertNotEqual(pick_place, navigation)
+        self.assertEqual(pick_place.name, "pick-place-run0-simulator.log")
+        self.assertEqual(navigation.name, "navigation-run0-simulator.log")
+
     def test_wrong_scene_fails_before_launch(self):
         with tempfile.TemporaryDirectory() as directory:
             missing = Path(directory) / "wrong-scene.xml"
