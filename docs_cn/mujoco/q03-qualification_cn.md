@@ -30,20 +30,20 @@ ctest --test-dir build-q03 -R 'strict-socket|strict-capacity|strict-stop|v2-sock
 python3 tests/fixtures/strict_socket/check.py
 python3 tests/fixtures/strict_stop_lane/check.py
 python3 tests/node_contributions.py
-python3 tools/build-backend-bundle.py --build-dir build-q03 --output logs/test/20261103-q03-mujoco/bundle
-python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco/pick-place-final.json
-python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scenes/navigation/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco/navigation-final.json
+python3 tools/build-backend-bundle.py --build-dir build-q03 --output logs/test/20261103-q03-mujoco/bundle-final
+python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco/pick-place-current.json
+python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scenes/navigation/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco/navigation-current.json
 ```
 
-初次全部 CTest 为 25/25，通过定向测试 16/16；R05、R06 静态用例矩阵分别通过 31、48 项，节点贡献检查通过。初次格式检查在三个原有文件中出现 86 项诊断：`tests/smoke.cpp`、`src/service.cpp`、`src/gui.cpp`。其格式修正将在基准实现提交后作为单独的纯格式提交，并须在合并前重检。软件包为 `mujoco-sim-v0.1.1-linux-x86_64.tar.gz`，SHA-256 为 `3aa0393883b02bb577ee7b6c408eff1fa4803df543723b9faaa3cdcb80b0c94f`。跨仓库 IsOS→EOS 安装重放仍待完成。
+格式修正后，全部 CTest 为 25/25，定向测试为 16/16；R05、R06 静态用例矩阵分别通过 31、48 项，节点贡献检查通过。初次格式检查在三个原有文件中出现 86 项诊断：`tests/smoke.cpp`、`src/service.cpp`、`src/gui.cpp`。单独的纯格式提交已修正，最终受 Git 跟踪的 C++ 格式检查通过。最终软件包为 `mujoco-sim-v0.1.1-linux-x86_64.tar.gz`，SHA-256 为 `f0b6a81edddc0cf3fdd0f2023b18de2ab709a041e00b8171dfefebb7838aa3d9`。跨仓库 IsOS→EOS 安装重放仍待完成。
 
 本机为 x86_64 Linux、GCC 13.3.0，使用已安装的 MuJoCo 3.16.0、软件包 EGL 渲染路径且无 GUI。`environment.json` 记录内核、工具版本、源码提交、二进制、场景、库和归档哈希。种子 42、暂停场景、每个场景三个新进程；每进程预热 20 次，再测量 200 次观察和 20 次图像采集。最终原始测量如下：
 
 | 场景 | 操作 | 成功／失败 | 吞吐量 | 中位数 | p99 |
 | --- | --- | ---: | ---: | ---: | ---: |
-| 抓取放置 | `base_observe` | 600/0 | 17,128 次／秒 | 0.054 毫秒 | 0.099 毫秒 |
-| 抓取放置 | `camera_capture` | 60/0 | 757 帧／秒 | 1.209 毫秒 | 2.459 毫秒 |
-| 导航 | `base_observe` | 600/0 | 17,917 次／秒 | 0.054 毫秒 | 0.075 毫秒 |
-| 导航 | `camera_capture` | 60/0 | 791 帧／秒 | 1.200 毫秒 | 2.041 毫秒 |
+| 抓取放置 | `base_observe` | 600/0 | 14,577 次／秒 | 0.065 毫秒 | 0.124 毫秒 |
+| 抓取放置 | `camera_capture` | 60/0 | 577 帧／秒 | 1.503 毫秒 | 3.627 毫秒 |
+| 导航 | `base_observe` | 600/0 | 14,581 次／秒 | 0.061 毫秒 | 0.124 毫秒 |
+| 导航 | `camera_capture` | 60/0 | 636 帧／秒 | 1.463 毫秒 | 2.865 毫秒 |
 
-吞吐量为成功次数除以各进程对应操作组的测量总时长。中位数取成功样本排序后的中点，p99 用最近秩。相同日志目录中的初次尝试较慢，可能受到本机负载影响；此基线不设性能目标，也不作跨主机推断。每次重复分别记录成功的 `Reset(seed=42)`、EGL 图像探针、640×480 尺寸及全部样本状态。数字只代表仿真器私有套接字。
+吞吐量为成功次数除以各进程对应操作组的测量总时长。中位数取成功样本排序后的中点，p99 用最近秩。相同日志目录中的较早尝试结果不同，可能受到本机负载影响；此基线不设性能目标，也不作跨主机推断。每次重复分别记录成功的 `Reset(seed=42)`、EGL 图像探针、640×480 尺寸及全部样本状态。数字只代表仿真器私有套接字。

@@ -31,20 +31,20 @@ ctest --test-dir build-q03 -R 'strict-socket|strict-capacity|strict-stop|v2-sock
 python3 tests/fixtures/strict_socket/check.py
 python3 tests/fixtures/strict_stop_lane/check.py
 python3 tests/node_contributions.py
-python3 tools/build-backend-bundle.py --build-dir build-q03 --output logs/test/20261103-q03-mujoco/bundle
-python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco/pick-place-final.json
-python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scenes/navigation/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco/navigation-final.json
+python3 tools/build-backend-bundle.py --build-dir build-q03 --output logs/test/20261103-q03-mujoco/bundle-final
+python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco/pick-place-current.json
+python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scenes/navigation/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco/navigation-current.json
 ```
 
-The initial full CTest passed 25/25 and the focused set passed 16/16. The static R05 and R06 fixture matrices passed 31 and 48 cases; the node contribution checker passed. The first formatting check failed in three pre-existing files (`tests/smoke.cpp`, `src/service.cpp`, `src/gui.cpp`, 86 diagnostics); a separate formatting-only change follows the harness commit and must be rechecked before merge. The package builder produced `mujoco-sim-v0.1.1-linux-x86_64.tar.gz` with SHA-256 `3aa0393883b02bb577ee7b6c408eff1fa4803df543723b9faaa3cdcb80b0c94f`. The installed IsOS→EOS replay remains open for the cross-owner gate.
+The post-format full CTest passed 25/25 and the focused set passed 16/16. The static R05 and R06 fixture matrices passed 31 and 48 cases; the node contribution checker passed. The first formatting check failed in three pre-existing files (`tests/smoke.cpp`, `src/service.cpp`, `src/gui.cpp`, 86 diagnostics); a separate formatting-only commit corrected them and the final tracked C++ check passed. The final package builder produced `mujoco-sim-v0.1.1-linux-x86_64.tar.gz` with SHA-256 `f0b6a81edddc0cf3fdd0f2023b18de2ab709a041e00b8171dfefebb7838aa3d9`. The installed IsOS→EOS replay remains open for the cross-owner gate.
 
 On this x86_64 Linux host, C++ is GCC 13.3.0, MuJoCo is the installed 3.16.0 tree, and the benchmark uses the package EGL path without a GUI. `environment.json` records the kernel, tool versions, source pin, binaries, scenes, library and archive hashes. With seed 42, paused scenes, 20 warm-up observations, three fresh processes per scene and 200 observations plus 20 captures per process, the final raw run recorded:
 
 | Scene | Operation | Success/failure | Throughput | Median | p99 |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Pick-place | `base_observe` | 600/0 | 17,128/s | 0.054 ms | 0.099 ms |
-| Pick-place | `camera_capture` | 60/0 | 757 frames/s | 1.209 ms | 2.459 ms |
-| Navigation | `base_observe` | 600/0 | 17,917/s | 0.054 ms | 0.075 ms |
-| Navigation | `camera_capture` | 60/0 | 791 frames/s | 1.200 ms | 2.041 ms |
+| Pick-place | `base_observe` | 600/0 | 14,577/s | 0.065 ms | 0.124 ms |
+| Pick-place | `camera_capture` | 60/0 | 577 frames/s | 1.503 ms | 3.627 ms |
+| Navigation | `base_observe` | 600/0 | 14,581/s | 0.061 ms | 0.124 ms |
+| Navigation | `camera_capture` | 60/0 | 636 frames/s | 1.463 ms | 2.865 ms |
 
-Throughput uses successful calls divided by summed measured group wall time. Median is the midpoint of sorted successful samples; p99 is nearest rank. The earlier raw attempt in the same log directory is slower, likely from local load; no performance target or cross-host claim follows from this baseline. Each repetition records its own values, successful `Reset(seed=42)`, EGL capture probe, 640×480 dimensions and all sample statuses. These numbers cover only the private simulator socket.
+Throughput uses successful calls divided by summed measured group wall time. Median is the midpoint of sorted successful samples; p99 is nearest rank. Earlier raw attempts in the same log directory differ, likely from local load; no performance target or cross-host claim follows from this baseline. Each repetition records its own values, successful `Reset(seed=42)`, EGL capture probe, 640×480 dimensions and all sample statuses. These numbers cover only the private simulator socket.

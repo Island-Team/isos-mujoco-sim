@@ -5,6 +5,8 @@ import importlib.util
 from pathlib import Path
 import socket
 import struct
+import subprocess
+import sys
 import tempfile
 import threading
 import time
@@ -88,6 +90,17 @@ class BenchTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaisesRegex(RuntimeError, "exited before socket ready"):
                 bench.wait_socket(Path(directory) / "missing.sock", Exited(), .1)
+
+    def test_wrong_scene_fails_before_launch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            missing = Path(directory) / "wrong-scene.xml"
+            result = subprocess.run(
+                [sys.executable, str(Path(__file__).with_name("q03_socket_bench.py")),
+                 "--sim", sys.executable, "--reset", sys.executable,
+                 "--scene", str(missing), "--json", str(Path(directory) / "out.json")],
+                capture_output=True, text=True, timeout=2)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("wrong-scene.xml", result.stderr)
 
 
 if __name__ == "__main__":
