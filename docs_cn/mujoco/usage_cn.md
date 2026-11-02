@@ -4,6 +4,8 @@
 
 [English](../../docs/mujoco/usage.md) · [v2 后端](backend_cn.md)
 
+[Q03 验证设计](q03-qualification_cn.md) 固定发布前的选定版本安装重放与初始套接字基准。
+
 MuJoCo 模拟器由此仓库构建，EOS 通过私有套接字连接它；可信评测器使用另一个私有套接字进行重置与评分。安装 MuJoCo 3.16.0 后，将 `.env.example` 复制为忽略的 `.env`，把 `MUJOCO_ROOT` 设为实际安装目录。该目录需要 `include/mujoco/mujoco.h`、`lib/libmujoco.so`、`bin/compile` 和 `bin/simulate`。构建还需要 C++20、CMake、protobuf、gRPC 与 libjpeg。
 
 ```sh
