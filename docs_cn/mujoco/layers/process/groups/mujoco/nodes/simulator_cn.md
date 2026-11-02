@@ -2,7 +2,7 @@
 
 [English](../../../../../../../docs/mujoco/layers/process/groups/mujoco/nodes/simulator.md) · [目录](../../../../../catalog/README_cn.md) · [包字段](../../../../../interfaces/package_cn.md) · [套接字契约](../../../../../interfaces/socket_cn.md)
 
-**0.x 目标，尚未发布。** 位置为 `core=eos`、`layer=process`、`group=mujoco`；新注册类型使用 `@v0.1`，`@v1.0` 别名保留供旧图读取。R05 严格子进程就绪通过限定范围的跨所有者验收；R06 物理停止及受管理运动仍待完成。注册的 `NodeType.description`：“作为 EOS 拥有的子进程启动一个已验证 MuJoCo 场景，只提供图中声明的仿真设备。”实例 `description` 独立记录本部署的用途。字段类型、默认值、校验和兼容规则以[包描述符](../../../../../interfaces/package_cn.md)、IsOS 图契约和 EOS 节点配置契约为准。
+**0.x 目标，尚未发布。** 位置为 `core=eos`、`layer=process`、`group=mujoco`；新注册类型使用 `@v0.1`，`@v1.0` 别名保留供旧图读取。R05 严格子进程就绪通过限定范围的跨所有者验收；MuJoCo R06 停止通道已合并，限定范围受管理运动/停止回放通过；更完整的 R06 验收仍待完成。注册的 `NodeType.description`：“作为 EOS 拥有的子进程启动一个已验证 MuJoCo 场景，只提供图中声明的仿真设备。”实例 `description` 独立记录本部署的用途。字段类型、默认值、校验和兼容规则以[包描述符](../../../../../interfaces/package_cn.md)、IsOS 图契约和 EOS 节点配置契约为准。
 
 ## 首次使用行为
 
