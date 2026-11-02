@@ -2,6 +2,7 @@
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+#include <GL/gl.h>
 #include <jpeglib.h>
 #include <mujoco/mujoco.h>
 
@@ -9,7 +10,9 @@
 #include <array>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
+#include <iostream>
 #include <stdexcept>
 #include <thread>
 
@@ -705,6 +708,17 @@ CameraFrame SimEngine::RenderCamera(std::optional<std::uint64_t> expected_stop_e
       delete r;
       render_failed_ = true;
       return frame;
+    }
+    if (const char* probe = std::getenv("MUJOCO_RENDERER_PROBE");
+        probe && std::strcmp(probe, "1") == 0) {
+      using GetGlString = const GLubyte* (*)(GLenum);
+      auto get_gl_string = reinterpret_cast<GetGlString>(eglGetProcAddress("glGetString"));
+      const char* egl_vendor = eglQueryString(r->display, EGL_VENDOR);
+      const auto* gl_renderer = get_gl_string ? get_gl_string(GL_RENDERER) : nullptr;
+      std::cerr << "renderer_probe egl_vendor=" << (egl_vendor ? egl_vendor : "unavailable")
+                << " gl_renderer="
+                << (gl_renderer ? reinterpret_cast<const char*>(gl_renderer) : "unavailable")
+                << std::endl;
     }
     mjv_defaultScene(&r->scene);
     mjv_makeScene(model_, &r->scene, 2000);

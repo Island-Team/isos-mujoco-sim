@@ -6,6 +6,7 @@ import json
 import math
 import os
 from pathlib import Path
+import re
 import signal
 import socket
 import stat
@@ -53,13 +54,17 @@ def exchange(path, operation, request_id, timeout):
                 or metadata.get("height_px") != 480 or metadata.get("rgb_length") != len(payload)
                 or not payload.startswith(b"\xff\xd8") or len(payload) <= 1000):
             raise RuntimeError("unexpected EGL camera result or dimensions")
-    return {"bytes": len(payload), "sequence": metadata.get("sequence")}
+    result = {"bytes": len(payload), "sequence": metadata.get("sequence")}
+    if operation == "camera_capture":
+        result.update({"width_px": metadata["width_px"], "height_px": metadata["height_px"]})
+    return result
 
 
 def summary(samples, duration_ns):
     good = sorted(sample["elapsed_ns"] for sample in samples if sample["ok"])
     count = len(good)
     return {"success": count, "failure": len(samples) - count,
+            "timeout": sum(bool(sample.get("timeout")) for sample in samples),
             "duration_ns": duration_ns,
             "throughput_per_s": count * 1e9 / duration_ns if duration_ns else 0,
             "median_ms": ((good[(count - 1) // 2] + good[count // 2]) / 2e6) if count else None,
@@ -73,10 +78,10 @@ def measure(path, operation, count, timeout, prefix):
         start = time.monotonic_ns()
         try:
             result = exchange(path, operation, f"{prefix}-{index}", timeout)
-            sample = {"index": index, "ok": True, **result}
+            sample = {"index": index, "ok": True, "timeout": False, **result}
         except (OSError, RuntimeError) as error:
             sample = {"index": index, "ok": False, "error": str(error),
-                      "timeout": isinstance(error, socket.timeout)}
+                      "timeout": isinstance(error, socket.timeout), "bytes": 0}
         sample["elapsed_ns"] = time.monotonic_ns() - start
         samples.append(sample)
     duration = time.monotonic_ns() - start_group
@@ -96,6 +101,15 @@ def wait_socket(path, process, timeout):
     raise TimeoutError("v2 socket unavailable")
 
 
+def read_renderer_probe(child_log_path):
+    text = child_log_path.read_text(errors="replace")
+    matches = re.findall(r"^renderer_probe egl_vendor=(.+) gl_renderer=(.+)$", text, re.MULTILINE)
+    if len(matches) != 1 or any(not value.strip() or value.strip() == "unavailable"
+                                for value in matches[0]):
+        raise RuntimeError("runtime EGL renderer probe missing or unavailable")
+    return {"egl_vendor": matches[0][0].strip(), "gl_renderer": matches[0][1].strip()}
+
+
 def run_once(args, repetition):
     with tempfile.TemporaryDirectory(prefix="q03-mujoco-") as directory:
         root = Path(directory)
@@ -104,14 +118,13 @@ def run_once(args, repetition):
                    "--benchmark-socket", str(paths["benchmark"]),
                    "--v2-socket", str(paths["v2"]), "--scene", str(args.scene),
                    "--manual-step"]
-        environment = {**os.environ, "MUJOCO_GUI": "0"}
+        environment = {**os.environ, "MUJOCO_GUI": "0", "MUJOCO_RENDERER_PROBE": "1"}
         child_log_path = args.json.parent / f"{args.scene.stem}-{repetition}-simulator.log"
         with child_log_path.open("w") as child_log:
             process = subprocess.Popen(command, stdout=child_log, stderr=subprocess.STDOUT, env=environment)
             result = {"repetition": repetition, "command": command,
                       "simulator_log": str(child_log_path),
-                      "scene": str(args.scene), "renderer": "package EGL", "camera": "cam-0",
-                      "width_px": 640, "height_px": 480, "seed": 42}
+                      "scene": str(args.scene), "camera": "cam-0", "seed": 42}
             try:
                 wait_socket(paths["v2"], process, args.timeout)
                 if not paths["benchmark"].is_socket():
@@ -123,9 +136,11 @@ def run_once(args, repetition):
                 result["reset"] = json.loads(reset.stdout)
                 if result["reset"].get("ok") is not True or result["reset"].get("seed") != 42:
                     raise RuntimeError("malformed Reset response")
-                # Establish the EGL renderer and validate dimensions before measured calls.
-                result["renderer_probe"] = exchange(paths["v2"], "camera_capture",
-                                                     f"renderer-{repetition}", args.timeout)
+                # The first capture initializes EGL and writes the runtime renderer
+                # identity to the child log. Assert the observed image properties.
+                result["capture_probe"] = exchange(paths["v2"], "camera_capture",
+                                                   f"renderer-{repetition}", args.timeout)
+                result["renderer_probe"] = read_renderer_probe(child_log_path)
                 for index in range(args.warmup):
                     exchange(paths["v2"], "base_observe", f"warmup-{repetition}-{index}", args.timeout)
                 result["base_observe"] = measure(paths["v2"], "base_observe",
