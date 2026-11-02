@@ -18,8 +18,7 @@ unsigned long Channel(unsigned char value, unsigned long mask) {
   if (!mask) return 0;
   const unsigned shift = __builtin_ctzl(mask);
   const unsigned long scale = mask >> shift;
-  return ((static_cast<unsigned long>(value) * scale + 127) / 255 << shift) &
-         mask;
+  return ((static_cast<unsigned long>(value) * scale + 127) / 255 << shift) & mask;
 }
 bool DecodeJpeg(const CameraFrame& frame, std::vector<unsigned char>* rgb) {
   if (frame.jpeg.empty()) return false;
@@ -33,8 +32,7 @@ bool DecodeJpeg(const CameraFrame& frame, std::vector<unsigned char>* rgb) {
     return false;
   }
   jpeg_start_decompress(&jpeg);
-  if (jpeg.output_width != 640 || jpeg.output_height != 480 ||
-      jpeg.output_components != 3) {
+  if (jpeg.output_width != 640 || jpeg.output_height != 480 || jpeg.output_components != 3) {
     jpeg_destroy_decompress(&jpeg);
     return false;
   }
@@ -51,12 +49,10 @@ bool DecodeJpeg(const CameraFrame& frame, std::vector<unsigned char>* rgb) {
 
 GuiWindow::GuiWindow(SimEngine& engine) : engine_(engine) {
   display_ = XOpenDisplay(nullptr);
-  if (!display_)
-    throw std::runtime_error("--gui requires an available X11 display");
+  if (!display_) throw std::runtime_error("--gui requires an available X11 display");
   const int screen = DefaultScreen(display_);
-  window_ = XCreateSimpleWindow(display_, RootWindow(display_, screen), 100,
-                                100, 640, 480, 0, BlackPixel(display_, screen),
-                                BlackPixel(display_, screen));
+  window_ = XCreateSimpleWindow(display_, RootWindow(display_, screen), 100, 100, 640, 480, 0,
+                                BlackPixel(display_, screen), BlackPixel(display_, screen));
   XStoreName(display_, window_, "IsOS MuJoCo — live simulation");
   XSelectInput(display_, window_, ExposureMask | StructureNotifyMask);
   XMapWindow(display_, window_);
@@ -86,8 +82,7 @@ void GuiWindow::Run() {
     if (DecodeJpeg(frame, &rgb)) {
       auto* pixels = static_cast<char*>(std::calloc(640 * 480, 4));
       if (!pixels) break;
-      XImage* image = XCreateImage(display_, visual, depth, ZPixmap, 0, pixels,
-                                   640, 480, 32, 0);
+      XImage* image = XCreateImage(display_, visual, depth, ZPixmap, 0, pixels, 640, 480, 32, 0);
       if (!image) {
         std::free(pixels);
         break;
@@ -95,10 +90,9 @@ void GuiWindow::Run() {
       for (int y = 0; y < 480; ++y) {
         for (int x = 0; x < 640; ++x) {
           const size_t offset = (y * 640 + x) * 3;
-          const unsigned long color =
-              Channel(rgb[offset], visual->red_mask) |
-              Channel(rgb[offset + 1], visual->green_mask) |
-              Channel(rgb[offset + 2], visual->blue_mask);
+          const unsigned long color = Channel(rgb[offset], visual->red_mask) |
+                                      Channel(rgb[offset + 1], visual->green_mask) |
+                                      Channel(rgb[offset + 2], visual->blue_mask);
           XPutPixel(image, x, y, color);
         }
       }

@@ -23,8 +23,7 @@ namespace bench = ::eos::mujoco::benchmark::v1;
 namespace {
 
 template <size_t N>
-void Copy(const std::array<double, N>& source,
-          google::protobuf::RepeatedField<double>* output) {
+void Copy(const std::array<double, N>& source, google::protobuf::RepeatedField<double>* output) {
   for (double value : source) output->Add(value);
 }
 void FillBase(const Snapshot& snapshot, sim::BaseTelemetry* output) {
@@ -45,10 +44,8 @@ void FillState(const Snapshot& snapshot, bench::StateResponse* response) {
   Copy(snapshot.joint_positions_rad, response->mutable_arm_joints_rad());
   response->set_object_held_id(snapshot.object_held_id);
   Copy(snapshot.object_position, response->mutable_object_position_m());
-  Copy(snapshot.obstacle_positions[0],
-       response->mutable_obstacle_0_position_m());
-  Copy(snapshot.obstacle_positions[1],
-       response->mutable_obstacle_1_position_m());
+  Copy(snapshot.obstacle_positions[0], response->mutable_obstacle_0_position_m());
+  Copy(snapshot.obstacle_positions[1], response->mutable_obstacle_1_position_m());
   Copy(snapshot.pinch_position, response->mutable_gripper_pinch_position_m());
 }
 
@@ -80,8 +77,7 @@ class SimulatorEndpoint final : public sim::SimulatorService::Service {
       : engine_(engine), halted_(halted) {}
   grpc::Status Health(grpc::ServerContext*, const sim::HealthRequest* request,
                       sim::HealthResponse* response) override {
-    response->set_available(KnownDevice(request->device_id()) &&
-                            !halted_.load());
+    response->set_available(KnownDevice(request->device_id()) && !halted_.load());
     return grpc::Status::OK;
   }
   grpc::Status Execute(grpc::ServerContext*, const sim::ExecuteRequest* request,
@@ -97,21 +93,17 @@ class SimulatorEndpoint final : public sim::SimulatorService::Service {
       case sim::ExecuteRequest::kArmMoveL: {
         const auto& pose = request->arm_move_l();
         if (pose.position_m_size() != 3 || pose.orientation_xyzw_size() != 4)
-          return {grpc::StatusCode::INVALID_ARGUMENT,
-                  "arm pose dimensions are invalid"};
+          return {grpc::StatusCode::INVALID_ARGUMENT, "arm pose dimensions are invalid"};
         command.type = Command::Type::ArmMoveL;
         for (int i = 0; i < 3; ++i) command.values[i] = pose.position_m(i);
-        for (int i = 0; i < 4; ++i)
-          command.values[i + 3] = pose.orientation_xyzw(i);
+        for (int i = 0; i < 4; ++i) command.values[i + 3] = pose.orientation_xyzw(i);
         break;
       }
       case sim::ExecuteRequest::kArmMoveJ:
         if (request->arm_move_j().positions_rad_size() != 6)
-          return {grpc::StatusCode::INVALID_ARGUMENT,
-                  "arm joint dimensions are invalid"};
+          return {grpc::StatusCode::INVALID_ARGUMENT, "arm joint dimensions are invalid"};
         command.type = Command::Type::ArmMoveJ;
-        for (int i = 0; i < 6; ++i)
-          command.values[i] = request->arm_move_j().positions_rad(i);
+        for (int i = 0; i < 6; ++i) command.values[i] = request->arm_move_j().positions_rad(i);
         break;
       case sim::ExecuteRequest::kArmStop:
         command.type = Command::Type::ArmStop;
@@ -127,10 +119,8 @@ class SimulatorEndpoint final : public sim::SimulatorService::Service {
         command.values[0] = request->base_navigate_relative().x_m();
         command.values[1] = request->base_navigate_relative().y_m();
         command.values[2] = request->base_navigate_relative().yaw_rad();
-        command.values[3] =
-            request->base_navigate_relative().footprint_width_m();
-        command.values[4] =
-            request->base_navigate_relative().footprint_length_m();
+        command.values[3] = request->base_navigate_relative().footprint_width_m();
+        command.values[4] = request->base_navigate_relative().footprint_length_m();
         break;
       case sim::ExecuteRequest::kBaseStop:
         command.type = Command::Type::BaseStop;
@@ -159,23 +149,19 @@ class SimulatorEndpoint final : public sim::SimulatorService::Service {
     }
     for (double value : command.values)
       if (!std::isfinite(value))
-        return {grpc::StatusCode::INVALID_ARGUMENT,
-                "command contains non-finite value"};
+        return {grpc::StatusCode::INVALID_ARGUMENT, "command contains non-finite value"};
     const auto result = engine_.Execute(command);
-    if (command.type == Command::Type::Halt && result.accepted)
-      halted_.store(true);
+    if (command.type == Command::Type::Halt && result.accepted) halted_.store(true);
     response->set_accepted(result.accepted);
     response->set_error_code(result.error_code);
     return grpc::Status::OK;
   }
-  grpc::Status ReadTelemetry(grpc::ServerContext*,
-                             const sim::ReadTelemetryRequest* request,
+  grpc::Status ReadTelemetry(grpc::ServerContext*, const sim::ReadTelemetryRequest* request,
                              sim::ReadTelemetryResponse* response) override {
     if (halted_.load()) return grpc::Status::OK;
     if ((request->kind() == sim::ARM && request->device_id() != "arm-0") ||
         (request->kind() == sim::BASE && request->device_id() != "base-0") ||
-        (request->kind() == sim::GRIPPER &&
-         request->device_id() != "gripper-0"))
+        (request->kind() == sim::GRIPPER && request->device_id() != "gripper-0"))
       return grpc::Status::OK;
     const Snapshot snapshot = engine_.GetSnapshot();
     switch (request->kind()) {
@@ -185,8 +171,7 @@ class SimulatorEndpoint final : public sim::SimulatorService::Service {
         Copy(snapshot.ee_orientation_xyzw, out->mutable_ee_orientation_xyzw());
         Copy(snapshot.ee_linear_velocity, out->mutable_ee_linear_velocity());
         Copy(snapshot.joint_positions_rad, out->mutable_joint_positions_rad());
-        Copy(snapshot.joint_velocities_rad_s,
-             out->mutable_joint_velocities_rad_s());
+        Copy(snapshot.joint_velocities_rad_s, out->mutable_joint_velocities_rad_s());
         out->set_contact(snapshot.arm_contact);
         break;
       }
@@ -204,19 +189,16 @@ class SimulatorEndpoint final : public sim::SimulatorService::Service {
         break;
       }
       case sim::TELEMETRY_KIND_UNSPECIFIED:
-        return {grpc::StatusCode::INVALID_ARGUMENT,
-                "telemetry kind is required"};
+        return {grpc::StatusCode::INVALID_ARGUMENT, "telemetry kind is required"};
       default:
         return grpc::Status::OK;
     }
     response->set_available(true);
     return grpc::Status::OK;
   }
-  grpc::Status ReadCameraFrame(
-      grpc::ServerContext*, const sim::ReadCameraFrameRequest* request,
-      sim::ReadCameraFrameResponse* response) override {
-    if (request->device_id() != "cam-0" || halted_.load())
-      return grpc::Status::OK;
+  grpc::Status ReadCameraFrame(grpc::ServerContext*, const sim::ReadCameraFrameRequest* request,
+                               sim::ReadCameraFrameResponse* response) override {
+    if (request->device_id() != "cam-0" || halted_.load()) return grpc::Status::OK;
     const auto frame = engine_.RenderCamera();
     if (frame.jpeg.empty()) return grpc::Status::OK;
     const auto snapshot = engine_.GetSnapshot();
@@ -238,12 +220,9 @@ class SimulatorEndpoint final : public sim::SimulatorService::Service {
 
 class BenchmarkEndpoint final : public bench::BenchmarkService::Service {
  public:
-  BenchmarkEndpoint(SimEngine& engine, std::atomic_bool& halted,
-                    std::atomic_bool& paused, std::mutex& clock_mutex)
-      : engine_(engine),
-        halted_(halted),
-        paused_(paused),
-        clock_mutex_(clock_mutex) {}
+  BenchmarkEndpoint(SimEngine& engine, std::atomic_bool& halted, std::atomic_bool& paused,
+                    std::mutex& clock_mutex)
+      : engine_(engine), halted_(halted), paused_(paused), clock_mutex_(clock_mutex) {}
   grpc::Status Reset(grpc::ServerContext*, const bench::ResetRequest* request,
                      bench::StateResponse* response) override {
     std::lock_guard clock_lock(clock_mutex_);
@@ -263,8 +242,7 @@ class BenchmarkEndpoint final : public bench::BenchmarkService::Service {
       return {grpc::StatusCode::INVALID_ARGUMENT, "step count exceeds 100000"};
     std::lock_guard clock_lock(clock_mutex_);
     if (!paused_.load())
-      return {grpc::StatusCode::FAILED_PRECONDITION,
-              "pause simulation before manual stepping"};
+      return {grpc::StatusCode::FAILED_PRECONDITION, "pause simulation before manual stepping"};
     engine_.Step(request->steps());
     FillState(engine_.GetSnapshot(), response);
     return grpc::Status::OK;
@@ -274,8 +252,7 @@ class BenchmarkEndpoint final : public bench::BenchmarkService::Service {
     FillState(engine_.GetSnapshot(), response);
     return grpc::Status::OK;
   }
-  grpc::Status SetPaused(grpc::ServerContext*,
-                         const bench::SetPausedRequest* request,
+  grpc::Status SetPaused(grpc::ServerContext*, const bench::SetPausedRequest* request,
                          bench::StateResponse* response) override {
     std::lock_guard clock_lock(clock_mutex_);
     paused_.store(request->paused());
@@ -308,8 +285,7 @@ std::unique_ptr<grpc::Server> StartServer(const std::filesystem::path& socket,
   grpc::ServerBuilder builder;
   builder.SetMaxReceiveMessageSize(1024 * 1024);
   builder.SetMaxSendMessageSize(9 * 1024 * 1024);
-  builder.AddListeningPort("unix:" + socket.string(),
-                           grpc::InsecureServerCredentials());
+  builder.AddListeningPort("unix:" + socket.string(), grpc::InsecureServerCredentials());
   builder.RegisterService(service);
   auto server = builder.BuildAndStart();
   if (!server) throw std::runtime_error("cannot listen on " + socket.string());
@@ -322,16 +298,13 @@ std::unique_ptr<grpc::Server> StartServer(const std::filesystem::path& socket,
 }  // namespace
 
 void Serve(const std::filesystem::path& simulator_socket,
-           const std::filesystem::path& benchmark_socket,
-           const std::filesystem::path& v2_socket,
-           const std::filesystem::path& scene, const std::atomic_bool& stop,
-           bool manual_step, bool gui, bool managed_strict_socket) {
+           const std::filesystem::path& benchmark_socket, const std::filesystem::path& v2_socket,
+           const std::filesystem::path& scene, const std::atomic_bool& stop, bool manual_step,
+           bool gui, bool managed_strict_socket) {
   SimEngine engine(scene.string());
   std::string error;
-  if (!engine.Load(&error))
-    throw std::runtime_error("scene load failed: " + error);
-  if (!engine.Reset(0, &error))
-    throw std::runtime_error("scene reset failed: " + error);
+  if (!engine.Load(&error)) throw std::runtime_error("scene load failed: " + error);
+  if (!engine.Reset(0, &error)) throw std::runtime_error("scene reset failed: " + error);
   if (managed_strict_socket) {
     const auto frame = engine.RenderCamera();
     if (frame.jpeg.empty()) throw std::runtime_error("managed_camera_unavailable");
@@ -351,8 +324,7 @@ void Serve(const std::filesystem::path& simulator_socket,
       benchmark_server = StartServer(benchmark_socket, &benchmark);
     }
     if (!v2_socket.empty())
-      v2_server = std::make_unique<V2Server>(v2_socket, engine,
-                                             managed_strict_socket);
+      v2_server = std::make_unique<V2Server>(v2_socket, engine, managed_strict_socket);
     if (gui) live_window = std::make_unique<GuiWindow>(engine);
     std::atomic_bool ticker_stop{false};
     std::thread ticker([&] {
@@ -368,8 +340,7 @@ void Serve(const std::filesystem::path& simulator_socket,
         std::this_thread::sleep_until(next);
       }
     });
-    while (!stop.load())
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    while (!stop.load()) std::this_thread::sleep_for(std::chrono::milliseconds(50));
     ticker_stop.store(true);
     ticker.join();
   } catch (...) {
