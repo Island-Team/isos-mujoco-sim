@@ -2,7 +2,62 @@
 
 [English](../../docs/mujoco/package-release.md)
 
-## Aether v2 节点候选包
+## `0.1.1` 发布候选包 — 2026-11-04
+
+**状态：**选定的原生 Linux x86_64 候选包已通过本机 Q04 干净主目录重放与独立归档审查。`v0.1.1` 标签和 GitHub Release 尚未发布。候选包是下文精确的 `release.json` 与归档；从较新的文档提交重新构建会产生新候选包，必须重新验证。
+
+**操作员可见变化。** IsOS 可以验证并安装 `island/mujoco-sim@0.1.1`，列出两个场景及可用的相机、底盘、机械臂设备，预览 `sim-hardware` 节点集，并对选定图执行 Validate/Apply。EOS 将已验证仿真器作为直接子进程启动，读取真实相机帧，经 Dispatcher 准入运动，并在终止和回收子进程前确认物理 Stop。选定的干净主目录运行还覆盖子进程故障、受治理重启、软件包与边拒绝，以及显式图迁移。[Q03 验证记录](q03-qualification_cn.md)及 [EOS Q04 重放记录](https://github.com/Island-Team/Island-eos/blob/master/docs_cn/island/q04-merged-qualification_cn.md)说明范围和原始证据。
+
+**兼容与迁移。** 此包采用 IsOS schema v4，面向图 `0.1.0` 和已注册的 `@v0.1` 类型。保留旧 `eos.process.mujoco@v1.0` 贡献供已验证的旧图读取；迁移须显式执行并检查修订。已发布的 `v1.0.1` 包使用退役图形态，属于另一版本。软件包要求操作员提供 MuJoCo 3.16.0 库；选定资产记录 Ubuntu 24.04、`glibc>=2.39` 和 x86_64。原生依赖规则见[软件包契约](interfaces/package_cn.md)。
+
+**发布后的安装或升级。** 将 `MUJOCO_ROOT` 指向已安装的 MuJoCo 3.16.0 目录，按下文验证已发布清单和归档，再按[后端指南](backend_cn.md)安装或链接精确的 `0.1.1` 软件包，选择场景和设备，执行 Validate/Apply，启动 EOS。已保存的旧图在操作员请求迁移前保持原字节。
+
+**已知范围。** 此次验证使用本地模拟托管 Origin 和 Ubuntu 24.04 原生资产；不证明公网 HTTPS 部署、其他架构或发行版、物理机器人切换或高频执行器通道。MuJoCo 仍是外部运行时依赖。软件包不向 EOS 或 EGIA 暴露基准真实状态。
+
+### 精确候选包与发布前检查
+
+冻结的 Q04 final-5 候选包由源码提交 `04b65882cd11b0aff8ce56473164691dbd662196` 构建。选定**输入** `release.json` 的 SHA-256 为 `c421039753c24ffc74658d6b1dfe5c9de6a1ed77b64df8fbaee77063da837096`；归档为 8,797,162 字节，SHA-256 为 `bb2862b01c3ccab8b68570e766a0ad26c8c5783b3c87cf99225eb0edb7a260f4`。IsOS 安装后的清单是另一份字节流，不是发布输入。此次审查开始时，远端 `master` 为 `f2cdbbbf547fb488182d075b7faf8e43312701cd`；与构建源码的差异仅为 `docs/mujoco/q03-qualification.md` 和 `docs_cn/mujoco/q03-qualification_cn.md`。后续标签可以指向经审查的纯文档后代提交，`release.json.source_commit` 仍记录二进制构建源码。发布前出现任何非文档改动，均须重新构建、生成清单与摘要并重放干净主目录。
+
+将封存的 Q04 `live/package-input/` 候选文件复制到 `/home` 下由操作员管理的目录后，运行并保留以下输出：
+
+```sh
+candidate=/home/ashex/release-candidates/mujoco-0.1.1
+test "$(sha256sum "$candidate/release.json" | cut -d' ' -f1)" = c421039753c24ffc74658d6b1dfe5c9de6a1ed77b64df8fbaee77063da837096
+test "$(sha256sum "$candidate/asset.tar.gz" | cut -d' ' -f1)" = bb2862b01c3ccab8b68570e766a0ad26c8c5783b3c87cf99225eb0edb7a260f4
+test "$(stat -c %s "$candidate/asset.tar.gz")" = 8797162
+python3 - "$candidate/release.json" <<'PY'
+import json, sys
+release = json.load(open(sys.argv[1], encoding="utf-8"))
+asset = release["assets"][0]
+assert (release["id"], release["version"], release["source_commit"]) == ("island/mujoco-sim", "0.1.1", "04b65882cd11b0aff8ce56473164691dbd662196")
+assert (asset["sha256"], asset["size_bytes"], asset["libc"], asset["tested_ubuntu"]) == ("bb2862b01c3ccab8b68570e766a0ad26c8c5783b3c87cf99225eb0edb7a260f4", 8797162, "glibc>=2.39", ["24.04"])
+assert "libmujoco.so.3.16.0" in asset["required_libraries"]
+PY
+mkdir -p "$candidate/inspect"
+tar -xzf "$candidate/asset.tar.gz" -C "$candidate/inspect"
+readelf -d "$candidate/inspect/bin/eos-mujoco-sim"
+test -z "$(readelf -d "$candidate/inspect/bin/eos-mujoco-sim" | rg 'RPATH|RUNPATH')"
+git diff --quiet 04b65882cd11b0aff8ce56473164691dbd662196 HEAD -- . ':(exclude)docs/**' ':(exclude)docs_cn/**'
+```
+
+最后一条命令只适用于将创建标签的已审查源码检出。应对照目标主机检查 `readelf` 以及清单中的完整排序 `required_libraries` 列表，并在发布记录中保留选定 EOS [完整离线验证器命令](https://github.com/Island-Team/Island-eos/blob/master/docs/island/q04-merged-qualification.md)及其 `Q01_FULL_VERIFIED` 输出。该记录还包含 CMake/CTest（26/26）与 3,630 个文件的归档审查。选定 Q04 资产须原字节上传；从较新提交重新构建并写入新的 `source_commit`，即使测试通过，也属于新候选包。
+
+此次文档审查在已审查的 master 基础提交上重新运行 `git ls-files -z '*.cc' '*.cpp' '*.h' '*.hpp' | xargs -0 -r clang-format --dry-run --Werror`、`cmake -S . -B logs/test/20261104-q04-release-notes/build -DMUJOCO_ROOT=<MuJoCo 3.16.0 根目录>`、`cmake --build logs/test/20261104-q04-release-notes/build -j4` 和 `ctest --test-dir logs/test/20261104-q04-release-notes/build --output-on-failure`：格式检查通过，CTest 为 26/26。R05/R06 静态用例矩阵分别通过 31/48 项，五项节点贡献测试、文档本地链接以及所复制选定清单／归档／ELF 检查均通过。完整本机输出位于 Git 忽略的 `logs/test/20261104-q04-release-notes/`；此次重跑检查当前源码，冻结的 Q04 归档仍是精确发布候选包。
+
+### 发布后检查
+
+源码和资产经审查批准后，从已审查提交创建 `v0.1.1`，将精确清单以 `release.json`、精确归档以 `mujoco-sim-v0.1.1-linux-x86_64.tar.gz` 发布，再下载两份 Release 资产到 `/home` 下的新目录。将 SHA-256 和归档大小与上文数值比较；检查公开标签目标、清单 `source_commit`、许可证、归档布局、ELF 依赖和发布 URL。在干净的 IsOS 主目录中验证／安装下载的软件包，选择两个场景，执行 Validate/Apply、启动／就绪、相机和受治理运动、注入故障／重启、确认 Stop 与子进程回收。将下载字节和完整重放输出保存到 `logs/test/<run-id>/`。任何摘要或重放不同，均不得标记发布完成。
+
+```sh
+download=/home/ashex/release-candidates/mujoco-0.1.1-public
+mkdir -p "$download"
+gh release download v0.1.1 --repo Island-Team/isos-mujoco-sim --dir "$download" --pattern release.json --pattern mujoco-sim-v0.1.1-linux-x86_64.tar.gz
+sha256sum "$download/release.json" "$download/mujoco-sim-v0.1.1-linux-x86_64.tar.gz"
+stat -c '%s %n' "$download/mujoco-sim-v0.1.1-linux-x86_64.tar.gz"
+git ls-remote --tags origin refs/tags/v0.1.1
+```
+
+## Aether v2 节点候选包详情
 
 `tools/build-backend-bundle.py` 生成本地 `island/mujoco-sim@0.1.1` 后端包、schema v4 `release.json` 和带校验值的归档。`node_contributions` 声明一个由包提供的模拟器进程类型、`mujoco-v2` 适配器系列，以及 `sim-hardware` 节点集。节点集使用通用 EOS 相机、底盘、机械臂、门和 primitive 绑定类型。每个硬件节点在设置中选择并固定 MuJoCo 适配器；通用类型不归该包所有。IsOS 在安装或链接时验证发布信息并展示节点；图预览与应用仍需操作员明确执行。`backend-v2.json` 继续单独描述可执行文件、场景、设备和 MuJoCo 库依赖。构建与验证步骤见 [后端指南](backend_cn.md)。
 
