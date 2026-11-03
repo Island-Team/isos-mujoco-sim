@@ -4,6 +4,8 @@
 
 [中文](../../docs_cn/mujoco/usage_cn.md)
 
+The [Q03 qualification design](q03-qualification.md) fixes the selected installed replay and initial socket benchmark before release.
+
 [Package overview](README.md) · [Benchmark tasks](benchmarks.md)
 
 Build the simulator separately from EOS. Install MuJoCo 3.16.0, copy [`.env.example`](../../.env.example) to the ignored `.env`, and set `MUJOCO_ROOT` there to its real installation directory. It must contain `include/mujoco/mujoco.h`, `lib/libmujoco.so`, `bin/compile`, and `bin/simulate`. CMake also needs C++20, protobuf, gRPC, and libjpeg.
