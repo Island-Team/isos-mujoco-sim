@@ -82,6 +82,10 @@ IsOS 保留 P01 诊断结构 `{code,path,message,id,version,stage}` 和 HTTP 422
 
 通用 `release.json` 字段（ID、版本、校验值、架构、源码、许可证、资源）遵循 IsOS 包契约。本包贡献新进程类型及保留的历史类型、`mujoco-v2` 适配器系列和 `sim-hardware` 节点集。包只拥有模拟器进程类型；相机、底盘、机械臂、门和 primitive 绑定类型仍归 EOS。实例的 `description` 描述配置好的实例；注册进程的 `NodeType.description` 描述可复用类型。缺少类型描述的旧版已验证 sidecar 继续使用兼容默认。
 
+### 原生 `0.1.1` 资源要求
+
+发布归档包含 CMake 安装后的 `bin/eos-mujoco-sim`，其中没有构建目录的绝对 `RPATH` 或 `RUNPATH`。`release.json` 资源中的 `libc` 是在原生构建主机测得的 `glibc>=主版本.次版本`，`tested_ubuntu` 是该主机的 Ubuntu 版本，`required_libraries` 是已安装程序解析出的、排序后的 SONAME 依赖闭包。在 Ubuntu 24.04 验收主机上，保守的 libc 要求是 `glibc>=2.39`。直接依赖和实际解析的 MuJoCo SONAME 必须恰好为 `libmujoco.so.3.16.0`，并位于所选 `MUJOCO_ROOT/lib` 下；缺失、版本不符或任何未解析库都会阻止归档生成。归档不包含外部 MuJoCo 库。IsOS 解析 `MUJOCO_ROOT`，并通过 `LD_LIBRARY_PATH` 将库目录传给 EOS 管理的模拟器子进程；图设置和包锁定均不嵌入构建主机路径。`required_libraries` 与 `tested_ubuntu` 描述已测原生目标，不代表未测试主机也兼容。
+
 ## 历史声明的兼容性
 
 历史已验证 sidecar 仅贡献 `eos.process.mujoco@v1.0`，缺少进程类型描述与选择器，且使用固定设备 ID 组合 `1.0.0` 图。读取方可为旧 sidecar 提供仅供目录显示的描述默认值，而不改变验证过的字节。当前构建工具同时输出两个进程类型及 `@v0.1` 七节点预设；IsOS 先接受并验证新描述符，再把该预设发布为图选项。其他包资源以后可使用 P03 选项机制；本版本不定义 `egia.tensor` 执行。

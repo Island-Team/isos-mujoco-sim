@@ -8,13 +8,17 @@ Build the simulator and stage a local `island/mujoco-sim@0.1.1` bundle:
 
 ```sh
 export MUJOCO_ROOT=/absolute/path/to/mujoco-3.16.0
+mkdir -p "$HOME/tmp"
+export TMPDIR="$HOME/tmp"
 cmake -S . -B build -DMUJOCO_ROOT="$MUJOCO_ROOT"
 cmake --build build -j
 ctest --test-dir build --output-on-failure
 python3 tests/node_contributions.py
-python3 tools/build-backend-bundle.py --output /absolute/path/to/mujoco-v2-bundle
+python3 tools/build-backend-bundle.py --build-dir build --mujoco-root "$MUJOCO_ROOT" --output /absolute/path/to/mujoco-v2-bundle
 isos pkg link island/mujoco-sim 0.1.1 /absolute/path/to/mujoco-v2-bundle --manifest /absolute/path/to/mujoco-v2-bundle/release.json
 ```
+
+Keep build and temporary directories on a filesystem with enough space, for example `TMPDIR=/home/you/tmp` and `--build-dir /home/you/build-mujoco`. The builder installs the executable through CMake, checks its installed ELF dependencies, and records the native Ubuntu, glibc and resolved library requirements in `release.json`. On Ubuntu 24.04 the asset claims `glibc>=2.39` and `tested_ubuntu:["24.04"]`; the archive has no build-host RUNPATH. Use `--mujoco-root "$MUJOCO_ROOT"` when the root is not exported to the builder. Inspect `readelf -d bin/eos-mujoco-sim` and the release asset before linking or publishing.
 
 The bundle contains an actual executable at `bin/eos-mujoco-sim`, the two
 supported scenes and their model assets, `backend-v2.json`, and a local schema v4 `release.json`. The builder writes a checksummed release archive beside the bundle. The descriptor

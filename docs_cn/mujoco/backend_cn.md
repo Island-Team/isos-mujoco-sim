@@ -8,13 +8,17 @@
 
 ```sh
 export MUJOCO_ROOT=/absolute/path/to/mujoco-3.16.0
+mkdir -p "$HOME/tmp"
+export TMPDIR="$HOME/tmp"
 cmake -S . -B build -DMUJOCO_ROOT="$MUJOCO_ROOT"
 cmake --build build -j
 ctest --test-dir build --output-on-failure
 python3 tests/node_contributions.py
-python3 tools/build-backend-bundle.py --output /absolute/path/to/mujoco-v2-bundle
+python3 tools/build-backend-bundle.py --build-dir build --mujoco-root "$MUJOCO_ROOT" --output /absolute/path/to/mujoco-v2-bundle
 isos pkg link island/mujoco-sim 0.1.1 /absolute/path/to/mujoco-v2-bundle --manifest /absolute/path/to/mujoco-v2-bundle/release.json
 ```
+
+构建目录与临时目录应放在空间充足的文件系统上，例如设置 `TMPDIR=/home/you/tmp` 和 `--build-dir /home/you/build-mujoco`。构建工具通过 CMake 安装程序，检查安装后的 ELF 依赖，并将原生 Ubuntu、glibc 和已解析库要求写入 `release.json`。在 Ubuntu 24.04 上，资源声明 `glibc>=2.39`、`tested_ubuntu:["24.04"]`，归档中没有构建主机的 RUNPATH。若构建工具未继承环境变量，用 `--mujoco-root "$MUJOCO_ROOT"` 显式指定根目录。链接或发布前检查 `readelf -d bin/eos-mujoco-sim` 以及清单中的资源要求。
 
 包中包含 `bin/eos-mujoco-sim`、两个场景及其资源、`backend-v2.json` 和本地 schema v4 `release.json`。构建工具还会在包目录旁生成带 SHA-256 校验值的发布归档。后端描述文件声明 `mujoco-v2` 协议、`cam-0`、`base-0`、`arm-0` 设备 ID，以及外部 MuJoCo 3.16.0 库依赖。IsOS 在运行前验证可执行文件、场景、资源和库；安装包本身不会启用部署图。
 

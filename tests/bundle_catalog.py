@@ -3,7 +3,9 @@
 
 import hashlib
 import json
+import os
 from pathlib import Path
+import platform
 import subprocess
 import sys
 import tarfile
@@ -17,12 +19,14 @@ EXPECTED = json.loads((ROOT / "tests/fixtures/scene_catalog/target-descriptor.js
 
 def main() -> None:
     binary = Path(sys.argv[1]).resolve()
+    mujoco_root = Path(sys.argv[2]).resolve()
     if binary.name != "eos-mujoco-sim" or not binary.is_file():
         raise SystemExit("expected built eos-mujoco-sim executable")
     with tempfile.TemporaryDirectory(prefix="mujoco-p02-bundle-") as temporary:
         output = Path(temporary) / "bundle"
         subprocess.run([sys.executable, str(ROOT / "tools/build-backend-bundle.py"),
-                        "--build-dir", str(binary.parent), "--output", str(output)],
+                        "--build-dir", str(binary.parent), "--output", str(output),
+                        "--mujoco-root", str(mujoco_root)],
                        check=True, capture_output=True, text=True)
         descriptor = json.loads((output / "backend-v2.json").read_text())
         assert descriptor == EXPECTED
@@ -34,6 +38,12 @@ def main() -> None:
             "eos.process.mujoco@v1.0", "eos.process.mujoco@v0.1"}
         assert len(contributions["node_sets"][0]["nodes"]) == 7
         asset = release["assets"][0]
+        assert asset["libc"] == f"glibc>={platform.libc_ver()[1]}", asset
+        ubuntu = next(line.split("=", 1)[1].strip('"') for line in
+                      Path("/etc/os-release").read_text().splitlines()
+                      if line.startswith("VERSION_ID="))
+        assert asset["tested_ubuntu"] == [ubuntu], asset
+        assert "libmujoco.so.3.16.0" in asset["required_libraries"], asset
         archive = output.parent / asset["name"]
         assert archive.stat().st_size == asset["size_bytes"]
         assert hashlib.sha256(archive.read_bytes()).hexdigest() == asset["sha256"]
@@ -54,6 +64,20 @@ def main() -> None:
                     assert asset.is_relative_to(output.resolve()), (scene["id"], reference)
                     assert asset.is_file(), (scene["id"], reference)
                     assert asset.relative_to(output).as_posix() in members, (scene["id"], reference)
+            relocated = Path(temporary) / "relocated"
+            tar.extractall(relocated, filter="data")
+        environment = os.environ.copy()
+        environment["LD_LIBRARY_PATH"] = str(mujoco_root / "lib") + (
+            ":" + environment["LD_LIBRARY_PATH"] if environment.get("LD_LIBRARY_PATH") else ""
+        )
+        environment["MUJOCO_ROOT"] = str(mujoco_root)
+        dynamic = subprocess.run(["readelf", "-d", str(relocated / "bin/eos-mujoco-sim")],
+                                 check=True, capture_output=True, text=True).stdout
+        assert "RUNPATH" not in dynamic and "RPATH" not in dynamic, dynamic
+        subprocess.run([sys.executable, str(ROOT / "tests/strict_socket.py"),
+                        str(relocated / "bin/eos-mujoco-sim"),
+                        str(relocated / "assets/scene.xml")],
+                       check=True, env=environment, timeout=90)
         print("P02 built bundle descriptor, contributions and archive pin: PASS")
 
 
