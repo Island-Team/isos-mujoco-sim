@@ -78,6 +78,10 @@ EGIA 连接已运行的 EOS，发现健康设备和版本化 primitive，并通�
 
 已发布的 v1.0.1 包及其生成的 EOS profile 属于旧路线。v2 中，IsOS 链接或安装精确的 `island/mujoco-sim@0.1.1` 包，检查可执行文件、场景、资源和外部 MuJoCo 库，并通过 `sim-hardware` 节点集应用共享图修订。EOS 读取该图，并将经校验的模拟器作为直接子进程启动。源码构建仍可用绝对场景与套接字路径直接运行。
 
+原生 `0.1.1` 发布中，CMake 在构建目录的 RUNPATH 中保留 `MUJOCO_ROOT/lib`，以便本地测试。打包时先用 `cmake --install` 安装到临时目录，检查安装后的程序，再复制进归档。安装后仍有绝对 RUNPATH、MuJoCo SONAME 不符、依赖未解析，或实际库不在选定 MuJoCo 根目录下，都会使打包失败。资源记录包含测得的 Ubuntu 与 glibc 版本以及解析出的 SONAME 依赖闭包。IsOS 在受管理启动时为选定的外部库设置 `LD_LIBRARY_PATH`；这是重定位边界。包集成测试将最终归档解压到另一目录，并在该环境下运行严格套接字路径。
+
+**原生发布证据，2026-11-03：** 在 Ubuntu 24.04 x86_64、glibc 2.39、`/home` 下的 MuJoCo 3.16.0 环境，`cmake -S . -B build-native -DMUJOCO_ROOT=<根目录>`、`cmake --build build-native -j4`、`TMPDIR=<home 临时目录> ctest --test-dir build-native --output-on-failure -j2`、`python3 tests/scene_catalog.py`、`python3 tests/node_contributions.py`、`python3 tests/release.py` 和 `git diff --check` 均通过。CTest 为 26/26，包含原生要求的反向用例，以及归档解压后使用与 IsOS 后端解析器一致的环境进行的异地严格套接字启动。`tools/build-backend-bundle.py --build-dir build-native --mujoco-root <根目录> --output logs/test/20261103-native-release-metadata/bundle` 生成的资源包含 `glibc>=2.39`、`tested_ubuntu:["24.04"]`、解析出的 SONAME 依赖闭包，归档 SHA-256 为 `eebf8f1e8267b8a766ae4c25dc657516a0b645bdf5867cef974d5535a67a383b`。安装后的 ELF 没有 RUNPATH/RPATH。`isos pkg verify <清单> <归档>` 在本机接受了精确归档。完整输出位于忽略 Git 的 `logs/test/20261103-native-release-metadata/`。发布前仍须另行完成干净的 IsOS/EOS 受管理回放。
+
 ## 时间与故障
 
 MuJoCo 以固定的 2 毫秒物理步长推进。重置将场景置于确定性的带种子初始状态并暂停实时推进。评测器可以推进有界步数、检查状态、评分，再恢复实时运行。可重复性要求相同的场景版本、种子、命令序列和步进安排；异步实时观察不保证确定性重放。

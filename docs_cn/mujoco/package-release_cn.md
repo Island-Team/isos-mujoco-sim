@@ -4,7 +4,9 @@
 
 ## Aether v2 节点候选包
 
-`tools/build-backend-bundle.py` 生成本地 `island/mujoco-sim@0.1.1` 后端包、schema v4 `release.json` 和带校验值的归档。`node_contributions` 声明一个由包提供的模拟器进程类型、`mujoco-v2` 适配器系列，以及 `sim-hardware` 节点集。节点集使用通用 EOS 相机、底盘、机械臂、门和 primitive 绑定类型，并添加 IsOS Vision 面板。每个硬件节点在设置中选择并固定 MuJoCo 适配器；通用类型不归该包所有。IsOS 在安装或链接时验证发布信息并展示节点；图预览与应用仍需操作员明确执行。`backend-v2.json` 继续单独描述可执行文件、场景、设备和 MuJoCo 库依赖。构建与验证步骤见 [后端指南](backend_cn.md)。
+`tools/build-backend-bundle.py` 生成本地 `island/mujoco-sim@0.1.1` 后端包、schema v4 `release.json` 和带校验值的归档。`node_contributions` 声明一个由包提供的模拟器进程类型、`mujoco-v2` 适配器系列，以及 `sim-hardware` 节点集。节点集使用通用 EOS 相机、底盘、机械臂、门和 primitive 绑定类型。每个硬件节点在设置中选择并固定 MuJoCo 适配器；通用类型不归该包所有。IsOS 在安装或链接时验证发布信息并展示节点；图预览与应用仍需操作员明确执行。`backend-v2.json` 继续单独描述可执行文件、场景、设备和 MuJoCo 库依赖。构建与验证步骤见 [后端指南](backend_cn.md)。
+
+原生 `0.1.1` 候选包先运行 CMake/CTest 门，再执行 `tools/build-backend-bundle.py --build-dir <构建目录> --mujoco-root "$MUJOCO_ROOT" --output <空目录>`。构建工具暂存 CMake 安装后的程序，并在归档前检查它。审核 `assets[0].libc`、`tested_ubuntu`、`required_libraries`、归档摘要以及解压后 `readelf -d bin/eos-mujoco-sim` 的输出。当前 Ubuntu 24.04 主机记录 `glibc>=2.39` 和精确的 MuJoCo 3.16.0 SONAME。归档程序通过 IsOS 受管理启动时的 `LD_LIBRARY_PATH` 使用外部 MuJoCo 库。干净的 IsOS 管理式重定位与停止回放通过之前，不发布候选包。
 
 ## 先前发布版本
 
