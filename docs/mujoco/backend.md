@@ -4,6 +4,8 @@
 
 [中文](../../docs_cn/mujoco/backend_cn.md)
 
+For a fresh local source install, set `MUJOCO_ROOT` and run `isos pkg install --source /absolute/path/to/isos-mujoco-sim --allow-source-build`. IsOS invokes this repository's executable `build.sh --output <empty-staging-directory>`, verifies `release.json` and `asset.tar.gz`, then installs the package. The package declares its process entrypoint and generic scene/device catalog; IsOS does not need a MuJoCo-specific launch path. Validate and Apply the node set, then explicitly Run or Restart the deployment. Installation alone does not change an active run.
+
 Build the simulator and stage a local `island/mujoco-sim@0.1.1` bundle:
 
 ```sh

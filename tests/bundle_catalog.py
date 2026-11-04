@@ -34,6 +34,15 @@ def main() -> None:
         assert (release["id"], release["version"], release["schema_version"]) == (
             "island/mujoco-sim", "0.1.1", 4)
         contributions = release["node_contributions"]
+        assert contributions["processes"] == [{
+            "node_type": "eos.process.mujoco@v0.1",
+            "entrypoint": "bin/eos-mujoco-sim",
+            "lifecycle_adapter": "mujoco-v2",
+            "resources": [{"setting": "scene", "kind": "scene",
+                           "descriptor": "package-resources.json"}],
+            "host_inputs": [{"name": "MUJOCO_ROOT", "kind": "directory",
+                             "library_dir": "lib", "required": True}],
+        }]
         assert {node["id"] for node in contributions["node_types"]} == {
             "eos.process.mujoco@v1.0", "eos.process.mujoco@v0.1"}
         assert len(contributions["node_sets"][0]["nodes"]) == 7
@@ -49,11 +58,17 @@ def main() -> None:
         assert hashlib.sha256(archive.read_bytes()).hexdigest() == asset["sha256"]
         with tarfile.open(archive, "r:gz") as tar:
             members = {member.name for member in tar.getmembers()}
-            assert {"backend-v2.json", "bin/eos-mujoco-sim", "assets/scene.xml",
+            assert {"backend-v2.json", "package-resources.json", "bin/eos-mujoco-sim", "assets/scene.xml",
                     "assets/scenes/navigation/scene.xml"} <= members
             assert "release.json" not in members
             assert all(not member.name.startswith("/") and ".." not in Path(member.name).parts
                        and (member.isfile() or member.isdir()) for member in tar.getmembers())
+            resources = json.load(tar.extractfile("package-resources.json"))
+            assert resources["schema_version"] == 1
+            assert {entry["id"] for entry in resources["resources"]} == {
+                "pick-place", "navigation", "cam-0", "base-0", "arm-0"}
+            assert {entry["device_kind"] for entry in resources["resources"]
+                    if entry["kind"] == "device"} == {"camera", "base", "manipulator"}
             for scene in descriptor["scenes"]:
                 scene_file = output / scene["path"]
                 references = [element.get("file") for element in ET.parse(scene_file).iter()

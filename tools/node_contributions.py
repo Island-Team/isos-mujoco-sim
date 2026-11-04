@@ -125,6 +125,15 @@ def contributions() -> dict:
     "only the graph-declared simulated devices."
   )
   return {
+    "processes": [{
+      "node_type": BACKEND,
+      "entrypoint": "bin/eos-mujoco-sim",
+      "lifecycle_adapter": "mujoco-v2",
+      "resources": [{"setting": "scene", "kind": "scene",
+                     "descriptor": "package-resources.json"}],
+      "host_inputs": [{"name": "MUJOCO_ROOT", "kind": "directory",
+                       "library_dir": "lib", "required": True}],
+    }],
     "node_types": [
       legacy,
       current,
