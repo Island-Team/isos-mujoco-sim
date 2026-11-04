@@ -2,7 +2,7 @@
 
 [English](../../docs/mujoco/q03-qualification.md)
 
-**状态：**归属方源码检查、Q03 final-17 选定源码重放及 Q04 final-5 合并后提交重放均已通过。独立 Q04 归档审查没有 P1/P2 发现；发布收尾和 `v0.1.1` 标签仍未完成。仿真器拥有场景加载、确定性复位、物理、渲染、私有套接字及基准评分。EOS 拥有机器人侧路由。基准真实状态不得通过 EOS、EGIA 或界面暴露。
+**状态：**归属方源码检查、Q03 final-17 选定源码重放及 Q04 final-5 合并后提交重放均已通过。独立 Q04 归档审查没有 P1/P2 发现。`v0.1.1` 标签已发布，后续五方发布资产重放通过了其既定 Q04/M5 关卡；详见[软件包发布记录](package-release_cn.md)和 [EOS Q04 验证记录](https://github.com/Island-Team/Island-eos/blob/master/docs_cn/island/q04-merged-qualification_cn.md)。仿真器拥有场景加载、确定性复位、物理、渲染、私有套接字及基准评分。EOS 拥有机器人侧路由。基准真实状态不得通过 EOS、EGIA 或界面暴露。
 
 **Q03 所有者初始基线（2026-11-03）：**已实现 `tests/q03_socket_bench.py`、私有 `benchmark-reset` 工具及失败路径单元测试。此处是本机直接套接字证据，不等同于跨仓库安装重放或发布批准。初次完整输出保留在 Git 忽略的 `logs/test/20261103-q03-mujoco/`；最终渲染器探针软件包保存在 `logs/test/20261103-q03-mujoco-review-final/`；无碰撞的逐请求原始样本及六份子进程日志保存在 `logs/test/20261103-q03-mujoco-review-final-2/`。
 
@@ -58,4 +58,4 @@ python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q
 
 后续封存的 Q03 `20261103-q03-selected-final-17` 归档仍固定软件包源码 `3bf8a50aa2100b3eb1758ea4795bdcdddb65391e`、发布文件 SHA-256 `591cd2ec454b659bbe97645811a6c928081045636e82e52b5b2f2dda3247b445` 和归档 SHA-256 `53f9fa5d9af4b92b74635fd22447a9f08450b89a19725b6d26b6bd5850a5be96`。冻结选择清单 SHA-256 为 `35dd4e5aa4c209bf84935002a4eded756f3eb5a1c147b2fb12bd5d894e46b78a`；精确选定的 EOS 源码 `219f031bae9dbfc9d9f53f62c910b9e235bb2138` 上的验证器对全部六组返回 `Q01_FULL_VERIFIED`。独立 EOS 审核位于 `logs/test/20261104-q03-final17-independent-audit/`：选定源码验证通过，而较新检出因测试工具摘要变化被拒。上文 final-15 记录保留为历史证据。
 
-Q04 `20261103-q04-merged-home-final-5` 的发布文件从已合并的 MuJoCo `master` `04b65882cd11b0aff8ce56473164691dbd662196` 重新构建。`release.json` 的 SHA-256 为 `c421039753c24ffc74658d6b1dfe5c9de6a1ed77b64df8fbaee77063da837096`，已安装归档的 SHA-256 为 `bb2862b01c3ccab8b68570e766a0ad26c8c5783b3c87cf99225eb0edb7a260f4`；冻结的外部选择清单 SHA-256 为 `7f5cefa5b6521d42d28b88c916679f2b668ba93fd61bbcbbfed4bb8fcc722b87`。IsOS 在干净主目录中验证并安装精确软件包；EOS 将仿真器作为直接子进程启动，产生真实相机帧和受治理的底盘结果，随后在子进程终止与回收之前确认物理 Stop。选定的 R06/A03 故障与重启案例通过，没有重放结果不明的运动。完整选定验证器返回 `Q01_FULL_VERIFIED`；独立归档评审检查了 3,630 个封存文件，没有 P1/P2 发现。原始收据、事件、子进程证明和命令保存在 EOS 中忽略 Git 的 `logs/test/20261103-q04-merged-home-final-5/`。这是本地模拟托管 Origin 的重放，不代表已发布 `v0.1.1` 软件包或公网 HTTPS 部署；发布收尾和标签仍未完成。
+Q04 `20261103-q04-merged-home-final-5` 的发布文件从已合并的 MuJoCo `master` `04b65882cd11b0aff8ce56473164691dbd662196` 重新构建。`release.json` 的 SHA-256 为 `c421039753c24ffc74658d6b1dfe5c9de6a1ed77b64df8fbaee77063da837096`，已安装归档的 SHA-256 为 `bb2862b01c3ccab8b68570e766a0ad26c8c5783b3c87cf99225eb0edb7a260f4`；冻结的外部选择清单 SHA-256 为 `7f5cefa5b6521d42d28b88c916679f2b668ba93fd61bbcbbfed4bb8fcc722b87`。IsOS 在干净主目录中验证并安装精确软件包；EOS 将仿真器作为直接子进程启动，产生真实相机帧和受治理的底盘结果，随后在子进程终止与回收之前确认物理 Stop。选定的 R06/A03 故障与重启案例通过，没有重放结果不明的运动。完整选定验证器返回 `Q01_FULL_VERIFIED`；独立归档评审检查了 3,630 个封存文件，没有 P1/P2 发现。原始收据、事件、子进程证明和命令保存在 EOS 中忽略 Git 的 `logs/test/20261103-q04-merged-home-final-5/`。这是本地模拟托管 Origin 的重放，不代表已发布 `v0.1.1` 软件包或公网 HTTPS 部署；在该关卡时，发布收尾和标签仍未完成。
