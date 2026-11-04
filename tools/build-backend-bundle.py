@@ -110,6 +110,17 @@ def main() -> None:
     shutil.copy2(ROOT / "LICENSE", bundle / "LICENSE")
     descriptor = descriptor_for_bundle(bundle)
     (bundle / "backend-v2.json").write_text(json.dumps(descriptor, indent=2) + "\n")
+    resources = {
+        "schema_version": 1,
+        "resources": [{key: scene[key] for key in
+                       ("id", "label", "description", "path", "sha256")}
+                      | {"kind": "scene"} for scene in descriptor["scenes"]]
+                     + [{key: device[key] for key in
+                         ("id", "label", "description", "scene_ids")}
+                        | {"kind": "device", "device_kind": device["kind"]}
+                        for device in descriptor["device_catalog"]],
+    }
+    (bundle / "package-resources.json").write_text(json.dumps(resources, indent=2) + "\n")
     arch = platform.machine()
     asset_name = f"mujoco-sim-v{PACKAGE_VERSION}-linux-{arch}.tar.gz"
     archive = bundle.parent / asset_name

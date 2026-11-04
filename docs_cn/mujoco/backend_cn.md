@@ -4,6 +4,8 @@
 
 [English](../../docs/mujoco/backend.md)
 
+从本地源码全新安装时，先设置 `MUJOCO_ROOT`，再运行 `isos pkg install --source /absolute/path/to/isos-mujoco-sim --allow-source-build`。IsOS 调用本仓库可执行的 `build.sh --output <空暂存目录>`，验证 `release.json` 和 `asset.tar.gz` 后安装包。包声明进程入口及通用场景和设备目录，IsOS 无需 MuJoCo 专用启动路径。随后验证并应用节点集，再明确运行或重启部署；仅安装包不会改变当前运行实例。
+
 先构建模拟器，再生成本地 `island/mujoco-sim@0.1.1` 包：
 
 ```sh
