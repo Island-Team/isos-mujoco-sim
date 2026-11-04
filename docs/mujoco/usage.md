@@ -39,6 +39,7 @@ Direct launch without `--managed-strict-socket` remains the legacy socket `2.0.0
 build/eos-mujoco-sim \
   --socket /tmp/eos-simulator.sock \
   --benchmark-socket /tmp/eos-benchmark.sock \
+  --v2-socket /tmp/eos-v2.sock \
   --scene "$PWD/assets/scenes/navigation/scene.xml" \
   --manual-step
 ```

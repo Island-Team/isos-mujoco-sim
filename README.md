@@ -44,6 +44,7 @@ Use `--scene navigation` for the navigation task or `--gui` to open a separate M
 build/eos-mujoco-sim \
   --socket /tmp/eos-simulator.sock \
   --benchmark-socket /tmp/eos-benchmark.sock \
+  --v2-socket /tmp/eos-v2.sock \
   --scene "$PWD/assets/scene.xml"
 ```
 
