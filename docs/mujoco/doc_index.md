@@ -8,6 +8,7 @@
 
 - [Usage](usage.md): build, direct launcher, scene viewer, current IsOS/EOS v2 graph setup, and verification.
 - [Package release](package-release.md): local v2 candidate and historical v1.0.1 package-center publication.
+- [Legacy caller audit](maintenance/legacy-caller-audit.md): retained direct-run and evaluator paths.
 - [Design](design.md): scene selection, engine ownership, EOS and EGIA boundaries, and package activation.
 - [Benchmarks](benchmarks.md): task catalog, agent evaluation method, provenance, and adding a scene.
 - [EOS simulator interface](interfaces/simulator.md): robot-facing private RPC consumed by EOS.
