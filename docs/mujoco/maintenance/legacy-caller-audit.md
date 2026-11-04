@@ -1,6 +1,6 @@
 # Legacy caller audit (2026-11-04)
 
-[中文](../../../docs_cn/mujoco/maintenance/legacy-caller-audit.md)
+[中文](../../../docs_cn/mujoco/maintenance/legacy-caller-audit_cn.md)
 
 The managed IsOS path uses the strict framed v2 socket. The following older paths still have callers, so they are retained.
 
