@@ -4,7 +4,7 @@
 
 ## `0.1.1` 发布版本 — 2026-11-04
 
-**状态：**`v0.1.1` 已从准确的二进制构建源码 `04b65882cd11b0aff8ce56473164691dbd662196` 发布。重新下载的公开清单与归档摘要均与下文选定值一致。独立的干净 IsOS 主目录测试已验证并安装公开软件包、选择场景和设备、应用图、将 EOS 启动至就绪，并确认 Stop 与子进程回收。公开版本的完整相机、控制、故障与重启重放仍属于单独的发布收尾检查。从较新的文档提交重新构建会产生新候选包，必须重新验证。
+**状态：**`v0.1.1` 已从准确的二进制构建源码 `04b65882cd11b0aff8ce56473164691dbd662196` 发布。重新下载的公开清单与归档摘要均与下文选定值一致。独立的干净 IsOS 主目录测试已验证并安装公开软件包、选择场景和设备、应用图、将 EOS 启动至就绪，并确认 Stop 与子进程回收。后续五方发布资产重放通过了既定 Q04/M5 关卡；具体范围与限制见下文。从较新的文档提交重新构建会产生新候选包，必须重新验证。
 
 **操作员可见变化。** IsOS 可以验证并安装 `island/mujoco-sim@0.1.1`，列出两个场景及可用的相机、底盘、机械臂设备，预览 `sim-hardware` 节点集，并对选定图执行 Validate/Apply。EOS 将已验证仿真器作为直接子进程启动，读取真实相机帧，经 Dispatcher 准入运动，并在终止和回收子进程前确认物理 Stop。选定的干净主目录运行还覆盖子进程故障、受治理重启、软件包与边拒绝，以及显式图迁移。[Q03 验证记录](q03-qualification_cn.md)及 [EOS Q04 重放记录](https://github.com/Island-Team/Island-eos/blob/master/docs_cn/island/q04-merged-qualification_cn.md)说明范围和原始证据。
 
@@ -46,9 +46,9 @@ git diff --quiet 04b65882cd11b0aff8ce56473164691dbd662196 HEAD -- . ':(exclude)d
 
 ### 发布后检查
 
-首次公开下载检查已通过：`sha256sum` 返回选定清单摘要 `c421039…` 和归档摘要 `bb2862…`；归档有 56 个安全成员，远端 `v0.1.1^{}` 解析到 `04b65882cd11b0aff8ce56473164691dbd662196`。独立的干净主目录测试使用重新下载的字节、IsOS `c45011f`、公开 EOS 候选源码 `a4b66d3` 与 MuJoCo 3.16.0；软件包验证／安装、`pick-place` 预览、Validate/Apply、受管就绪和确认 Stop／回收均通过。完整本机输出位于 `/home/ashex/q04t/mujoco-public-smoke/`。剩余相机、控制、故障与重启重放另行跟踪，完成前不得声称全部发布后资格已通过。
+首次公开下载检查已通过：`sha256sum` 返回选定清单摘要 `c421039…` 和归档摘要 `bb2862…`；归档有 56 个安全成员，远端 `v0.1.1^{}` 解析到 `04b65882cd11b0aff8ce56473164691dbd662196`。独立的干净主目录测试使用重新下载的字节、IsOS `c45011f`、公开 EOS 候选源码 `a4b66d3` 与 MuJoCo 3.16.0；软件包验证／安装、`pick-place` 预览、Validate/Apply、受管就绪和确认 Stop／回收均通过。完整本机输出位于 `/home/ashex/q04t/mujoco-public-smoke/`。这是首次使用已发布字节的初步测试。后续[五方发布资产重放](https://github.com/Island-Team/Island-eos/blob/master/docs_cn/island/q04-merged-qualification_cn.md)在干净 IsOS 主目录中使用已发布的 MuJoCo 归档，通过了发布资产的主路径、重启、迁移及 Stop 验证；另有单独封存的合并后提交六案例重放作为补充。发布关卡在其既定范围内已完成；发布资产重放没有呈现界面 Vision 帧，也没有测试公网 HTTPS Origin。
 
-已发布的 `v0.1.1` 包包含精确的 `release.json` 清单和 `mujoco-sim-v0.1.1-linux-x86_64.tar.gz` 归档。将两份资源下载到 `/home` 下的新目录，对照上文核对 SHA-256 和归档大小，并检查公开标签目标、清单 `source_commit`、许可证、归档布局、ELF 依赖与发布 URL。上述安装／就绪／Stop 初步测试已经通过。剩余的干净 IsOS 主目录重放须覆盖两个场景、相机和受治理运动、注入故障／重启、确认 Stop 与子进程回收。将下载字节和完整重放输出保存到 `logs/test/<run-id>/`。任何摘要或重放不同，均不得标记发布后资格完成。
+已发布的 `v0.1.1` 包包含精确的 `release.json` 清单和 `mujoco-sim-v0.1.1-linux-x86_64.tar.gz` 归档。将两份资源下载到 `/home` 下的新目录，对照上文核对 SHA-256 和归档大小，并检查公开标签目标、清单 `source_commit`、许可证、归档布局、ELF 依赖与发布 URL。上述安装／就绪／Stop 初步测试与后续 Q04/M5 发布资产重放，均已在各自记录的范围内通过。封存的 EOS `logs/test/20261104-public-five-assets-7/` 记录已发布资产字节、来源、现场观察、重启、迁移、Stop、独立评审及校验和清单。新的候选包或部署环境须使用新的运行 ID 重新验证。
 
 ```sh
 download=/home/ashex/release-candidates/mujoco-0.1.1-public
