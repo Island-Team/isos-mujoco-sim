@@ -39,10 +39,10 @@ assert required <= set(ids)
 for relative in (
     "docs/mujoco/interfaces/socket.md",
     "docs_cn/mujoco/interfaces/socket_cn.md",
-    "docs/mujoco/design.md",
-    "docs_cn/mujoco/design_cn.md",
-    "docs/mujoco/usage.md",
-    "docs_cn/mujoco/usage_cn.md",
+    "docs/mujoco/architecture.md",
+    "docs_cn/mujoco/architecture_cn.md",
+    "docs/mujoco/usage/README.md",
+    "docs_cn/mujoco/usage/README_cn.md",
 ):
     text = (ROOT / relative).read_text(encoding="utf-8")
     for token in ("strict-socket-v1", "--managed-strict-socket", "R05", "R06"):

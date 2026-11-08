@@ -1,6 +1,6 @@
 # MuJoCo 持有的模拟器套接字契约
 
-[English](../../../docs/mujoco/interfaces/socket.md) · [包描述符](package_cn.md) · [设计](../design_cn.md)
+[English](../../../docs/mujoco/interfaces/socket.md) · [包描述符](package_cn.md) · [设计](../architecture_cn.md)
 
 **所有权、标识与状态。** 本包拥有模拟器套接字协议；EOS 拥有客户端适配器和直接子进程生命周期。现有线协议为 `2.0.0`，与包或图版本独立。模拟器已实现下述分帧 Unix 套接字和操作。R05 管理模式检查 `node` 设备身份、按 `command_id` 去重并返回稳定错误码。R06 `strict-stop-v1` 所有者实现通过独立设计与实现审查，经 [PR #21](https://github.com/Island-Team/isos-mujoco-sim/pull/21) 合并；限定范围的跨所有者回放通过，更完整的 R06 验收仍待完成。EOS 通过内部 `mujoco-v2` 适配器系列作为唯一机器人侧调用方；EGIA、IsosUI 只调用 EOS。Benchmark RPC 独立且仅供评测器使用。旧 gRPC 模拟器套接字是保留的历史侧链，见英文 [simulator.md](../../../docs/mujoco/interfaces/simulator.md)。
 
@@ -125,4 +125,4 @@ EOS 从 IsOS 获得已验证的程序、场景和套接字，直接启动子进�
 {"version":"2.0.0","id":"stop-req-2","ok":false,"accepted":false,"base_stop":"stopped","arm_stop":"unknown","generation_id":"00112233445566778899aabbccddeeff","stop_epoch":"2","error":{"code":"stop_outcome_unknown","message":"arm stop outcome unknown"},"timestamp_ns":102000000,"sequence":51}
 ```
 
-R06 设计与负面样本见[固定用例](../../../tests/fixtures/strict_stop_lane/README.md)。经审查的 MuJoCo 所有者头 `212f757` 在 [PR #21](https://github.com/Island-Team/isos-mujoco-sim/pull/21) 于 `c171208` 合并前通过 24/24 项 CTest、十次排队入口期限回归，以及 R06 48 项和 R05 31 项样本检查。限定范围的 IsOS → EOS → MuJoCo 回放确认 pick-place 和 navigation 的双部件停止与清理，并将停止套接字丢失及子进程崩溃判为未知。[证据与可复现命令](../design_cn.md#r06-停止通道设计目标)记录精确范围。强制超时/KILL、GUI 不可用、过期或错误管道及崩溃恢复仍属于更完整的 R06 验收；此次包合并不发布 `0.1.1` 标签。
+R06 设计与负面样本见[固定用例](../../../tests/fixtures/strict_stop_lane/README.md)。经审查的 MuJoCo 所有者头 `212f757` 在 [PR #21](https://github.com/Island-Team/isos-mujoco-sim/pull/21) 于 `c171208` 合并前通过 24/24 项 CTest、十次排队入口期限回归，以及 R06 48 项和 R05 31 项样本检查。限定范围的 IsOS → EOS → MuJoCo 回放确认 pick-place 和 navigation 的双部件停止与清理，并将停止套接字丢失及子进程崩溃判为未知。[证据与可复现命令](../architecture_cn.md#r06-停止通道设计目标)记录精确范围。强制超时/KILL、GUI 不可用、过期或错误管道及崩溃恢复仍属于更完整的 R06 验收；此次包合并不发布 `0.1.1` 标签。

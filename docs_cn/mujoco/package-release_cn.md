@@ -10,7 +10,7 @@
 
 **兼容与迁移。** 此包采用 IsOS schema v4，面向图 `0.1.0` 和已注册的 `@v0.1` 类型。保留旧 `eos.process.mujoco@v1.0` 贡献供已验证的旧图读取；迁移须显式执行并检查修订。已发布的 `v1.0.1` 包使用退役图形态，属于另一版本。软件包要求操作员提供 MuJoCo 3.16.0 库；选定资产记录 Ubuntu 24.04、`glibc>=2.39` 和 x86_64。原生依赖规则见[软件包契约](interfaces/package_cn.md)。
 
-**发布后的安装或升级。** 将 `MUJOCO_ROOT` 指向已安装的 MuJoCo 3.16.0 目录，按下文验证已发布清单和归档，再按[后端指南](backend_cn.md)安装或链接精确的 `0.1.1` 软件包，选择场景和设备，执行 Validate/Apply，启动 EOS。已保存的旧图在操作员请求迁移前保持原字节。
+**发布后的安装或升级。** 将 `MUJOCO_ROOT` 指向已安装的 MuJoCo 3.16.0 目录，按下文验证已发布清单和归档，再按[后端指南](usage/isos-pkg_cn.md)安装或链接精确的 `0.1.1` 软件包，选择场景和设备，执行 Validate/Apply，启动 EOS。已保存的旧图在操作员请求迁移前保持原字节。
 
 **已知范围。** 此次验证使用本地模拟托管 Origin 和 Ubuntu 24.04 原生资产；不证明公网 HTTPS 部署、其他架构或发行版、物理机器人切换或高频执行器通道。MuJoCo 仍是外部运行时依赖。软件包不向 EOS 或 EGIA 暴露基准真实状态。
 
@@ -61,7 +61,7 @@ git ls-remote --tags origin refs/tags/v0.1.1
 
 ## Aether v2 节点候选包详情
 
-`tools/bundle.py` 生成本地 `island/mujoco-sim@0.1.2` 后端包、schema v4 `release.json` 和带校验值的归档。`node_contributions` 声明一个由包提供的模拟器进程类型、`mujoco-v2` 适配器系列，以及 `sim-hardware` 节点集。节点集使用通用 EOS 相机、底盘、机械臂、门和 primitive 绑定类型。每个硬件节点在设置中选择并固定 MuJoCo 适配器；通用类型不归该包所有。IsOS 在安装或链接时验证发布信息并展示节点；图预览与应用仍需操作员明确执行。`backend-v2.json` 继续单独描述可执行文件、场景、设备和 MuJoCo 库依赖。构建与验证步骤见 [后端指南](backend_cn.md)。
+`tools/bundle.py` 生成本地 `island/mujoco-sim@0.1.2` 后端包、schema v4 `release.json` 和带校验值的归档。`node_contributions` 声明一个由包提供的模拟器进程类型、`mujoco-v2` 适配器系列，以及 `sim-hardware` 节点集。节点集使用通用 EOS 相机、底盘、机械臂、门和 primitive 绑定类型。每个硬件节点在设置中选择并固定 MuJoCo 适配器；通用类型不归该包所有。IsOS 在安装或链接时验证发布信息并展示节点；图预览与应用仍需操作员明确执行。`backend-v2.json` 继续单独描述可执行文件、场景、设备和 MuJoCo 库依赖。构建与验证步骤见 [后端指南](usage/isos-pkg_cn.md)。
 
 原生 `0.1.2` 候选包先运行 CMake/CTest 门，再执行 `tools/bundle.py --build-dir <构建目录> --mujoco-root "$MUJOCO_ROOT" --output <空目录>`。构建工具暂存 CMake 安装后的程序，并在归档前检查它。审核 `assets[0].libc`、`tested_ubuntu`、`required_libraries`、归档摘要以及解压后 `readelf -d bin/eos-mujoco-sim` 的输出。当前 Ubuntu 24.04 主机记录 `glibc>=2.39` 和精确的 MuJoCo 3.3.1 SONAME。归档程序通过 IsOS 受管理启动时的 `LD_LIBRARY_PATH` 使用外部 MuJoCo 库。干净的 IsOS 管理式重定位与停止回放通过之前，不发布候选包。
 
