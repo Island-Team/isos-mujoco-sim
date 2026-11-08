@@ -30,4 +30,4 @@ hardware.close()
 
 **目标设计 — 尚未实现：** RoboCasa 进程节点将管理环境生命周期，EOS 硬件节点通过受控适配器绑定稳定目录 ID。IsOS 包和图组合随后对接该进程契约。当前 C++ 场景目录及 EOS 模拟器 protobuf 不描述此核心。
 
-验证：`PYTHONPATH=. .local/robocasa-venv/bin/python -m unittest discover -s tests -p 'robocasahardware.py' -v` 执行桩单元测试；`PYTHONPATH=. .local/robocasa-venv/bin/python tests/robocasareplay.py` 执行两次固定种子的 `CloseFridge` 硬件重放。
+保存命令及检查指定本地回合时，使用[记录与重放接口](robocasa-record_cn.md)。验证：`PYTHONPATH=. .local/robocasa-venv/bin/python -m unittest discover -s tests -p 'robocasahardware.py' -v` 执行桩单元测试；`PYTHONPATH=. .local/robocasa-venv/bin/python tests/robocasareplay.py` 执行两次固定种子的 `CloseFridge` 硬件重放。

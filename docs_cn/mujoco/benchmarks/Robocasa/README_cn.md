@@ -8,7 +8,7 @@
 
 RoboCasa [源码采用 MIT 许可](https://github.com/robocasa/robocasa/blob/main/LICENSE)；其 [README](https://github.com/robocasa/robocasa#license) 说明资源与数据集采用 CC BY 4.0。任务实现和成功规则位于上游 `robocasa/environments/kitchen/atomic/kitchen_doors.py`。[RoboCasa365 论文](https://robocasa.ai/assets/robocasa365_iclr26.pdf) 描述基准。再分发资源或结果时应保留资源署名。
 
-原有自行设计的抓取放置和导航任务仅作为历史模拟器兼容性测试场景，不再是当前基准。其私有 C++ 基准 RPC 仍不通过 EOS 或 EGIA 暴露。RoboCasa 在上游环境中运行；[Python 机器人硬件核心](../../interfaces/robocasa-hardware_cn.md)现已在进程内控制并观测 PandaOmron 机器人。EOS 代理控制仍需受控适配器，完成之前不能称为 EOS 端到端评测。
+原有自行设计的抓取放置和导航任务仅作为历史模拟器兼容性测试场景，不再是当前基准。其私有 C++ 基准 RPC 仍不通过 EOS 或 EGIA 暴露。RoboCasa 在上游环境中运行；[Python 机器人硬件核心](../../interfaces/robocasa-hardware_cn.md)在进程内控制并观测 PandaOmron 机器人，[本地记录](../../interfaces/robocasa-record_cn.md)可重放硬件命令以测试控制逻辑。EOS 代理控制仍需受控适配器，完成之前不能称为 EOS 端到端评测。
 
 ## 列出并选择任务
 
