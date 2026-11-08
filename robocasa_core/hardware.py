@@ -48,6 +48,10 @@ STATE_KEYS = {
   "end_effector_position_relative": "state.end_effector_position_relative",
   "end_effector_rotation_relative": "state.end_effector_rotation_relative",
 }
+STATE_SHAPES = {
+  "gripper_qpos": (2,), "base_position": (3,), "base_rotation": (4,),
+  "end_effector_position_relative": (3,), "end_effector_rotation_relative": (4,),
+}
 CAMERA_KEYS = {
   "agentview-left": "video.robot0_agentview_left",
   "agentview-right": "video.robot0_agentview_right",
@@ -95,7 +99,10 @@ class Hardware:
     for key, shape in ACTION_SHAPES.items():
       if key not in action or tuple(action[key].shape) != shape:
         raise HardwareError(f"unsupported RoboCasa action endpoint: {key}")
-    for key in (*STATE_KEYS.values(), *CAMERA_KEYS.values()):
+    for name, key in STATE_KEYS.items():
+      if key not in observation or tuple(observation[key].shape) != STATE_SHAPES[name]:
+        raise HardwareError(f"unsupported RoboCasa observation endpoint: {key}")
+    for key in CAMERA_KEYS.values():
       if key not in observation:
         raise HardwareError(f"unsupported RoboCasa observation endpoint: {key}")
     for key in CAMERA_KEYS.values():
@@ -173,7 +180,7 @@ class Hardware:
       if key not in observation:
         raise HardwareError(f"missing robot observation: {key}")
       value = np.asarray(observation[key])
-      if not np.issubdtype(value.dtype, np.number) or not np.all(np.isfinite(value)):
+      if value.shape != STATE_SHAPES[name] or not np.issubdtype(value.dtype, np.number) or not np.all(np.isfinite(value)):
         raise HardwareError(f"invalid robot observation: {key}")
       result[name] = value.copy()
     for name, key in CAMERA_KEYS.items():

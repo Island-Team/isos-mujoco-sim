@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 
 from robocasa_core import Hardware, HardwareError
-from robocasa_core.hardware import ACTION_SHAPES, CAMERA_KEYS, STATE_KEYS
+from robocasa_core.hardware import ACTION_SHAPES, CAMERA_KEYS, STATE_KEYS, STATE_SHAPES
 
 
 class Space:
@@ -21,13 +21,15 @@ class Spaces:
 class Environment:
   def __init__(self):
     self.action_space = Spaces({key: Space(shape) for key, shape in ACTION_SHAPES.items()})
-    self.observation_space = Spaces({key: Space((3,)) for key in STATE_KEYS.values()})
+    self.observation_space = Spaces({key: Space(STATE_SHAPES[name])
+                                     for name, key in STATE_KEYS.items()})
     self.observation_space.spaces.update({key: Space((8, 8, 3)) for key in CAMERA_KEYS.values()})
     self.actions = []
     self.closed = False
 
   def observation(self):
-    values = {key: np.zeros(3, dtype=np.float32) for key in STATE_KEYS.values()}
+    values = {key: np.zeros(STATE_SHAPES[name], dtype=np.float32)
+              for name, key in STATE_KEYS.items()}
     values.update({key: np.zeros((8, 8, 3), dtype=np.uint8) for key in CAMERA_KEYS.values()})
     values["annotation.human.task_description"] = "close fridge"
     values["success"] = True
@@ -55,6 +57,21 @@ class HardwareTests(unittest.TestCase):
     del self.env.action_space.spaces["action.base_motion"]
     with self.assertRaises(HardwareError):
       Hardware(self.env)
+
+  def test_catalog_rejects_wrong_state_shape(self):
+    self.env.observation_space.spaces["state.base_rotation"].shape = (3,)
+    with self.assertRaises(HardwareError):
+      Hardware(self.env)
+
+  def test_step_rejects_wrong_state_shape(self):
+    original = self.env.observation
+    def malformed():
+      observation = original()
+      observation["state.base_rotation"] = np.zeros(3, dtype=np.float32)
+      return observation
+    self.env.observation = malformed
+    with self.assertRaises(HardwareError):
+      self.hardware.step()
 
   def test_combines_groups_and_clears_pending(self):
     self.hardware.command_arm([.1, .2, .3], [-.1, 0, .1])
