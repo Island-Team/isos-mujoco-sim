@@ -41,8 +41,8 @@ for relative in (
     "docs_cn/mujoco/interfaces/socket_cn.md",
     "docs/mujoco/architecture.md",
     "docs_cn/mujoco/architecture_cn.md",
-    "docs/mujoco/usage/README.md",
-    "docs_cn/mujoco/usage/README_cn.md",
+    "docs/mujoco/usage/isos-pkg.md",
+    "docs_cn/mujoco/usage/isos-pkg_cn.md",
 ):
     text = (ROOT / relative).read_text(encoding="utf-8")
     for token in ("strict-socket-v1", "--managed-strict-socket", "R05", "R06"):

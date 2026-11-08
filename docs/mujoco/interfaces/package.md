@@ -23,7 +23,7 @@ The package build entrypoint is `build.sh --output <empty-absolute-directory>`. 
 
 `package-resources.json` has integer `schema_version:1` and `resources[]`. A scene resource requires `kind:"scene"`, a unique stable string `id`, nonblank `label` and `description`, a contained relative `path` to MJCF, and its lowercase SHA-256 `sha256`. A device resource requires `kind:"device"`, unique stable string `id`, nonblank `label` and `description`, `device_kind` (`camera`, `base`, or `manipulator`), and nonempty unique `scene_ids[]` referencing declared scene IDs. All fields are required and have no default. The generic IsOS selector reads this file; `backend-v2.json` remains the MuJoCo-specific EOS adapter contract and legacy descriptor.
 
-[中文](../../../docs_cn/mujoco/interfaces/package_cn.md) · [Socket](socket.md) · [Package release](../package-release.md)
+[中文](../../../docs_cn/mujoco/interfaces/package_cn.md) · [Socket](socket.md) · [Package release](../usage/isos-pkg.md#package-release-record)
 
 **Owner and status.** This repository owns the MuJoCo-specific `backend-v2.json` descriptor and `node_contributions` in its schema v4 `release.json`. IsOS owns the general release-manifest schema, [verified receipt and package admission](https://github.com/Island-Team/isos/blob/master/docs/isos/interfaces/package-verification.md), graph revision, and `/node-options` response. `tools/bundle.py` emits the P02 catalog and `@v0.1` contribution; IsOS semantic admission and the generic P03 option API are implemented in their owner repository; the pinned R05 replay verifies their use with this package. `backend-v2.json`, schema `2.0.0`, protocol name `mujoco-v2`, and socket wire `2.0.0` remain compatibility identities when the authored graph format is `0.1.0`.
 

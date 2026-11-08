@@ -23,7 +23,7 @@ schema v4 `release.json` 为 `eos.process.mujoco@v0.1` 增加 `node_contribution
 
 包的构建入口为 `build.sh --output <空的绝对目录>`。它要求 `MUJOCO_ROOT`，从本地源码构建，在输出目录写入 `release.json` 和 `asset.tar.gz`。清单中的摘要和大小覆盖归档的准确字节。安装不会激活图或重启运行实例。
 
-[English](../../../docs/mujoco/interfaces/package.md) · [套接字](socket_cn.md) · [包发布](../package-release_cn.md)
+[English](../../../docs/mujoco/interfaces/package.md) · [套接字](socket_cn.md) · [包发布](../usage/isos-pkg_cn.md#软件包发布记录)
 
 **所有权与状态。** 本仓库拥有 MuJoCo 专用 `backend-v2.json` 描述符和 schema v4 `release.json` 中的 `node_contributions`。IsOS 拥有通用发布清单 schema、[已验证收据与包准入](https://github.com/Island-Team/isos/blob/master/docs_cn/isos/interfaces/package-verification_cn.md)、图修订和 `/node-options` 响应。`tools/bundle.py` 已输出 P02 目录和 `@v0.1` 声明；IsOS 的语义准入及通用 P03 选项 API 已在其所有者仓库实现；固定版本的 R05 回放验证了本包的实际使用。即使新图格式为 `0.1.0`，描述符 schema、协议和套接字线协议 `2.0.0` 仍是独立兼容性标识。
 

@@ -1,6 +1,6 @@
 # IsOS MuJoCo simulator
 
-[中文](README_cn.md) · [First-run guide](docs/mujoco/usage/dev.md) · [Documentation map](docs/mujoco/doc_index.md)
+[中文](README_cn.md) · [First-run guide](docs/mujoco/usage/dev.md) · [Documentation overview](docs/mujoco/README.md)
 
 This repository has two runnable paths. The active benchmark is upstream RoboCasa365 `CloseFridge`, launched locally through its Python environment. The C++ MuJoCo simulator supplies a native development core and an IsOS/EOS package wrapper. Its pick-and-place and navigation scenes remain compatibility fixtures. EOS connects to the wrapper for robot-facing devices and primitives; a trusted evaluator alone uses its private benchmark socket. RoboCasa does not yet have an EOS adapter.
 
@@ -58,4 +58,4 @@ The GUI is 768 pixels wide by default. Set `[gui].width` in `config/benchmarks/r
 
 The local `island/mujoco-sim@0.1.2` candidate packages the C++ wrapper for an IsOS graph. Build a bundle, verify its manifest, link or install it in IsOS, then Validate, Apply, and Run the graph. EOS owns the simulator child and exposes ordinary device capabilities to agents. Follow the [managed backend guide](docs/mujoco/usage/isos-pkg.md) for the exact package and graph commands, readiness checks, logs, and stop procedure. The published `0.1.1` release used MuJoCo 3.16.0; these source instructions target 3.3.1.
 
-The [documentation map](docs/mujoco/doc_index.md) links the interfaces, source ownership, benchmark provenance, design, and verification records. [GitHub repository](https://github.com/Island-Team/isos-mujoco-sim).
+The [documentation overview](docs/mujoco/README.md) links the interfaces, source ownership, benchmark provenance, design, and verification records. [GitHub repository](https://github.com/Island-Team/isos-mujoco-sim).

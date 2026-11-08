@@ -2,7 +2,7 @@
 
 The `0.1.2` bundle below is a local development candidate using MuJoCo 3.3.1. It is not a published release; historical `0.1.1` evidence later on this page remains tied to MuJoCo 3.16.0.
 
-**Current implementation:** This page records the existing bundle and integration path. [Package descriptor and contributions](../interfaces/package.md) and [simulator socket](../interfaces/socket.md) are the owner-specific field contracts; [design](../architecture.md) and [TODO](../todo.md) distinguish the new 0.x target. The `v2` in a protocol or generated descriptor filename is retained for compatibility; this topic page has no version suffix.
+**Current implementation:** This page records the existing bundle and integration path. [Package descriptor and contributions](../interfaces/package.md) and [simulator socket](../interfaces/socket.md) are the owner-specific field contracts; [design](../architecture.md) and [TODO](../architecture.md#remaining-work) distinguish the new 0.x target. The `v2` in a protocol or generated descriptor filename is retained for compatibility; this topic page has no version suffix.
 
 [中文](../../../docs_cn/mujoco/usage/isos-pkg_cn.md)
 
@@ -84,3 +84,140 @@ An isolated IsOS home linked the previous `bundle-r3`, previewed `sim-hardware` 
 ## Package version 0.1.1 check (2026-10-31)
 
 `python3 tests/nodes.py`, `python3 tests/release.py`, and `ctest --test-dir build --output-on-failure` passed (10 simulator tests). `python3 tools/bundle.py --build-dir build --output logs/test/20261031-version-alignment/bundle` staged a bundle whose release and descriptor report package `0.1.1`. Descriptor schema and socket protocol remain `2.0.0`. Output is in ignored `logs/test/20261031-version-alignment/`.
+
+## IsOS and EOS deployment
+
+For the current IsOS/EOS path, build and link a local `island/mujoco-sim@0.1.2` bundle as described in the [backend guide](isos-pkg.md). The published v1.0.1 package uses the retired graph shape; its [release guide](isos-pkg.md#package-release-record) remains for historical installations. MuJoCo 3.3.1 is an operator-provided dependency; set `MUJOCO_ROOT` to the real installation before building the bundle and running the graph.
+
+```sh
+source .env
+python3 tools/bundle.py --build-dir build --mujoco-root "$MUJOCO_ROOT" --output /absolute/path/to/mujoco-v2-bundle
+isos init --mode dev
+isos pkg link island/mujoco-sim 0.1.2 /absolute/path/to/mujoco-v2-bundle --manifest /absolute/path/to/mujoco-v2-bundle/release.json
+isos pkg node-sets
+```
+
+Stage and select EOS and IsosUI builds with `isos build eos`, `isos version select eos <selector>`, `isos build isosui`, and `isos version select isosui <selector>`. A selector identifies one exact receipt; when multiple EOS builds share a commit, use its source fingerprint. `isos init` exits without starting services. Run `isos serve` in a terminal, preview the installed `sim-hardware` node set with `isos pkg preview-set` or the IsOS API, choose the scene and owner-only socket, then Validate and Apply the draft with the revision-checked IsOS interface. The IsosUI catalog editor is part of the later U01 workbench gate. The preset adds the EOS-owned simulator process, three generic hardware adapters, dispatcher bindings, and typed connections. IsOS preserves an authored graph until the operator applies the new revision.
+
+**P02 package catalog and IsOS selection.** The bundle builder now emits the `0.1.0` catalog descriptor and seven-node `@v0.1` preset with stable `scene`, `camera_device`, `base_device` and `manipulator_device` parameters. Build and inspect the bundle with `python3 tools/bundle.py --build-dir build --mujoco-root "$MUJOCO_ROOT" --output <empty-directory>`; `backend-v2.json` contains two scene IDs, their labels, profiles and SHA-256 values, plus the three device descriptions and scene support lists. After P01 verifies the exact `island/mujoco-sim@0.1.2` receipt, the IsOS P02/P03 slices expose available IDs, Validate and Apply the selected scene and devices against the current saved revision, and retain unavailable saved IDs for correction. A scene edit creates a new saved revision; Restart is required to replace the EOS-owned child. See the [P02 package contract](../interfaces/package.md#p02-descriptor-extension) and [negative fixtures](../../../tests/fixtures/scene_catalog/negative-cases.json).
+
+Run `isos run` in another terminal to start the applied deployment. IsOS preflights the exact package, assets, scene, MuJoCo library, EOS executables, sockets, and ports before starting graph children. EOS starts the simulator as its direct child. The scoped R06 replay proved physical stop ordering for pick-place and navigation; broader failure qualification remains open. `isos deployment stop` stops the deployment only; `isos stop` shuts down the manager, API, UI, deployment, and independent IsOS services. EGIA uses EOS's normal agent interface and never connects to the private benchmark socket. The service manager for model-like processes is separate from this hardware graph.
+
+**R05 managed readiness, scoped qualified:** after Apply, EOS launches the verified child in strict mode and probes `health` for every graph-declared camera, base and arm device. It requires `version:"2.0.0"`, the echoed request ID, `ok:true`, `accepted:true` and `features` containing `strict-socket-v1`. Treat a socket file or process startup line as progress, not readiness. A missing feature, wrong device, failed camera render or exited child leaves the backend unavailable; inspect the current run's first failure event. The pinned cross-owner replay passed this path for pick-place and navigation, including read-only capture and observations. At that R05 baseline, the EOS catalog exposed only `safety.estop` for MuJoCo and withheld `base.velocity` and `arm.movej`; the R06 replay below subsequently exercised governed movement and stop. The R05 replay itself released no managed movement. See the [qualification](../architecture.md#r05-cross-owner-qualification).
+
+To verify the simulator owner slice directly, start `build/eos-mujoco-sim --managed-strict-socket --v2-socket /absolute/private/run/strict.sock --scene "$PWD/assets/scene.xml"` in a private directory and send a framed `health` request with `node:"base-0"`. The response must echo the ID and include `ok:true`, `accepted:true` and `strict-socket-v1`. Managed launch rejects `--socket` and `--benchmark-socket`; direct launch without the flag continues to support them. `ctest --test-dir build -R 'strict-socket|strict-capacity|v2-socket' --output-on-failure` replays the owner checks, including full retention capacity.
+
+For a P02 catalog failure, inspect the unavailable scene/device reason and the first package or Apply failure event before changing the draft. A changed linked asset requires explicit relink under the P01 receipt rule. A missing `MUJOCO_ROOT` library blocks launch readiness; a scene/profile mismatch blocks Apply. The graph and running child retain their prior revisions on these failures.
+
+Stop through `isos deployment stop` after inspecting the result and current run logs. R05 adds strict identity and retransmission protection; the merged R06 companion lane and scoped replay proved separate base/arm acknowledgment before simulator termination and reap for both scenes. An `accepted:true` reply alone is never evidence of confirmed safe stop; inspect EOS's selected terminal receipt and IsOS's final outcome.
+
+**R06 scoped first-use behavior:** the reviewed `strict-stop-v1` owner implementation merged in [PR #21](https://github.com/Island-Team/isos-mujoco-sim/pull/21), and a real pick-place/navigation IsOS → EOS → MuJoCo replay exercised governed movement and stop. With exact verified owner builds, use the same Validate/Apply/Run path. The managed child derives an owner-only companion socket at the main socket path plus `.stop`; no graph field is added. Check that `health` for each actuator reports both `strict-socket-v1` and `strict-stop-v1` and that EOS probes the companion stop socket before its catalog offers `base.velocity` or `arm.movej`. EOS sends the matching 32-character `generation_id` from both health paths and `stop_epoch:"0"` with the first bounded managed movement and sends the current proved epoch with later movements; a stale **new** command fails `stop_fenced`, while an identical old command ID returns its stored R05 result. Submit the movement through EOS, then use EOS/IsOS stop while a movement or capture is active. EOS sends governed stops with that generation ID to the companion socket. A delayed request from an old child fails `stale_generation`. Its strict `stop` response must echo its request ID and contain `base_stop:"stopped"`, `arm_stop:"stopped"`, the matching `generation_id`, a nonempty decimal-string `stop_epoch`, `ok:true`, and `accepted:true`; EOS must validate that proof before terminating and reaping its direct child, then publish the selected terminal receipt only after cleanup. The values are defined in the [socket contract](../interfaces/socket.md#r06-managed-stop-contract): status strings are unitless proof states, while `stop_epoch` is a child-local ordering counter used as a movement precondition. A missing/unknown status, timeout, child crash or `stop_outcome_unknown` means safe stop is unconfirmed; inspect the first correlated failure event and the EOS journal, then verify bounded child and both socket paths are cleaned up. Do not infer physical stop from process exit or `accepted` alone. The scoped replay confirmed both stop parts, matching generation and epoch `1`, and no surviving child/group/socket; lost stop socket and child crash remained unknown. See the [R06 evidence](../architecture.md#r06-owner-merge-and-scoped-cross-owner-replay). Forced timeout/KILL, GUI unavailability, stale or wrong pipe, and crash recovery still require broader R06 qualification before full M3 control is claimed.
+
+The v2 package permits `MUJOCO_GUI=1` in the simulator node's `settings.env`. It opens a live X11 view from the same simulator engine used by the v2 socket. The standalone `--gui` launcher below opens a separate static MuJoCo viewer instead. See [backend.md](isos-pkg.md) for the node and socket contracts.
+
+## Package release record
+
+## Island package release
+
+[中文](../../../docs_cn/mujoco/usage/isos-pkg_cn.md#软件包发布记录)
+
+## `0.1.1` release — 2026-11-04
+
+**Status:** `v0.1.1` is published from the exact binary build source `04b65882cd11b0aff8ce56473164691dbd662196`. Fresh public downloads match the selected manifest and archive hashes below. A focused clean IsOS home verified and installed the public package, selected the scene and devices, applied the graph, launched EOS to ready, and confirmed Stop and child reap. The later five-owner released-asset replay passed its stated Q04/M5 gate, with the scope and limits recorded below. Rebuilding from a later documentation commit produces a different candidate and requires new verification.
+
+**Operator-visible changes.** IsOS can verify and install `island/mujoco-sim@0.1.1`, list its two scenes and available camera, base and manipulator devices, preview the `sim-hardware` node set, and Validate/Apply the selected graph. EOS launches the verified simulator as its direct child, reads real camera frames, admits movement through Dispatcher and confirms physical Stop before child termination and reap. The selected clean-home run also exercised a child fault, governed restart, package and edge rejection, and explicit graph migration. The [Q03 qualification record](../architecture.md#final-selected-source-and-merged-head-archive-evidence-2026-11-04) and [EOS Q04 replay record](https://github.com/Island-Team/Island-eos/blob/master/docs/island/q04-merged-qualification.md) describe the scope and raw evidence.
+
+**Compatibility and migration.** This is an IsOS schema v4 backend package for graph `0.1.0` and registered `@v0.1` types. The old `eos.process.mujoco@v1.0` contribution remains for verified legacy reads; migration is explicit and revision checked. The published `v1.0.1` package uses the retired graph shape and is a separate release. The package requires an operator-provided MuJoCo 3.16.0 library; the selected asset records Ubuntu 24.04, `glibc>=2.39`, and x86_64. The [package contract](../interfaces/package.md#native-011-asset-requirements) owns the native dependency rules.
+
+**Install or upgrade after publication.** Set `MUJOCO_ROOT` to the installed MuJoCo 3.16.0 tree, verify the published manifest and archive as below, then use the [backend guide](isos-pkg.md) to install or link the exact `0.1.1` package, select a scene and devices, Validate/Apply, and start EOS. A saved legacy graph is read without changing its bytes until the operator requests migration.
+
+**Known limits.** This qualification used a local simulated hosted Origin and the native Ubuntu 24.04 asset. It does not establish a public HTTPS deployment, another architecture or distribution, a physical robot cutover, or a high-rate actuator channel. MuJoCo remains an external runtime dependency. The package does not expose benchmark truth to EOS or EGIA.
+
+### Exact published bytes and candidate checks
+
+The frozen Q04 final-5 candidate was built from source commit `04b65882cd11b0aff8ce56473164691dbd662196`. Its selected **input** `release.json` SHA-256 is `c421039753c24ffc74658d6b1dfe5c9de6a1ed77b64df8fbaee77063da837096`; the archive is 8,797,162 bytes with SHA-256 `bb2862b01c3ccab8b68570e766a0ad26c8c5783b3c87cf99225eb0edb7a260f4`. The IsOS-installed manifest is a separate byte stream and is not the publication input. Current remote `master` contains later documentation only; `v0.1.1` peels to the exact build source, as required by IsOS package provenance. The newly created tag was initially placed on the documentation descendant and corrected immediately after publication; the manifest and archive bytes did not change. Any non-documentation change requires a new build, manifest, digest and clean-home replay.
+
+With the candidate copied from the sealed Q04 `live/package-input/` directory into an operator-owned directory under `/home`, run and retain the output of:
+
+```sh
+candidate=/home/ashex/release-candidates/mujoco-0.1.1
+test "$(sha256sum "$candidate/release.json" | cut -d' ' -f1)" = c421039753c24ffc74658d6b1dfe5c9de6a1ed77b64df8fbaee77063da837096
+test "$(sha256sum "$candidate/asset.tar.gz" | cut -d' ' -f1)" = bb2862b01c3ccab8b68570e766a0ad26c8c5783b3c87cf99225eb0edb7a260f4
+test "$(stat -c %s "$candidate/asset.tar.gz")" = 8797162
+python3 - "$candidate/release.json" <<'PY'
+import json, sys
+release = json.load(open(sys.argv[1], encoding="utf-8"))
+asset = release["assets"][0]
+assert (release["id"], release["version"], release["source_commit"]) == ("island/mujoco-sim", "0.1.1", "04b65882cd11b0aff8ce56473164691dbd662196")
+assert (asset["sha256"], asset["size_bytes"], asset["libc"], asset["tested_ubuntu"]) == ("bb2862b01c3ccab8b68570e766a0ad26c8c5783b3c87cf99225eb0edb7a260f4", 8797162, "glibc>=2.39", ["24.04"])
+assert "libmujoco.so.3.16.0" in asset["required_libraries"]
+PY
+mkdir -p "$candidate/inspect"
+tar -xzf "$candidate/asset.tar.gz" -C "$candidate/inspect"
+readelf -d "$candidate/inspect/bin/eos-mujoco-sim"
+test -z "$(readelf -d "$candidate/inspect/bin/eos-mujoco-sim" | rg 'RPATH|RUNPATH')"
+git diff --quiet 04b65882cd11b0aff8ce56473164691dbd662196 HEAD -- . ':(exclude)docs/**' ':(exclude)docs_cn/**'
+```
+
+The last command compares the reviewed build source with the current documentation descendant; the published tag itself resolves to the build source. Review `readelf` and the manifest's full sorted `required_libraries` list against the target host, and keep the selected EOS [full offline verifier command](https://github.com/Island-Team/Island-eos/blob/master/docs/island/q04-merged-qualification.md) and its `Q01_FULL_VERIFIED` output with the release record. CMake/CTest (26/26) and the 3,630-file archive review are recorded there. The selected Q04 asset must be uploaded unchanged; a fresh build with a later stamped `source_commit` is a new candidate even if its tests pass.
+
+The documentation review reran `git ls-files -z '*.cc' '*.cpp' '*.h' '*.hpp' | xargs -0 -r clang-format --dry-run --Werror`, `cmake -S . -B logs/test/20261104-q04-release-notes/build -DMUJOCO_ROOT=<MuJoCo 3.16.0 root>`, `cmake --build logs/test/20261104-q04-release-notes/build -j4`, and `ctest --test-dir logs/test/20261104-q04-release-notes/build --output-on-failure` on the reviewed master base: formatting passed and CTest passed 26/26. The R05/R06 fixture matrices passed 31/48 cases, five node-contribution tests passed, local document links passed, and the copied selected manifest/archive/ELF checks above passed. Complete local output is ignored by Git under `logs/test/20261104-q04-release-notes/`; this rerun checks the current source, while the frozen Q04 archive remains the exact release candidate.
+
+### Postpublication checks
+
+The first public download check passed: `sha256sum` returned the selected `c421039…` manifest and `bb2862…` archive digests, the archive had 56 safe members, and remote `v0.1.1^{}` resolved to `04b65882cd11b0aff8ce56473164691dbd662196`. An independent clean-home smoke used those downloaded bytes with IsOS `c45011f`, public EOS candidate `a4b66d3`, and MuJoCo 3.16.0; package verification/install, `pick-place` preview, Validate/Apply, managed readiness and confirmed Stop/reap passed. The complete local output is under `/home/ashex/q04t/mujoco-public-smoke/`. That was the initial published-byte smoke. The later [five-owner released-asset replay](https://github.com/Island-Team/Island-eos/blob/master/docs/island/q04-merged-qualification.md#seventh-attempt-published-owner-assets-2026-11-04-approved) used the published MuJoCo archive in a clean IsOS home and passed its released-asset main, Restart, migration, and Stop profile. It complements the separately sealed merged-head six-case replay. The release gate is complete for that stated scope; the published-asset replay did not render a UI Vision frame or exercise public HTTPS Origin.
+
+The published `v0.1.1` release contains the exact manifest as `release.json` and archive as `mujoco-sim-v0.1.1-linux-x86_64.tar.gz`. Download both into a fresh directory under `/home` and compare their SHA-256 and archive size with the values above; inspect the public tag target, manifest `source_commit`, license, archive layout, ELF dependencies and release URLs. The focused install/readiness/Stop smoke above and the later Q04/M5 released-asset replay have passed for their documented scopes. The sealed EOS run `logs/test/20261104-public-five-assets-7/` records the published asset bytes, provenance, live observations, Restart, migration, Stop, independent review, and checksum manifest. Use a new run ID and fresh verification for any new candidate or deployment environment.
+
+```sh
+download=/home/ashex/release-candidates/mujoco-0.1.1-public
+mkdir -p "$download"
+gh release download v0.1.1 --repo Island-Team/isos-mujoco-sim --dir "$download" --pattern release.json --pattern mujoco-sim-v0.1.1-linux-x86_64.tar.gz
+sha256sum "$download/release.json" "$download/mujoco-sim-v0.1.1-linux-x86_64.tar.gz"
+stat -c '%s %n' "$download/mujoco-sim-v0.1.1-linux-x86_64.tar.gz"
+git ls-remote --tags origin refs/tags/v0.1.1
+```
+
+## Aether v2 node candidate details
+
+`tools/bundle.py` stages the local `island/mujoco-sim@0.1.2` backend, a schema v4 `release.json`, and a checksummed archive. Its `node_contributions` declares one package-owned simulator process type, the `mujoco-v2` adapter family, and the `sim-hardware` node set. The set uses generic EOS camera, base, manipulator, gate, and primitive binding types. Each hardware node selects and pins the MuJoCo adapter in its settings; the package does not own those generic types. IsOS verifies the release and lists the nodes after install or link; graph preview and apply remain explicit operator actions. The backend descriptor still owns executable, scene, device, and MuJoCo library metadata. See the [backend guide](isos-pkg.md) for build and validation steps.
+
+For the native `0.1.2` candidate, run the CMake/CTest gates first, then invoke `tools/bundle.py --build-dir <build> --mujoco-root "$MUJOCO_ROOT" --output <empty directory>`. The builder stages the CMake-installed executable and inspects it before archiving. Review `assets[0].libc`, `tested_ubuntu`, `required_libraries`, archive digest, and an extracted archive's `readelf -d bin/eos-mujoco-sim` output. The Ubuntu 24.04 host currently records `glibc>=2.39` and the exact MuJoCo 3.3.1 SONAME. The archived executable relies on IsOS's managed `LD_LIBRARY_PATH` for the external MuJoCo library. Do not publish a candidate until a clean IsOS-managed relocation and stop replay passes.
+
+## Earlier published release
+
+Version 1.0.1 is published as a GitHub Release and in the Island package-center catalog for `island/mujoco-sim`. The older v0.1.0 entry remains in the legacy catalog schema; v1.0.1 uses an IsOS schema v4 manifest.
+
+`tools/release.py` assembles a local candidate for the curated
+Island package center. It runs the existing CTest suite, stages the simulator
+binary, scene assets, license files, and EOS configuration templates, then
+measures the exact archive size and SHA-256 digest. It does not upload or
+publish a release.
+
+Build on each target machine separately. Supply the minimum glibc version
+established for that binary and only Ubuntu versions actually tested there:
+
+```sh
+python3.12 tools/release.py \
+  --version 1.0.1 \
+  --build-dir build \
+  --eos-root ../Island-eos \
+  --output /home/ashex/release-candidates/island-mujoco-legacy \
+  --glibc-min 2.35 \
+  --tested-ubuntu 24.04
+```
+
+The archive contains `bin/eos-mujoco-sim` as a launcher. It requires an
+operator-provided MuJoCo 3.16.0 installation and `MUJOCO_ROOT` pointing at its
+root directory. The archive includes neither the MuJoCo library nor EOS. The
+candidate manifest lists all SONAMEs reported by `ldd`; `isos packages doctor`
+checks them before installation. Review the full list and the actual target
+machine before approval.
+
+The builder writes `island-release.<arch>.draft.json` using IsOS release schema v4. Its `assets` entry records the tested Linux architecture and minimum glibc, while `source_commit`, SHA-256, and byte size identify the exact source and archive. Build each target natively, review both drafts and assets, and combine only qualified target entries into the final `island-release.json` uploaded with the GitHub `v1.0.1` release. Do not claim an architecture or Ubuntu version that was not tested.
+
+The activation bundle contains `module.toml`, `eos.toml`, and `binding.toml` from the current EOS layout. IsOS installs the backend but stages activation until `isos config apply`; it never edits an operator's active deployment on download. The generated EOS module launches the packaged `eos-mujoco-sim` with sockets under the deployment run directory. MuJoCo 3.16.0 remains an operator-provided dependency. Set `MUJOCO_ROOT` in the IsOS-managed EOS node's `launch.env` so EOS passes the MuJoCo installation root to the child simulator process.
+
+After uploading, verify the release source, asset bytes, licenses, digest, requirements, and EOS behavior. A member's submission needs an independent reviewer before publication; a developer can publish a complete manifest directly. A changed binary needs a new version.
+
+To inspect archive layout without claiming qualification, pass `--skip-tests`. Do not submit that candidate for approval.

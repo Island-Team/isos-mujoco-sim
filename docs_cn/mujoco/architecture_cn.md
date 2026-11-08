@@ -87,3 +87,105 @@ EGIA 连接已运行的 EOS，发现健康设备和版本化 primitive，并通�
 MuJoCo 以固定的 2 毫秒物理步长推进。重置将场景置于确定性的带种子初始状态并暂停实时推进。评测器可以推进有界步数、检查状态、评分，再恢复实时运行。可重复性要求相同的场景版本、种子、命令序列和步进安排；异步实时观察不保证确定性重放。
 
 缺少或无效的场景、必要元素缺失或套接字不可用都会导致启动失败。不可用设备与命令通过 EOS 面向机器人的接口报错。benchmark 服务在 `StateResponse.ok` 和 `error` 中报告重置或步进错误。与当前场景无关的真实状态字段不能用作代理输入，也不能推断为目标。
+
+## 旧实现调用者核查（2026-11-04）
+
+[English](../../docs/mujoco/architecture.md#legacy-caller-audit)
+
+IsOS 受管理路径使用严格模式的 v2 帧套接字。以下旧路径仍有调用者，因此保留。
+
+| 候选项 | 构建、运行时或测试调用者 | 结论 |
+|---|---|---|
+| `src/isos/service.cpp`、`src/isos/service.h`、`proto/simulator.proto` | `src/isos/main.cpp` 调用 `Serve`；直接启动的 `launch.sh` 传入 `--socket` 与 `--benchmark-socket`；`tests/smoke.sh`、`tests/eval.py` 和 `smoke-rpc` 检查 gRPC 路径。EOS 也保存 simulator proto。 | 保留直接运行兼容性及已发布 proto。受管理严格模式禁止两个旧监听器。 |
+| `proto/benchmark.proto`、`benchmark-eval` | 可信的直接运行评测器调用 Reset、Step 和评分 RPC；`tests/eval.py` 覆盖此路径。 | 保留，仅供评测器使用。 |
+| `benchmark-reset` | `tests/q03bench.py` 使用此私有工具进行确定性种子重置；Q03 验证命令也指定该目标。 | 在基准工具有替代实现前保留。 |
+| 直接模式的 `--v2-socket` | `tests/v2.py` 与 Q03 工具覆盖该路径；直接运行时可与历史监听器共存。 | 保留。README 和英文用法示例现列出三个不同的套接字。 |
+
+上述候选项均非无调用者实现。IsOS 受管理子进程仍通过 `--managed-strict-socket` 启动，仅使用所有者可访问的 v2 与伴随停止套接字。
+
+## 当前基线
+
+- 命令：`eos-mujoco-sim --help` 列出直接运行的 `--socket`、`--benchmark-socket`、可选 `--v2-socket` 与 `--managed-strict-socket`；`launch.sh`/`kill.sh` 持有独立进程；`benchmark-eval` 仅供评测器使用。
+- 安装：`CMakeLists.txt` 只将 `eos-mujoco-sim` 安装到 `bin`。`tools/bundle.py` 生成独立的 IsOS 包；CMake 不安装测试及基准工具。
+- 接口：直接运行的历史 gRPC simulator 与 benchmark 套接字仍为私有路径；受管理路径仅开放 v2 帧套接字和派生的 `.stop` 伴随套接字。精确请求与响应契约见 `docs/mujoco/interfaces/socket.md`。
+- 图版本：`tools/nodes.py` 输出七个 `@v0.1` 注册类型；`tools/catalog.py` 输出 catalog `0.1.0`。IsOS 持有编写图的版本与持久化；模拟器不修改已应用图。
+
+## 后续工作
+
+## MuJoCo 0.1.1 集成 TODO
+
+实施跟踪见 [MuJoCo 包 0.1.1](https://github.com/Island-Team/isos-mujoco-sim/milestone/1)，并纳入共享 [M2 已验证输入](https://github.com/Island-Team/Island-eos/milestone/2)、[M3 受治理执行](https://github.com/Island-Team/Island-eos/milestone/3) 和 [M5 集成验收](https://github.com/Island-Team/Island-eos/milestone/5)。下列步骤按依赖顺序完成。
+
+[English](../../docs/mujoco/architecture.md#remaining-work) · [设计](architecture_cn.md) · [套接字契约](interfaces/socket_cn.md)
+
+**进度，2026-11-02：** 第 2 项已在固定版本的 MuJoCo、EOS 和 IsOS 上通过限定范围的 R05 所有者验收；详见[跨所有者证据](architecture_cn.md#r05-跨所有者验收)。第 3 项的 MuJoCo 所有者停止通道已在 [PR #21](https://github.com/Island-Team/isos-mujoco-sim/pull/21) 合并，限定范围的实时运动/停止回放通过；强制超时/KILL、GUI 不可用、过期或错误管道、崩溃恢复及完整 R06 验收仍待完成。第 4–5 项的完整日志和发布验收也仍待完成。两次限定范围的结果均不意味着已发布 `v0.1.1` 标签。
+
+1. 为贡献的进程类型及其场景设置增加非空描述和选择器元数据。只有 IsOS/EOS 目录读取方支持后才发布 `@v0.1` 类型；保留 `@v1.0` 别名和已安装 schema-v4 包身份。描述符选项必须来自已验证场景/设备资源。
+2. 增加受管理的严格套接字启动与健康特性确认，同时保留直接启动的旧 `2.0.0` 语义。在严格模式下检查套接字 `node` 模拟器设备 ID 与操作/设备匹配，并在 EOS 检查图到设备的映射、有限有类型输入、向后兼容的稳定错误码、有界请求 ID。按 `(node, command_id)` 实现幂等，拒绝冲突重放并限制保留量。保持分帧格式与线协议 `2.0.0` 不变。
+3. Stop 可抢占进行中的运动或慢速拍摄，遵守有限期限，并确认底盘与机械臂；EOS 必须在终止子进程前停止已准入执行器。测试相同传输重发、结果不确定时不自动重放、重复运动、冲突重放、不支持的节点/设备、损坏或超长帧、GUI 不可用、子进程崩溃和清理。
+4. 按共享格式记录经净化的 JSONL 启动、就绪、故障与停止事件，包含运行/节点/关联 ID；不记录 JPEG 帧或秘密。通过 IsOS 测试轮转/游标与 UI 中首次故障查找。
+5. 运行 `python3 tests/nodes.py`、`python3 tests/release.py`、`ctest --test-dir build --output-on-failure` 和 IsOS → EOS → MuJoCo → EGIA 成功、故障与安全停止集成测试。完整输出存于 `logs/test/<run-id>/`，记录可复现命令、环境、结果与限制。之后才考虑发布 `v0.1.1`；保留历史标签。
+
+`src/mujoco/` 核心与 `src/isos/` 软件包包装层实现本模拟器，**不是** EOS 无用的旧 `src/eos/` 运行时。包装层现有的 gRPC 模拟器服务在最后调用方审查证明可移除前仍是历史兼容侧链。
+
+## Q03 仿真器验证设计
+
+[English](../../docs/mujoco/architecture.md)
+
+**状态：**归属方源码检查、Q03 final-17 选定源码重放及 Q04 final-5 合并后提交重放均已通过。独立 Q04 归档审查没有 P1/P2 发现。`v0.1.1` 标签已发布，后续五方发布资产重放通过了其既定 Q04/M5 关卡；详见[软件包发布记录](usage/isos-pkg_cn.md#软件包发布记录)和 [EOS Q04 验证记录](https://github.com/Island-Team/Island-eos/blob/master/docs_cn/island/q04-merged-qualification_cn.md)。仿真器拥有场景加载、确定性复位、物理、渲染、私有套接字及基准评分。EOS 拥有机器人侧路由。基准真实状态不得通过 EOS、EGIA 或界面暴露。
+
+**Q03 所有者初始基线（2026-11-03）：**已实现 `tests/q03bench.py`、私有 `benchmark-reset` 工具及失败路径单元测试。此处是本机直接套接字证据，不等同于跨仓库安装重放或发布批准。初次完整输出保留在 Git 忽略的 `logs/test/20261103-q03-mujoco/`；最终渲染器探针软件包保存在 `logs/test/20261103-q03-mujoco-review-final/`；无碰撞的逐请求原始样本及六份子进程日志保存在 `logs/test/20261103-q03-mujoco-review-final-2/`。
+
+## 固定输入与所有者检查
+
+从已获取的 `master` 提交构建，使用 MuJoCo 3.16.0，记录编译器、CMake、CTest、库、源码及场景哈希。对受 Git 跟踪的 C++ 源码运行 `clang-format --dry-run --Werror`；运行 CMake 配置／构建及全部 CTest，再运行严格套接字／容量／Stop、场景、引擎及基准的定向测试。运行节点贡献契约用例，并在空输出目录构建新的 `island/mujoco-sim@0.1.1` 软件包。保存清单／归档 SHA-256，并在干净的 IsOS 主目录验证该包。把完整命令、输出及退出状态保存到忽略 Git 的 `logs/test/<run-id>/`，包括失败的尝试。
+
+已安装的所有者重放必须选择目录中的两个场景，证明精确软件包和场景准入，读取一帧图像，通过 EOS 发送一次获准的底盘或机械臂命令，注入仿真器死亡，并观察当前运行的故障和受控 Stop／回收。保留选定图修订、运行 ID、软件包收据、子进程身份及跨仓库验证器结果。独立的 CTest 必需，但不能替代已安装重放。
+
+## 初始套接字基线
+
+使用私有、仅所有者可访问的 v2 Unix 套接字，不启用 GUI。针对 `assets/scene.xml` 和 `assets/scenes/navigation/scene.xml`，分别启动三个全新的仿真器进程。使用直接启动的非托管基准进程（绝不作为 EOS 持有的托管子进程），提供私有、绝对且互不相同的 `--socket`、`--benchmark-socket`、`--v2-socket` 与 `--scene` 路径。例如：`build-q03/eos-mujoco-sim --socket /absolute/private/legacy.sock --benchmark-socket /absolute/private/benchmark.sock --v2-socket /absolute/private/v2.sock --scene /absolute/scene.xml --manual-step`。每次进程预热前必须通过私有基准套接字成功执行 `Reset(seed=42)` 并记录响应；测量期间保持引擎暂停，不进行异步步进。使用软件包中仅含 EGL 的 `SimEngine::RenderCamera` 路径及 640×480 的 `cam-0` 捕获。套接字不输出运行时解析的渲染器身份；启用子进程的可选 EGL 上下文探针，从子进程日志记录运行时 EGL 供应商和 GL 渲染器，并在每次重复时断言实际 JPEG 格式、字节长度和图像尺寸。预热 20 次后，串行发送 200 次 `base_observe` 和 20 次 `camera_capture` 请求。记录每次单调时钟耗时、响应状态和字节数，以及每组操作测得的墙钟时长。逐进程和合并样本报告成功请求数／秒或帧数／秒、中位数（偶数样本取中间两数平均）及最近秩 p99（毫秒）；单独报告所有失败与超时。这只测量仿真器套接字，不代表 IsOS HTTP、EOS Dispatcher 或浏览器延迟。初始测量不形成性能目标。
+
+测试工具须对套接字不可用、畸形响应、超时、场景错误和子进程意外退出明确失败；定向测试须覆盖这些路径。独立代理在实现前审查本设计，并在合入 MuJoCo `master` 前审查工具、证据及 PR。Q03 跨仓库摘要记录最终精确提交；Q04 负责发布与标签。
+## 可重现的所有者证据
+
+在仓库根目录设置 `MUJOCO_ROOT=/home/ashex/mujoco-3.16.0-linux-x86_64/mujoco-3.16.0`，依次执行：
+
+```sh
+git ls-files -z '*.cc' '*.cpp' '*.h' '*.hpp' | xargs -0 -r clang-format --dry-run --Werror
+cmake -S . -B build-q03 -DMUJOCO_ROOT="$MUJOCO_ROOT"
+cmake --build build-q03 -j4
+ctest --test-dir build-q03 --output-on-failure
+ctest --test-dir build-q03 -R 'strict-socket|strict-capacity|strict-stop|v2-socket|benchmark-eval|engine-test|scene-catalog|bundle-catalog|q03-socket' --output-on-failure
+python3 tests/fixtures/strict_socket/check.py
+python3 tests/fixtures/strict_stop_lane/check.py
+python3 tests/nodes.py
+python3 tools/bundle.py --build-dir build-q03 --output logs/test/20261103-q03-mujoco-review-final/bundle
+python3 tests/q03bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco-review-final-2/pick-place.json
+python3 tests/q03bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scenes/navigation/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco-review-final-2/navigation.json
+```
+
+格式修正后，全部 CTest 为 25/25，定向测试为 16/16；R05、R06 静态用例矩阵分别通过 31、48 项，节点贡献检查通过。初次格式检查在三个原有文件中出现 86 项诊断：`tests/smoke.cpp`、`src/isos/service.cpp`、`src/mujoco/gui.cpp`。单独的纯格式提交已修正，最终受 Git 跟踪的 C++ 格式检查通过。最终软件包为 `mujoco-sim-v0.1.1-linux-x86_64.tar.gz`，SHA-256 为 `05a9346db26f43510c1986ff7431038ae29197ac85300a2f1efd1211f3458fe6`。在这一初始归属方基线时，跨仓库 IsOS→EOS 安装重放尚待完成。
+
+本机为 x86_64 Linux、GCC 13.3.0，使用已安装的 MuJoCo 3.16.0、软件包 EGL 渲染路径且无 GUI。`environment.json` 记录内核、工具版本、源码提交、二进制、场景、库和归档哈希。全部六个进程的运行时探针均报告 EGL 供应商 `NVIDIA` 和 GL 渲染器 `NVIDIA GeForce RTX 2080 Ti/PCIe/SSE2`。种子 42、暂停场景、每个场景三个新进程；每进程预热 20 次，再测量 200 次观察和 20 次图像采集。最终原始测量如下：
+
+| 场景 | 操作 | 成功／失败 | 吞吐量 | 中位数 | p99 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 抓取放置 | `base_observe` | 600/0 | 17,549 次／秒 | 0.054 毫秒 | 0.089 毫秒 |
+| 抓取放置 | `camera_capture` | 60/0 | 716 帧／秒 | 1.261 毫秒 | 2.961 毫秒 |
+| 导航 | `base_observe` | 600/0 | 18,033 次／秒 | 0.053 毫秒 | 0.074 毫秒 |
+| 导航 | `camera_capture` | 60/0 | 731 帧／秒 | 1.262 毫秒 | 2.453 毫秒 |
+
+吞吐量为成功次数除以各进程对应操作组的测量总时长。中位数取成功样本排序后的中点，p99 用最近秩。相同日志目录中的较早尝试结果不同，可能受到本机负载影响；此基线不设性能目标，也不作跨主机推断。每次重复分别记录成功的 `Reset(seed=42)`、观察到的 JPEG 探针尺寸，以及全部样本状态、字节数和超时标记。失败请求记录零个已接受的有效负载字节，摘要单独统计超时。可选的子进程日志在上下文创建后记录运行时 EGL 供应商与 GL 渲染器；套接字响应提供观察到的 JPEG 尺寸。日志文件名使用基准输出文件名，确保两个均名为 `scene.xml` 的场景各有独立日志。前一次运行因场景文件同名覆盖了子进程日志；其原始样本仍保留，但子进程日志由本次运行取代。数字只代表仿真器私有套接字。
+
+### 选定安装归档证据（2026-11-03）
+
+选定的 0.1.1 软件包记录 MuJoCo 源码提交 `3bf8a50aa2100b3eb1758ea4795bdcdddb65391e`；`release.json` 必须继续保持这个精确来源身份。选定发布文件 SHA-256 为 `591cd2ec454b659bbe97645811a6c928081045636e82e52b5b2f2dda3247b445`，归档资产 SHA-256 为 `53f9fa5d9af4b92b74635fd22447a9f08450b89a19725b6d26b6bd5850a5be96`。EOS Q03 选定清单 SHA-256 为 `116aef2846750a96275645e4dec3021ad716ce6fb80b05c087a2ce377a74b990`；冻结评审主构建和案例构建收据 SHA-256 分别为 `977293e097779f636cb70bde9f3d5657bc9351b0b9f67534ca7beb41a97ef915` 和 `20b2dc444d4f90ca1e4cf4b8a2404893c53cd20de19a090ce02debf0c539ab5d`。
+
+在封存的干净主目录重放中，IsOS 验证并安装该归档，选择 `pick-place` 场景和可用的相机、底盘、机械臂设备；EOS 将已验证的 MuJoCo 可执行程序作为直接子进程启动。真实的 640×480 相机帧到达 EOS、EGIA Vision 与浏览器观察。R06/A03 选定来源故障试验通过子进程死亡、Stop／回收及重启检查，没有重放结果不明的运动；最终部署 Stop 获确认，受管进程无存活者。六组选定案例和 `Q01_FULL_VERIFIED` 保存在 EOS 中忽略 Git 的 `logs/test/20261103-q03-selected-final-15/`。上文私有套接字基准仍是另一项固定负载测量。此次安装重放只覆盖本地模拟托管 Origin。在 final-15 关卡时，Q04 合并后提交评审和标签发布尚未执行。若更改软件包来源 HEAD，必须重新构建并验证 0.1.1 软件包。
+
+### 最终选定源码与合并后提交的归档证据，2026-11-04
+
+后续封存的 Q03 `20261103-q03-selected-final-17` 归档仍固定软件包源码 `3bf8a50aa2100b3eb1758ea4795bdcdddb65391e`、发布文件 SHA-256 `591cd2ec454b659bbe97645811a6c928081045636e82e52b5b2f2dda3247b445` 和归档 SHA-256 `53f9fa5d9af4b92b74635fd22447a9f08450b89a19725b6d26b6bd5850a5be96`。冻结选择清单 SHA-256 为 `35dd4e5aa4c209bf84935002a4eded756f3eb5a1c147b2fb12bd5d894e46b78a`；精确选定的 EOS 源码 `219f031bae9dbfc9d9f53f62c910b9e235bb2138` 上的验证器对全部六组返回 `Q01_FULL_VERIFIED`。独立 EOS 审核位于 `logs/test/20261104-q03-final17-independent-audit/`：选定源码验证通过，而较新检出因测试工具摘要变化被拒。上文 final-15 记录保留为历史证据。
+
+Q04 `20261103-q04-merged-home-final-5` 的发布文件从已合并的 MuJoCo `master` `04b65882cd11b0aff8ce56473164691dbd662196` 重新构建。`release.json` 的 SHA-256 为 `c421039753c24ffc74658d6b1dfe5c9de6a1ed77b64df8fbaee77063da837096`，已安装归档的 SHA-256 为 `bb2862b01c3ccab8b68570e766a0ad26c8c5783b3c87cf99225eb0edb7a260f4`；冻结的外部选择清单 SHA-256 为 `7f5cefa5b6521d42d28b88c916679f2b668ba93fd61bbcbbfed4bb8fcc722b87`。IsOS 在干净主目录中验证并安装精确软件包；EOS 将仿真器作为直接子进程启动，产生真实相机帧和受治理的底盘结果，随后在子进程终止与回收之前确认物理 Stop。选定的 R06/A03 故障与重启案例通过，没有重放结果不明的运动。完整选定验证器返回 `Q01_FULL_VERIFIED`；独立归档评审检查了 3,630 个封存文件，没有 P1/P2 发现。原始收据、事件、子进程证明和命令保存在 EOS 中忽略 Git 的 `logs/test/20261103-q04-merged-home-final-5/`。这是本地模拟托管 Origin 的重放，不代表已发布 `v0.1.1` 软件包或公网 HTTPS 部署；在该关卡时，发布收尾和标签仍未完成。

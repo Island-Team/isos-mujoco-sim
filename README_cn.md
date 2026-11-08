@@ -1,6 +1,6 @@
 # IsOS MuJoCo 模拟器
 
-[English](README.md) · [首次运行指南](docs_cn/mujoco/usage/dev_cn.md) · [文档导航](docs_cn/mujoco/doc_index_cn.md)
+[English](README.md) · [首次运行指南](docs_cn/mujoco/usage/dev_cn.md) · [文档概览](docs_cn/mujoco/README_cn.md)
 
 本仓库有两条可运行路径。当前基准是上游 RoboCasa365 `CloseFridge`，通过其 Python 环境在本地启动。C++ MuJoCo 模拟器提供直接开发用的核心和 IsOS/EOS 软件包包装层；抓取放置与导航场景保留为兼容性测试场景。EOS 连接包装层，向代理提供机器人设备与 primitive；只有可信评测器使用独立的私有 benchmark 套接字。RoboCasa 目前尚无 EOS 适配器。
 
@@ -58,4 +58,4 @@ GUI 默认宽 768 像素。可在 `config/benchmarks/robocasa.toml` 设置 `[gui
 
 本地 `island/mujoco-sim@0.1.2` 候选包将 C++ 包装层接入 IsOS 图。构建资源包、验证清单、在 IsOS 中链接或安装，然后 Validate、Apply 并 Run 图。EOS 管理模拟器子进程，向代理公开普通设备能力。精确的包与图命令、就绪检查、日志和停止流程见[受管理后端指南](docs_cn/mujoco/usage/isos-pkg_cn.md)。已发布的 `0.1.1` 版本使用 MuJoCo 3.16.0；此处的源码说明针对 3.3.1。
 
-[文档导航](docs_cn/mujoco/doc_index_cn.md)提供接口、源码职责、基准来源、设计及验证记录。[GitHub 仓库](https://github.com/Island-Team/isos-mujoco-sim)。
+[文档概览](docs_cn/mujoco/README_cn.md)提供接口、源码职责、基准来源、设计及验证记录。[GitHub 仓库](https://github.com/Island-Team/isos-mujoco-sim)。
