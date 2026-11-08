@@ -1,4 +1,4 @@
-#include "strict_ledger.h"
+#include "ledger.h"
 
 #include <cassert>
 #include <iostream>

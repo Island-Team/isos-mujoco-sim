@@ -1,0 +1,16 @@
+# RoboCasa smoke-run defaults. Relative paths are resolved from the repository root.
+# Local .env assignments override these values; CLI flags override both.
+[task]
+name = "CloseFridge"
+split = "target"
+scene = ""
+seed = 42
+steps = 20
+
+[camera]
+name = "robot0_agentview_left"
+width = 1920
+height = 1080
+
+[gui]
+width = 1920

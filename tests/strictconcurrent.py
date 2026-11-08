@@ -10,7 +10,7 @@ import tempfile
 import threading
 import time
 
-from strict_socket import request
+from strictsocket import request
 
 
 def main():

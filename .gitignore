@@ -12,8 +12,9 @@ _deps/
 
 # Local simulator state and diagnostics.
 /.run/
-/launch.conf
+/.local/
 /logs/test/
+/logs/dev/
 *.sock
 *.sock.lock
 MUJOCO_LOG.TXT

@@ -9,7 +9,7 @@ import sys
 import tempfile
 import time
 
-from strict_stop import call, code
+from stop import call, code
 
 
 def main():

@@ -2,7 +2,6 @@
 
 
 BACKEND = "eos.process.mujoco@v0.1"
-LEGACY_BACKEND = "eos.process.mujoco@v1.0"
 CAMERA = "eos.hardware.camera@v0.1"
 BASE = "eos.hardware.base@v0.1"
 MANIPULATOR = "eos.hardware.manipulator@v0.1"
@@ -64,7 +63,7 @@ def hardware_profile(id: str, type_id: str, label: str, description: str,
     "references": ["@simulator"],
     "adapter": {
       "type": "mujoco-v2",
-      "package": {"id": "island/mujoco-sim", "version": "0.1.1"},
+      "package": {"id": "island/mujoco-sim", "version": "0.1.2"},
       "settings": {
         "backend": "@simulator",
         "socket_path": "${socket}",
@@ -102,13 +101,6 @@ def contributions() -> dict:
     "limits": {"max_joint_position_rad": 3.14, "max_joint_speed_rad_s": 1.0},
   }
   arm["inputs"] = {"command": [{"node": "@arm-movej", "output": "command"}]}
-  legacy = node_type(
-    LEGACY_BACKEND, "process", "software", "process", ["process"], [],
-    [port("status", "status", description="Simulator process lifecycle"),
-     port("health", "health", description="Simulator process health")],
-    [setting("scene", "string", True), setting("socket", "string", True),
-     setting("env", "string_table"), setting("start_timeout_ms", "positive_integer")],
-  )
   current = node_type(
     BACKEND, "process", "software", "process", ["process"], [],
     [port("status", "status", description="Simulator process lifecycle"),
@@ -132,10 +124,9 @@ def contributions() -> dict:
       "resources": [{"setting": "scene", "kind": "scene",
                      "descriptor": "package-resources.json"}],
       "host_inputs": [{"name": "MUJOCO_ROOT", "kind": "directory",
-                       "library_dir": "lib", "required": True}],
+                       "required": True}],
     }],
     "node_types": [
-      legacy,
       current,
     ],
     "safety_adapters": [],

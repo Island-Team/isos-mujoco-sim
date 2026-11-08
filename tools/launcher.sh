@@ -3,18 +3,60 @@
 launcher_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 load_launch_config() {
+  local assignments
+  assignments=$(python3 "$launcher_root/tools/config.py" "$launcher_root/config.toml") || return
+  eval "$assignments"
   if [[ -f "$launcher_root/.env" ]]; then
-    # The local environment and launch configuration are operator-owned shell files.
+    # Local shell overrides are operator-owned.
     source "$launcher_root/.env"
   fi
-  SIM_EXECUTABLE=${SIM_EXECUTABLE:-build/eos-mujoco-sim}
-  SIM_SCENE=${SIM_SCENE:-assets/scene.xml}
-  SIM_RUN_DIR=${SIM_RUN_DIR:-.run/mujoco}
-  SIM_GUI=${SIM_GUI:-false}
-  SIM_MANUAL_STEP=${SIM_MANUAL_STEP:-false}
-  if [[ -f "$launcher_root/launch.conf" ]]; then
-    source "$launcher_root/launch.conf"
+  case "$SIM_PROFILE" in
+    dev|isos-pkg) ;;
+    *) echo "SIM_PROFILE must be dev or isos-pkg" >&2; return 2 ;;
+  esac
+  [[ "$DEV_GUI" == true || "$DEV_GUI" == false ]] || {
+    echo "DEV_GUI must be true or false" >&2; return 2;
+  }
+}
+
+new_dev_log() {
+  local category=$1 directory stamp log
+  directory="$launcher_root/logs/dev/$category"
+  mkdir -p -m 700 -- "$directory" || return
+  stamp=$(date -u +%Y%m%dT%H%M%SZ)
+  log="$directory/$stamp-$$.log"
+  if [[ -e "$directory/latest.log" && ! -L "$directory/latest.log" ]]; then
+    echo "Log shortcut is not a symlink: $directory/latest.log" >&2
+    return 1
   fi
+  ln -sfn -- "$(basename "$log")" "$directory/latest.log" || return
+  printf '%s\n' "$log"
+}
+
+socket_is_active() {
+  local path=$1
+  [[ -r /proc/net/unix ]] || return 0
+  awk -v path="$path" '$NF == path { found = 1 } END { exit !found }' /proc/net/unix
+}
+
+clear_stale_sockets() {
+  local first=$1 second=$2 path
+  for path in "$first" "$second"; do
+    if [[ -e "$path" && ! -S "$path" ]]; then
+      echo "Non-socket path blocks startup: $path" >&2
+      return 1
+    fi
+    if [[ -S "$path" ]] && socket_is_active "$path"; then
+      echo "Socket is owned by a live process: $path" >&2
+      return 1
+    fi
+  done
+  for path in "$first" "$second"; do
+    if [[ -S "$path" ]]; then
+      rm -- "$path" || return
+      echo "Removed stale socket: $path" >&2
+    fi
+  done
 }
 
 resolve_launch_path() {

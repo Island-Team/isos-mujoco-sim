@@ -9,7 +9,7 @@ import sys
 import tempfile
 import time
 
-from strict_stop import call, launch, partial, stop_process
+from stop import call, launch, partial, stop_process
 
 
 def socket_fd_count(pid):

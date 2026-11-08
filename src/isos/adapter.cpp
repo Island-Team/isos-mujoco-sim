@@ -1,4 +1,4 @@
-#include "v2_service.h"
+#include "adapter.h"
 
 #include <google/protobuf/struct.pb.h>
 #include <google/protobuf/util/json_util.h>
@@ -24,7 +24,7 @@
 #include <string>
 #include <vector>
 
-#include "engine.h"
+#include "../mujoco/engine.h"
 #include "scene_devices.h"
 
 namespace eos_mujoco {

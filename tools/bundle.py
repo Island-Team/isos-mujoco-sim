@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage the local island/mujoco-sim@0.1.1 IsOS backend bundle."""
+"""Stage the local island/mujoco-sim@0.1.2 IsOS backend bundle."""
 
 import argparse
 import hashlib
@@ -13,15 +13,15 @@ import subprocess
 import tarfile
 import tempfile
 
-from node_contributions import contributions
-from scene_catalog import descriptor_for_bundle
+from nodes import contributions
+from catalog import descriptor_for_bundle
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ID = "island/mujoco-sim"
-PACKAGE_VERSION = "0.1.1"
+PACKAGE_VERSION = "0.1.2"
 SOURCE = "https://github.com/Island-Team/isos-mujoco-sim"
-MUJOCO_SONAME = "libmujoco.so.3.16.0"
+MUJOCO_SONAME = "libmujoco.so.3.3.1"
 
 
 def host_requirements() -> tuple[str, str]:
@@ -63,7 +63,7 @@ def inspect_installed_binary(binary: Path, mujoco_root: Path) -> list[str]:
                           result.stdout, re.MULTILINE)
     names = {name for name, _ in resolved}
     if MUJOCO_SONAME not in names or any(name.startswith("libmujoco.so") and name != MUJOCO_SONAME for name in names):
-        raise ValueError("resolved MuJoCo SONAME does not match 3.16.0")
+        raise ValueError("resolved MuJoCo SONAME does not match 3.3.1")
     actual = next(path for name, path in resolved if name == MUJOCO_SONAME)
     if Path(actual).resolve() != library.resolve():
         raise ValueError("MuJoCo SONAME resolved outside MUJOCO_ROOT")
@@ -78,7 +78,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--mujoco-root", type=Path,
                         default=Path(os.environ["MUJOCO_ROOT"]) if os.environ.get("MUJOCO_ROOT") else None,
-                        help="installed MuJoCo 3.16.0 root; defaults to MUJOCO_ROOT")
+                        help="installed MuJoCo 3.3.1 root; defaults to MUJOCO_ROOT")
     args = parser.parse_args()
     binary = args.build_dir / "eos-mujoco-sim"
     if not binary.is_file() or not os.access(binary, os.X_OK):
@@ -111,13 +111,17 @@ def main() -> None:
     descriptor = descriptor_for_bundle(bundle)
     (bundle / "backend-v2.json").write_text(json.dumps(descriptor, indent=2) + "\n")
     resources = {
-        "schema_version": 1,
+        "contract": "isos.package-resources@v1",
+        "schema_version": "0.1.0",
         "resources": [{key: scene[key] for key in
                        ("id", "label", "description", "path", "sha256")}
                       | {"kind": "scene"} for scene in descriptor["scenes"]]
                      + [{key: device[key] for key in
-                         ("id", "label", "description", "scene_ids")}
-                        | {"kind": "device", "device_kind": device["kind"]}
+                         ("id", "label", "description")}
+                        | {"kind": "device", "metadata": {
+                            "device_kind": device["kind"],
+                            "scene_ids": device["scene_ids"],
+                        }}
                         for device in descriptor["device_catalog"]],
     }
     (bundle / "package-resources.json").write_text(json.dumps(resources, indent=2) + "\n")
@@ -133,7 +137,8 @@ def main() -> None:
         ["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True,
     ).stdout.strip()
     release = {
-        "schema_version": 4,
+        "contract": "isos.package@v1",
+        "schema_version": "0.1.0",
         "id": PACKAGE_ID,
         "kind": "backend",
         "version": PACKAGE_VERSION,

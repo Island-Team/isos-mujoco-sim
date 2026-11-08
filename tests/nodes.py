@@ -9,7 +9,7 @@ import unittest
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from node_contributions import contributions  # noqa: E402
+from nodes import contributions  # noqa: E402
 
 
 def strings(value: object) -> list[str]:
@@ -30,8 +30,13 @@ class NodeContributionTests(unittest.TestCase):
     self.assertEqual(refs, {"simulator", "front", "drive", "arm", "base-velocity",
                             "arm-movej", "camera-gate"})
     contributed_types = {node_type["id"] for node_type in contract["node_types"]}
-    self.assertEqual(contributed_types,
-                     {"eos.process.mujoco@v1.0", "eos.process.mujoco@v0.1"})
+    self.assertEqual(contributed_types, {"eos.process.mujoco@v0.1"})
+    for definition in contract["node_types"]:
+      self.assertTrue(definition["description"].strip())
+      for setting in definition["settings"]:
+        self.assertTrue(setting["description"].strip())
+      for port in definition["inputs"] + definition["outputs"]:
+        self.assertTrue(port["description"].strip())
     declared = set(node_set["parameters"])
     for node in node_set["nodes"]:
       if node["profile"]["node_type"] in contributed_types:
@@ -69,7 +74,7 @@ class NodeContributionTests(unittest.TestCase):
       self.assertNotIn("package", profile)
       self.assertEqual(profile["adapter"]["type"], family["id"])
       self.assertEqual(profile["adapter"]["package"],
-                       {"id": "island/mujoco-sim", "version": "0.1.1"})
+                       {"id": "island/mujoco-sim", "version": "0.1.2"})
       selected = {"front": "camera_device", "drive": "base_device",
                   "arm": "manipulator_device"}[ref]
       self.assertEqual(profile["adapter"]["settings"]["device_id"], f"${{{selected}}}")

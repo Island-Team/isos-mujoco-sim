@@ -243,13 +243,13 @@ def descriptor_for_bundle(root: Path) -> dict:
               for scene in SCENES]
     descriptor = {
         "schema_version": "2.0.0", "catalog_version": CATALOG_VERSION,
-        "package": {"id": "island/mujoco-sim", "version": "0.1.1"},
+        "package": {"id": "island/mujoco-sim", "version": "0.1.2"},
         "entrypoint": "bin/eos-mujoco-sim", "protocol": "mujoco-v2",
         "scenes": scenes,
         "devices": {device["kind"]: device["id"] for device in DEVICES},
         "device_catalog": [dict(device) for device in DEVICES],
-        "runtime": {"mujoco_version": "3.16.0", "environment_variable": "MUJOCO_ROOT",
-                    "library": "lib/libmujoco.so.3.16.0"},
+        "runtime": {"mujoco_version": "3.3.1", "environment_variable": "MUJOCO_ROOT",
+                    "library": "lib/libmujoco.so.3.3.1"},
     }
     validate_descriptor(root, descriptor)
     return descriptor

@@ -1,7 +1,0 @@
-# Copy to launch.conf to change the standalone launch defaults.
-# Relative paths are resolved from the repository root.
-SIM_EXECUTABLE=build/eos-mujoco-sim
-SIM_SCENE=assets/scene.xml
-SIM_RUN_DIR=.run/mujoco
-SIM_GUI=false
-SIM_MANUAL_STEP=false

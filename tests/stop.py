@@ -9,7 +9,7 @@ import sys
 import tempfile
 import time
 
-from strict_socket import exchange
+from strictsocket import exchange
 
 
 def call(path, op, node="base-0", command_id=None, **fields):

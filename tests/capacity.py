@@ -8,7 +8,7 @@ import sys
 import tempfile
 import time
 
-from strict_socket import request, error
+from strictsocket import request, error
 
 
 def main():

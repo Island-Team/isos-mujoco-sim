@@ -14,7 +14,7 @@ import time
 import unittest
 
 
-spec = importlib.util.spec_from_file_location("q03_socket_bench", Path(__file__).with_name("q03_socket_bench.py"))
+spec = importlib.util.spec_from_file_location("q03_socket_bench", Path(__file__).with_name("q03bench.py"))
 bench = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(bench)
 
@@ -143,7 +143,7 @@ class BenchTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             missing = Path(directory) / "wrong-scene.xml"
             result = subprocess.run(
-                [sys.executable, str(Path(__file__).with_name("q03_socket_bench.py")),
+                [sys.executable, str(Path(__file__).with_name("q03bench.py")),
                  "--sim", sys.executable, "--reset", sys.executable,
                  "--scene", str(missing), "--json", str(Path(directory) / "out.json")],
                 capture_output=True, text=True, timeout=2)

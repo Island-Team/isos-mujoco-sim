@@ -2,13 +2,15 @@
 set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
-scene="$root/assets/scene.xml"
+source "$root/tools/launcher.sh"
+load_launch_config
+scene=$(resolve_launch_path "$SIM_SCENE")
 check_only=false
 snapshot=""
 
 usage() {
   cat <<'EOF'
-Usage: tools/scene-view.sh [--check | --snapshot PATH] [--scene PATH]
+Usage: tools/view.sh [--check | --snapshot PATH] [--scene PATH]
 
 Compile the benchmark scene, then open it in MuJoCo's interactive viewer.
 --check validates model loading without opening a window.

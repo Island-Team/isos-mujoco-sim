@@ -12,10 +12,10 @@
 #include <thread>
 
 #include "benchmark.grpc.pb.h"
-#include "engine.h"
-#include "gui.h"
+#include "../mujoco/engine.h"
+#include "../mujoco/gui.h"
 #include "simulator.grpc.pb.h"
-#include "v2_service.h"
+#include "adapter.h"
 
 namespace eos_mujoco {
 namespace sim = ::eos::simulator::v1;

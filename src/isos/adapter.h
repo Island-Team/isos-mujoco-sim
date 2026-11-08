@@ -12,8 +12,8 @@
 #include <thread>
 #include <vector>
 
-#include "engine.h"
-#include "strict_ledger.h"
+#include "../mujoco/engine.h"
+#include "ledger.h"
 
 namespace eos_mujoco {
 

@@ -14,7 +14,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURES = Path(__file__).resolve().parent / "fixtures/scene_catalog"
 sys.path.insert(0, str(ROOT / "tools"))
-from scene_catalog import CatalogError, descriptor_for_bundle, validate_descriptor  # noqa: E402
+from catalog import CatalogError, descriptor_for_bundle, validate_descriptor  # noqa: E402
 
 
 def fixture(name):

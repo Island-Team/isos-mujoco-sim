@@ -11,7 +11,7 @@ from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SPEC = importlib.util.spec_from_file_location("native_bundle", ROOT / "tools/build-backend-bundle.py")
+SPEC = importlib.util.spec_from_file_location("native_bundle", ROOT / "tools/bundle.py")
 assert SPEC and SPEC.loader
 sys.path.insert(0, str(ROOT / "tools"))
 BUNDLE = importlib.util.module_from_spec(SPEC)
@@ -27,7 +27,7 @@ class NativeReleaseTests(unittest.TestCase):
                            check=True, capture_output=True, text=True)
             installed = Path(temporary) / "bin/eos-mujoco-sim"
             names = BUNDLE.inspect_installed_binary(installed, mujoco_root)
-            self.assertIn("libmujoco.so.3.16.0", names)
+            self.assertIn("libmujoco.so.3.3.1", names)
             self.assertIn("libc.so.6", names)
 
     def test_rejects_absolute_runpath(self):
@@ -45,16 +45,16 @@ class NativeReleaseTests(unittest.TestCase):
     def test_rejects_wrong_mujoco_soname(self):
         with mock.patch.object(BUNDLE.subprocess, "run", return_value=mock.Mock(
                 stdout="(NEEDED) Shared library: [libmujoco.so.3.15.0]\n")):
-            with self.assertRaisesRegex(ValueError, "exactly libmujoco.so.3.16.0"):
+            with self.assertRaisesRegex(ValueError, "exactly libmujoco.so.3.3.1"):
                 BUNDLE.inspect_installed_binary(Path("/not-used"), Path("/not-used"))
 
     def test_rejects_unresolved_library(self):
         mujoco_root = Path(sys.argv[2]).resolve()
         def fake(command, **kwargs):
             if command[0] == "readelf":
-                return mock.Mock(stdout="(NEEDED) Shared library: [libmujoco.so.3.16.0]\n")
+                return mock.Mock(stdout="(NEEDED) Shared library: [libmujoco.so.3.3.1]\n")
             if command[0] == "ldd":
-                return mock.Mock(stdout="libmujoco.so.3.16.0 => not found\n", stderr="")
+                return mock.Mock(stdout="libmujoco.so.3.3.1 => not found\n", stderr="")
             raise AssertionError(command)
 
         with mock.patch.object(BUNDLE.subprocess, "run", side_effect=fake):
@@ -66,9 +66,9 @@ class NativeReleaseTests(unittest.TestCase):
 
         def fake(command, **kwargs):
             if command[0] == "readelf":
-                return mock.Mock(stdout="(NEEDED) Shared library: [libmujoco.so.3.16.0]\n")
+                return mock.Mock(stdout="(NEEDED) Shared library: [libmujoco.so.3.3.1]\n")
             if command[0] == "ldd":
-                return mock.Mock(stdout="libmujoco.so.3.16.0 => /other/libmujoco.so.3.16.0\n",
+                return mock.Mock(stdout="libmujoco.so.3.3.1 => /other/libmujoco.so.3.3.1\n",
                                  stderr="")
             raise AssertionError(command)
 
