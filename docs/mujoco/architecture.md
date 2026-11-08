@@ -114,23 +114,9 @@ No candidate above is unused implementation. The IsOS-managed child still starts
 - Interfaces: the direct historical gRPC simulator and benchmark sockets remain private; the managed path exposes only the framed v2 socket and derived `.stop` companion. The exact request and response contract is `docs/mujoco/interfaces/socket.md`.
 - Graph versions: `tools/nodes.py` emits seven `@v0.1` registered types; `tools/catalog.py` emits catalog `0.1.0`. IsOS owns authored graph versioning and persistence; the simulator does not edit the applied graph.
 
-## Remaining work
+## Remaining qualification
 
-## MuJoCo 0.1.1 integration TODO
-
-Track implementation in [MuJoCo package 0.1.1](https://github.com/Island-Team/isos-mujoco-sim/milestone/1), with the shared [M2 verified inputs](https://github.com/Island-Team/Island-eos/milestone/2), [M3 governed execution](https://github.com/Island-Team/Island-eos/milestone/3) and [M5 qualification](https://github.com/Island-Team/Island-eos/milestone/5) gates. The sequence below is the required dependency order.
-
-[中文](../../docs_cn/mujoco/architecture_cn.md#后续工作) · [Design](architecture.md) · [Socket contract](interfaces/socket.md)
-
-**Progress, 2026-11-02:** item 2 passed the scoped R05 owner qualification on pinned MuJoCo, EOS and IsOS heads; see the [cross-owner evidence](architecture.md#r05-cross-owner-qualification). Item 3's MuJoCo owner stop lane merged in [PR #21](https://github.com/Island-Team/isos-mujoco-sim/pull/21), and scoped live movement/stop replay passed; forced timeout/KILL, GUI unavailability, stale or wrong pipe, crash recovery, and full R06 qualification remain open. Items 4–5's full logging and release qualification also remain open. Neither scoped result implies a `v0.1.1` tag.
-
-1. Add a nonblank description and selector metadata to the contributed process type and its scene setting. Publish `@v0.1` types only when IsOS/EOS catalog readers accept them; preserve `@v1.0` aliases and the installed schema-v4 package identity. Ensure the descriptor options are derived from verified scene/device assets.
-2. Add managed strict-socket launch and health feature confirmation while preserving legacy direct-launch `2.0.0` semantics. In strict mode, enforce socket `node` as a simulator device ID with operation/device matching, and EOS graph-to-device mapping, finite typed inputs, stable additive error codes, and bounded request IDs. Add `(node, command_id)` idempotency with conflicting-replay rejection and bounded retention. Keep framing and wire version `2.0.0` unchanged.
-3. Make stop preempt an in-flight move or slow capture, respect a finite deadline, and acknowledge both base and arm; EOS must stop admitted actuators before child termination. Test identical transport retransmission, uncertain-outcome non-replay, duplicate movement, conflicting replay, unsupported node/device, malformed and oversized frames, unavailable GUI, child crash, and cleanup.
-4. Emit shared sanitized JSONL startup, readiness, fault and stop events with run/node/correlation IDs. Do not log JPEG frames or secrets. Test rotation/cursor behavior through IsOS and first-failure discovery in the UI.
-5. Run `python3 tests/nodes.py`, `python3 tests/release.py`, `ctest --test-dir build --output-on-failure`, and IsOS → EOS → MuJoCo → EGIA integration tests for success, failure and safe stop. Save full output under `logs/test/<run-id>/`; record reproducible commands, environment, results and limitations. Only then consider publication of `v0.1.1`; retain historical tags.
-
-The `src/mujoco/` core and `src/isos/` package wrapper implement this simulator; they are **not** EOS's unused legacy `src/eos/` runtime. The wrapper's gRPC simulator service remains a legacy compatibility side chain until last-caller review shows it is removable.
+The `v0.1.1` package is published, and the selected Q03/Q04 replays below passed. Broader R06 failure qualification remains open for forced timeout or kill, GUI unavailability, stale or wrong pipe, and crash recovery. Full logging and first-failure discovery through IsOS still require end-to-end verification. Record exact package and owner pins, run IDs, commands, and outcomes for each new qualification run.
 
 ## Q03 simulator qualification design
 

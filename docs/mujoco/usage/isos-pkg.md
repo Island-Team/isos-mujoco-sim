@@ -2,7 +2,7 @@
 
 The `0.1.2` bundle below is a local development candidate using MuJoCo 3.3.1. It is not a published release; historical `0.1.1` evidence later on this page remains tied to MuJoCo 3.16.0.
 
-**Current implementation:** This page records the existing bundle and integration path. [Package descriptor and contributions](../interfaces/package.md) and [simulator socket](../interfaces/socket.md) are the owner-specific field contracts; [design](../architecture.md) and [TODO](../architecture.md#remaining-work) distinguish the new 0.x target. The `v2` in a protocol or generated descriptor filename is retained for compatibility; this topic page has no version suffix.
+**Current implementation:** This page records the existing bundle and integration path. [Package descriptor and contributions](../interfaces/package.md) and [simulator socket](../interfaces/socket.md) are the owner-specific field contracts; [architecture](../architecture.md) explains integration and [remaining qualification](../architecture.md#remaining-qualification) records the open checks. The `v2` in a protocol or generated descriptor filename is retained for compatibility; this topic page has no version suffix.
 
 [中文](../../../docs_cn/mujoco/usage/isos-pkg_cn.md)
 
@@ -116,8 +116,6 @@ Stop through `isos deployment stop` after inspecting the result and current run 
 The v2 package permits `MUJOCO_GUI=1` in the simulator node's `settings.env`. It opens a live X11 view from the same simulator engine used by the v2 socket. The standalone `--gui` launcher below opens a separate static MuJoCo viewer instead. See [backend.md](isos-pkg.md) for the node and socket contracts.
 
 ## Package release record
-
-## Island package release
 
 [中文](../../../docs_cn/mujoco/usage/isos-pkg_cn.md#软件包发布记录)
 

@@ -2,7 +2,7 @@
 
 下述 `0.1.2` 软件包是使用 MuJoCo 3.3.1 的本地开发候选，尚未发布；本页后面的历史 `0.1.1` 证据仍对应 MuJoCo 3.16.0。
 
-**当前实现：** 本页记录现有包与集成路径。[包描述符与声明](../interfaces/package_cn.md)和[模拟器套接字](../interfaces/socket_cn.md)是本包拥有的字段契约；[设计](../architecture_cn.md)与 [TODO](../architecture_cn.md#后续工作)区分新的 0.x 目标。协议或已生成描述符文件名中的 `v2` 为兼容而保留；本主题页文件名不带版本后缀。
+**当前实现：** 本页记录现有包与集成路径。[包描述符与声明](../interfaces/package_cn.md)和[模拟器套接字](../interfaces/socket_cn.md)是本包拥有的字段契约；[架构](../architecture_cn.md)说明集成方式，[后续验证](../architecture_cn.md#后续验证)记录尚未完成的检查。协议或已生成描述符文件名中的 `v2` 为兼容而保留；本主题页文件名不带版本后缀。
 
 [English](../../../docs/mujoco/usage/isos-pkg.md)
 
