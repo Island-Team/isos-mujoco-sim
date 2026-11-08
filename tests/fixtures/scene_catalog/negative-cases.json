@@ -237,7 +237,7 @@
       "mutation": {
         "target": "runtime",
         "op": "remove",
-        "path": "/MUJOCO_ROOT/lib/libmujoco.so.3.16.0"
+        "path": "/MUJOCO_ROOT/lib/libmujoco.so.3.3.1"
       },
       "expected_graph": {
         "code": "mujoco_library_unavailable",

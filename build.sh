@@ -2,29 +2,73 @@
 set -euo pipefail
 
 usage() {
-  echo 'Usage: build.sh --output <empty-absolute-directory>' >&2
+  echo 'Usage: ./build.sh [--output <empty-absolute-directory>]' >&2
   exit 2
 }
 
-if [[ $# -ne 2 || $1 != --output || $2 != /* ]]; then
+if [[ $# -ne 0 && ( $# -ne 2 || $1 != --output || $2 != /* ) ]]; then
   usage
 fi
-output=$2
-if [[ -e $output && ! -d $output ]]; then
-  usage
+if [[ $# -eq 2 ]]; then
+  output=$2
+  if [[ -e $output && ! -d $output ]]; then usage; fi
+  if [[ -d $output && -n $(find "$output" -mindepth 1 -maxdepth 1 -print -quit) ]]; then
+    echo 'Output directory must be empty' >&2
+    exit 2
+  fi
 fi
-if [[ -d $output && -n $(find "$output" -mindepth 1 -maxdepth 1 -print -quit) ]]; then
-  echo 'Output directory must be empty' >&2
-  exit 2
-fi
-: "${MUJOCO_ROOT:?Set MUJOCO_ROOT to a MuJoCo 3.16.0 installation}"
-
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+source "$root/tools/launcher.sh"
+load_launch_config
+: "${MUJOCO_ROOT:?Set MUJOCO_ROOT in .env to a MuJoCo 3.3.1 installation}"
+if [[ $# -eq 0 ]]; then
+  cmake -S "$root" -B "$root/build" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release
+  cmake --build "$root/build" --parallel "${BUILD_JOBS:-4}"
+  echo "Built $root/build/eos-mujoco-sim and $root/build/mujoco-core ($SIM_PROFILE profile)"
+  if [[ "$SIM_PROFILE" == isos-pkg ]]; then
+    echo "IsOS package build is ready; use ./build.sh --output ABSOLUTE_EMPTY_DIRECTORY for a bundle"
+    exit 0
+  fi
+  source_dir=$(resolve_launch_path "${ROBOCASA_ROOT:-.local/robocasa}")
+  venv="$root/.local/robocasa-venv"
+  if [[ -x "$venv/bin/python" ]] &&
+     python3 "$root/tools/robocasasource.py" check --path "$source_dir" >/dev/null 2>&1; then
+    "$venv/bin/python" "$root/tools/robocasahrun.py" \
+      --task "$BENCHMARK_TASK" --split "$BENCHMARK_SPLIT" \
+      --kitchen-scene "$BENCHMARK_SCENE" \
+      --seed "$BENCHMARK_SEED" --steps "$BENCHMARK_STEPS" --validate
+  fi
+  full_assets=false
+  if [[ "${BENCHMARK_TASK#robocasa/}" != CloseFridge || -n "$BENCHMARK_SCENE" ]]; then
+    full_assets=true
+  fi
+  if ! python3 "$root/tools/robocasasource.py" check --path "$source_dir" >/dev/null 2>&1 ||
+     [[ ! -f "$venv/.robocasa-installed" || ! -f "$source_dir/.assets-ready" ]] ||
+     [[ "$full_assets" == true && ! -f "$source_dir/.assets-full-ready" ]]; then
+    if [[ "$full_assets" == true ]]; then
+      prompt="Configured benchmark needs full RoboCasa assets (about 8 GB compressed, plus extraction) under $source_dir. Download now? [y/N] "
+    else
+      prompt="RoboCasa source, runtime, or assets are missing. Download and set up under $source_dir? [y/N] "
+    fi
+    if ! read -r -p "$prompt" answer; then
+      echo "RoboCasa setup needs an interactive confirmation; run ./build.sh in a terminal" >&2
+      exit 2
+    fi
+    [[ "$answer" == y || "$answer" == Y ]] || { echo "RoboCasa setup cancelled" >&2; exit 2; }
+    if [[ "$full_assets" == true ]]; then
+      "$root/tools/robocasasetup.sh" --full
+    else
+      "$root/tools/robocasasetup.sh"
+    fi
+  fi
+  echo "RoboCasa is ready at $source_dir"
+  exit 0
+fi
 scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT
 cmake -S "$root" -B "$scratch/build" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release
 cmake --build "$scratch/build" --parallel "${BUILD_JOBS:-4}"
-python3 "$root/tools/build-backend-bundle.py" \
+python3 "$root/tools/bundle.py" \
   --build-dir "$scratch/build" --mujoco-root "$MUJOCO_ROOT" \
   --output "$scratch/bundle"
 archive=$(find "$scratch" -maxdepth 1 -type f -name '*.tar.gz' -print -quit)

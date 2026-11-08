@@ -1,0 +1,11 @@
+# Repository defaults. Set MUJOCO_ROOT in .env for the local installation.
+MUJOCO_ROOT = ""
+SIM_PROFILE = "isos-pkg"
+DEV_GUI = true
+SIM_EXECUTABLE = "build/eos-mujoco-sim"
+SIM_SCENE = "assets/scene.xml"
+SIM_RUN_DIR = ".run/mujoco"
+SIM_GUI = false
+SIM_MANUAL_STEP = false
+ROBOCASA_ROOT = ""
+BENCHMARK_CONFIG = "config/benchmarks/robocasa.toml"

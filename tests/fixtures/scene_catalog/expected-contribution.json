@@ -1,6 +1,6 @@
 {
   "graph_version": "0.1.0",
-  "package": { "id": "island/mujoco-sim", "version": "0.1.1" },
+  "package": { "id": "island/mujoco-sim", "version": "0.1.2" },
   "process_type": {
     "id": "eos.process.mujoco@v0.1",
     "core": "eos",

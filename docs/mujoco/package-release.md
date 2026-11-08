@@ -61,15 +61,15 @@ git ls-remote --tags origin refs/tags/v0.1.1
 
 ## Aether v2 node candidate details
 
-`tools/build-backend-bundle.py` stages the local `island/mujoco-sim@0.1.1` backend, a schema v4 `release.json`, and a checksummed archive. Its `node_contributions` declares one package-owned simulator process type, the `mujoco-v2` adapter family, and the `sim-hardware` node set. The set uses generic EOS camera, base, manipulator, gate, and primitive binding types. Each hardware node selects and pins the MuJoCo adapter in its settings; the package does not own those generic types. IsOS verifies the release and lists the nodes after install or link; graph preview and apply remain explicit operator actions. The backend descriptor still owns executable, scene, device, and MuJoCo library metadata. See the [backend guide](backend.md) for build and validation steps.
+`tools/bundle.py` stages the local `island/mujoco-sim@0.1.2` backend, a schema v4 `release.json`, and a checksummed archive. Its `node_contributions` declares one package-owned simulator process type, the `mujoco-v2` adapter family, and the `sim-hardware` node set. The set uses generic EOS camera, base, manipulator, gate, and primitive binding types. Each hardware node selects and pins the MuJoCo adapter in its settings; the package does not own those generic types. IsOS verifies the release and lists the nodes after install or link; graph preview and apply remain explicit operator actions. The backend descriptor still owns executable, scene, device, and MuJoCo library metadata. See the [backend guide](backend.md) for build and validation steps.
 
-For the native `0.1.1` candidate, run the CMake/CTest gates first, then invoke `tools/build-backend-bundle.py --build-dir <build> --mujoco-root "$MUJOCO_ROOT" --output <empty directory>`. The builder stages the CMake-installed executable and inspects it before archiving. Review `assets[0].libc`, `tested_ubuntu`, `required_libraries`, archive digest, and an extracted archive's `readelf -d bin/eos-mujoco-sim` output. The Ubuntu 24.04 host currently records `glibc>=2.39` and the exact MuJoCo 3.16.0 SONAME. The archived executable relies on IsOS's managed `LD_LIBRARY_PATH` for the external MuJoCo library. Do not publish a candidate until a clean IsOS-managed relocation and stop replay passes.
+For the native `0.1.2` candidate, run the CMake/CTest gates first, then invoke `tools/bundle.py --build-dir <build> --mujoco-root "$MUJOCO_ROOT" --output <empty directory>`. The builder stages the CMake-installed executable and inspects it before archiving. Review `assets[0].libc`, `tested_ubuntu`, `required_libraries`, archive digest, and an extracted archive's `readelf -d bin/eos-mujoco-sim` output. The Ubuntu 24.04 host currently records `glibc>=2.39` and the exact MuJoCo 3.3.1 SONAME. The archived executable relies on IsOS's managed `LD_LIBRARY_PATH` for the external MuJoCo library. Do not publish a candidate until a clean IsOS-managed relocation and stop replay passes.
 
 ## Earlier published release
 
 Version 1.0.1 is published as a GitHub Release and in the Island package-center catalog for `island/mujoco-sim`. The older v0.1.0 entry remains in the legacy catalog schema; v1.0.1 uses an IsOS schema v4 manifest.
 
-`tools/build-package-release.py` assembles a local candidate for the curated
+`tools/release.py` assembles a local candidate for the curated
 Island package center. It runs the existing CTest suite, stages the simulator
 binary, scene assets, license files, and EOS configuration templates, then
 measures the exact archive size and SHA-256 digest. It does not upload or
@@ -79,7 +79,7 @@ Build on each target machine separately. Supply the minimum glibc version
 established for that binary and only Ubuntu versions actually tested there:
 
 ```sh
-python3.12 tools/build-package-release.py \
+python3.12 tools/release.py \
   --version 1.0.1 \
   --build-dir build \
   --eos-root ../Island-eos \

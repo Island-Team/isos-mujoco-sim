@@ -1,7 +1,7 @@
 {
   "schema_version": "2.0.0",
   "catalog_version": "0.1.0",
-  "package": { "id": "island/mujoco-sim", "version": "0.1.1" },
+  "package": { "id": "island/mujoco-sim", "version": "0.1.2" },
   "entrypoint": "bin/eos-mujoco-sim",
   "protocol": "mujoco-v2",
   "scenes": [
@@ -47,8 +47,8 @@
     }
   ],
   "runtime": {
-    "mujoco_version": "3.16.0",
+    "mujoco_version": "3.3.1",
     "environment_variable": "MUJOCO_ROOT",
-    "library": "lib/libmujoco.so.3.16.0"
+    "library": "lib/libmujoco.so.3.3.1"
   }
 }

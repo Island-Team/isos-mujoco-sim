@@ -1,23 +1,25 @@
 # IsOS managed MuJoCo backend
 
+The `0.1.2` bundle below is a local development candidate using MuJoCo 3.3.1. It is not a published release; historical `0.1.1` evidence later on this page remains tied to MuJoCo 3.16.0.
+
 **Current implementation:** This page records the existing bundle and integration path. [Package descriptor and contributions](interfaces/package.md) and [simulator socket](interfaces/socket.md) are the owner-specific field contracts; [design](design.md) and [TODO](todo.md) distinguish the new 0.x target. The `v2` in a protocol or generated descriptor filename is retained for compatibility; this topic page has no version suffix.
 
 [中文](../../docs_cn/mujoco/backend_cn.md)
 
 For a fresh local source install, set `MUJOCO_ROOT` and run `isos pkg install --source /absolute/path/to/isos-mujoco-sim --allow-source-build`. IsOS invokes this repository's executable `build.sh --output <empty-staging-directory>`, verifies `release.json` and `asset.tar.gz`, then installs the package. The package declares its process entrypoint and generic scene/device catalog; IsOS does not need a MuJoCo-specific launch path. Validate and Apply the node set, then explicitly Run or Restart the deployment. Installation alone does not change an active run.
 
-Build the simulator and stage a local `island/mujoco-sim@0.1.1` bundle:
+Build the simulator and stage a local `island/mujoco-sim@0.1.2` bundle:
 
 ```sh
-export MUJOCO_ROOT=/absolute/path/to/mujoco-3.16.0
+export MUJOCO_ROOT=/absolute/path/to/mujoco-3.3.1
 mkdir -p "$HOME/tmp"
 export TMPDIR="$HOME/tmp"
 cmake -S . -B build -DMUJOCO_ROOT="$MUJOCO_ROOT"
 cmake --build build -j
 ctest --test-dir build --output-on-failure
-python3 tests/node_contributions.py
-python3 tools/build-backend-bundle.py --build-dir build --mujoco-root "$MUJOCO_ROOT" --output /absolute/path/to/mujoco-v2-bundle
-isos pkg link island/mujoco-sim 0.1.1 /absolute/path/to/mujoco-v2-bundle --manifest /absolute/path/to/mujoco-v2-bundle/release.json
+python3 tests/nodes.py
+python3 tools/bundle.py --build-dir build --mujoco-root "$MUJOCO_ROOT" --output /absolute/path/to/mujoco-v2-bundle
+isos pkg link island/mujoco-sim 0.1.2 /absolute/path/to/mujoco-v2-bundle --manifest /absolute/path/to/mujoco-v2-bundle/release.json
 ```
 
 Keep build and temporary directories on a filesystem with enough space, for example `TMPDIR=/home/you/tmp` and `--build-dir /home/you/build-mujoco`. The builder installs the executable through CMake, checks its installed ELF dependencies, and records the native Ubuntu, glibc and resolved library requirements in `release.json`. On Ubuntu 24.04 the asset claims `glibc>=2.39` and `tested_ubuntu:["24.04"]`; the archive has no build-host RUNPATH. Use `--mujoco-root "$MUJOCO_ROOT"` when the root is not exported to the builder. Inspect `readelf -d bin/eos-mujoco-sim` and the release asset before linking or publishing.
@@ -25,11 +27,11 @@ Keep build and temporary directories on a filesystem with enough space, for exam
 The bundle contains an actual executable at `bin/eos-mujoco-sim`, the two
 supported scenes and their model assets, `backend-v2.json`, and a local schema v4 `release.json`. The builder writes a checksummed release archive beside the bundle. The descriptor
 declares the `mujoco-v2` protocol, `cam-0`, `base-0`, and `arm-0` device IDs,
-and the external MuJoCo 3.16.0 library requirement. IsOS verifies the scene,
+and the external MuJoCo 3.3.1 library requirement. IsOS verifies the scene,
 assets, executable, and library before run and supplies the library directory
 to the child process. Package installation alone does not activate a graph.
 
-The release's `node_contributions` declares the `sim-hardware` node set, the `mujoco-v2` adapter family, and the package-owned `eos.process.mujoco@v0.1` process type. The new `0.1.0` graph preset has seven nodes: that process, generic EOS camera/base/manipulator adapters, generic `@v0.1` base/arm primitive bindings, and a camera gate. The IsOS starter supplies `eos.dispatcher.control@v0.1`; the package does not duplicate it. Each hardware instance pins `island/mujoco-sim@0.1.1` in `node.adapter.package`, selects `mujoco-v2`, and stores the selected device ID. EOS verifies the compiled factory and Dispatcher remains the command admission owner. The preset is a draft graph composition, not execution authority; it omits the unregistered legacy IsOS Vision type. IsOS verifies the package and graph before Apply. See the [package contribution contract](interfaces/package.md#p02-contribution-and-graph-boundary).
+The release's `node_contributions` declares the `sim-hardware` node set, the `mujoco-v2` adapter family, and the package-owned `eos.process.mujoco@v0.1` process type. The new `0.1.0` graph preset has seven nodes: that process, generic EOS camera/base/manipulator adapters, generic `@v0.1` base/arm primitive bindings, and a camera gate. The IsOS starter supplies `eos.dispatcher.control@v0.1`; the package does not duplicate it. Each hardware instance pins `island/mujoco-sim@0.1.2` in `node.adapter.package`, selects `mujoco-v2`, and stores the selected device ID. EOS verifies the compiled factory and Dispatcher remains the command admission owner. The preset is a draft graph composition, not execution authority; it omits the unregistered legacy IsOS Vision type. IsOS verifies the package and graph before Apply. See the [package contribution contract](interfaces/package.md#p02-contribution-and-graph-boundary).
 
 The backend node's `settings.env` can contain `MUJOCO_GUI=1` or
 `MUJOCO_GUI=true`. This opens an X11 window titled `IsOS MuJoCo — live
@@ -37,7 +39,7 @@ simulation` while EOS owns the simulator child. It renders camera frames from th
 same `SimEngine` instance controlled by the v2 socket and benchmark socket.
 The default is headless. A desktop with an accessible `DISPLAY` is required;
 an unavailable display makes the simulator fail at startup. The independent
-`tools/scene-view.sh` viewer remains a static scene preview.
+`tools/view.sh` viewer remains a static scene preview.
 
 **R05 scoped qualification:** an EOS-managed strict child accepts only the framed v2 socket and rejects the historical gRPC robot and benchmark sockets. A separate direct launch retains those sockets for legacy clients and trusted evaluation. The pinned IsOS → EOS → MuJoCo replay proved strict health for the declared camera, base and arm in both scenes, read-only capture and observations, and child/socket cleanup. The R06 owner stop fence merged, and scoped cross-owner movement and stop replay passed; broader R06 failure qualification remains open. See the [owning socket contract](interfaces/socket.md) and [R05 evidence](design.md#r05-cross-owner-qualification).
 
@@ -64,7 +66,7 @@ The v2 socket is owner-only (`0600`) and removed on normal shutdown. IsOS verifi
 ## Verification
 
 On 2026-10-30, `cmake --build build -j4` and all ten CTest cases passed on
-Ubuntu with MuJoCo 3.16.0. `tests/v2.py` exercised real JPEG capture, base
+Ubuntu with MuJoCo 3.3.1. `tests/v2.py` exercised real JPEG capture, base
 motion, six-joint command, safe stop, and socket cleanup. With
 `MUJOCO_GUI=1` and `DISPLAY=:0`, `xwininfo` reported a visible 640×480
 window. A v2 base command moved observed base x from -1.20 m to -0.951 m;
@@ -75,10 +77,10 @@ XWD captures are in that same directory. Reproduce the visual check with
 `python3 tests/gui.py build/eos-mujoco-sim assets/scene.xml
 logs/test/2026-10-30-v2-live` on a desktop with X11 access.
 
-The earlier six-node preset and port metadata passed `python3 tests/node_contributions.py` (four tests) on 2026-10-30. `python3 tools/build-backend-bundle.py --build-dir build --output logs/test/20261030-general-interfaces/bundle-r3` staged that release candidate, and `ctest --test-dir build --output-on-failure` passed all ten simulator tests. Complete local output is in `logs/test/20261030-general-interfaces/`. The then-current eight-node preset was checked with the same Python command; its baseline simulator suite passed ten tests on 2026-10-31 in `logs/test/20261031-generic-device-preset/`.
+The earlier six-node preset and port metadata passed `python3 tests/nodes.py` (four tests) on 2026-10-30. `python3 tools/bundle.py --build-dir build --output logs/test/20261030-general-interfaces/bundle-r3` staged that release candidate, and `ctest --test-dir build --output-on-failure` passed all ten simulator tests. Complete local output is in `logs/test/20261030-general-interfaces/`. The then-current eight-node preset was checked with the same Python command; its baseline simulator suite passed ten tests on 2026-10-31 in `logs/test/20261031-generic-device-preset/`.
 
 An isolated IsOS home linked the previous `bundle-r3`, previewed `sim-hardware` with a scene and socket, and validated the resulting graph through EOS `aether-profile`. That preview added six nodes, kept package pins only on the four former MuJoCo types, and reported three IsOS-owned processes. Reproduction details are in `logs/test/20261030-general-interfaces/graph-preview.log`. The later generic device and primitive contracts in EOS and IsOS support the new seven-node preset; see the R05 cross-owner qualification.
 
 ## Package version 0.1.1 check (2026-10-31)
 
-`python3 tests/node_contributions.py`, `python3 tests/release.py`, and `ctest --test-dir build --output-on-failure` passed (10 simulator tests). `python3 tools/build-backend-bundle.py --build-dir build --output logs/test/20261031-version-alignment/bundle` staged a bundle whose release and descriptor report package `0.1.1`. Descriptor schema and socket protocol remain `2.0.0`. Output is in ignored `logs/test/20261031-version-alignment/`.
+`python3 tests/nodes.py`, `python3 tests/release.py`, and `ctest --test-dir build --output-on-failure` passed (10 simulator tests). `python3 tools/bundle.py --build-dir build --output logs/test/20261031-version-alignment/bundle` staged a bundle whose release and descriptor report package `0.1.1`. Descriptor schema and socket protocol remain `2.0.0`. Output is in ignored `logs/test/20261031-version-alignment/`.

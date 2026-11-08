@@ -25,22 +25,22 @@ schema v4 `release.json` 为 `eos.process.mujoco@v0.1` 增加 `node_contribution
 
 [English](../../../docs/mujoco/interfaces/package.md) · [套接字](socket_cn.md) · [包发布](../package-release_cn.md)
 
-**所有权与状态。** 本仓库拥有 MuJoCo 专用 `backend-v2.json` 描述符和 schema v4 `release.json` 中的 `node_contributions`。IsOS 拥有通用发布清单 schema、[已验证收据与包准入](https://github.com/Island-Team/isos/blob/master/docs_cn/isos/interfaces/package-verification_cn.md)、图修订和 `/node-options` 响应。`tools/build-backend-bundle.py` 已输出 P02 目录和 `@v0.1` 声明；IsOS 的语义准入及通用 P03 选项 API 已在其所有者仓库实现；固定版本的 R05 回放验证了本包的实际使用。即使新图格式为 `0.1.0`，描述符 schema、协议和套接字线协议 `2.0.0` 仍是独立兼容性标识。
+**所有权与状态。** 本仓库拥有 MuJoCo 专用 `backend-v2.json` 描述符和 schema v4 `release.json` 中的 `node_contributions`。IsOS 拥有通用发布清单 schema、[已验证收据与包准入](https://github.com/Island-Team/isos/blob/master/docs_cn/isos/interfaces/package-verification_cn.md)、图修订和 `/node-options` 响应。`tools/bundle.py` 已输出 P02 目录和 `@v0.1` 声明；IsOS 的语义准入及通用 P03 选项 API 已在其所有者仓库实现；固定版本的 R05 回放验证了本包的实际使用。即使新图格式为 `0.1.0`，描述符 schema、协议和套接字线协议 `2.0.0` 仍是独立兼容性标识。
 
 ## 当前描述符字段
 
 | 字段 | 类型／单位 | 用途／所有者 | 默认、验证和兼容 |
 | --- | --- | --- | --- |
 | `schema_version` | 字符串 | 描述符解析标识／本包 | 必填 `2.0.0`；IsOS 拒绝未知主版本，并保留此标识。 |
-| `package.id`, `package.version` | 字符串 | 精确包锁定／本包 | 必填 `island/mujoco-sim`、`0.1.1`；须匹配已验证收据。 |
+| `package.id`, `package.version` | 字符串 | 精确包锁定／本包 | 必填 `island/mujoco-sim`、`0.1.2`；须匹配已验证收据。 |
 | `entrypoint` | 相对路径 | 模拟器程序／本包 | 必填 `bin/eos-mujoco-sim`；IsOS 检查其在已验证包内且可执行。 |
 | `protocol` | 字符串 | EOS 适配器工厂标识／本包与 EOS | 必填 `mujoco-v2`；EOS 必须有匹配的编译工厂。 |
 | `scenes[] .id` | 唯一字符串 | 稳定场景选择值／本包 | 当前 `pick-place`、`navigation`；图不存路径。 |
 | `scenes[] .path` | 相对路径 | 场景 MJCF 与资源／本包 | 必须在已验证包内解析为可读的受支持场景；禁止遍历和符号链接逃逸。 |
 | `devices.camera`, `.base`, `.manipulator` | 字符串 | 模拟器设备 ID／本包 | 当前 `cam-0`、`base-0`、`arm-0`；适配器设置使用精确 ID。 |
-| `runtime.mujoco_version` | 字符串 | 外部 MuJoCo ABI 要求／本包 | `3.16.0`；IsOS 启动前检查库和程序兼容性。 |
+| `runtime.mujoco_version` | 字符串 | 外部 MuJoCo ABI 要求／本包 | `3.3.1`；IsOS 启动前检查库和程序兼容性。 |
 | `runtime.environment_variable` | 字符串 | 安装根目录输入／本包 | `MUJOCO_ROOT`；不能把未验证程序路径或秘密写入图。 |
-| `runtime.library` | 相对路径 | 安装根目录下所需动态库／本包 | `lib/libmujoco.so.3.16.0`；IsOS 启动前验证。 |
+| `runtime.library` | 相对路径 | 安装根目录下所需动态库／本包 | `lib/libmujoco.so.3.3.1`；IsOS 启动前验证。 |
 
 历史描述符没有场景或设备的人工描述、场景 profile 和逐场景校验值；设备映射适用于整个包。IsOS 现有解析器检查路径包含关系和引用文件字节；其 P02 配套切片增加描述符级 profile 与校验值检查。模拟器引擎加载场景时也会检查该 profile。
 
@@ -63,13 +63,13 @@ schema v4 `release.json` 为 `eos.process.mujoco@v0.1` 增加 `node_contribution
 | `device_catalog[].label`, `.description` | 非空字符串／— | 操作员显示与能力说明；MuJoCo 包 | 必填；不能从标签推断设备能力。 |
 | `device_catalog[].scene_ids` | 非空场景 ID 数组／— | 此设备可用的场景；MuJoCo 包 | 必填，ID 在 `scenes[]` 中且不重复；当前两个场景均支持三台设备。所选场景不含该设备时 IsOS 拒绝选择。 |
 
-`runtime.mujoco_version`、`runtime.environment_variable` 和 `runtime.library` 保持原义。IsOS 在 Apply 和 Run 前检查 `MUJOCO_ROOT` 下所声明的 `3.16.0` 库；缺失或不兼容时返回不可用原因。包不内置该库。文件名符合要求并不自动证明 ABI 兼容；启动/就绪边界须在报告 ready 前确定实际加载的版本。P01 先验证精确发布收据、全部载荷字节和路径包含关系；P02 再以该已验证句柄检查场景/profile 与设备映射语义。固定 `0.1.1` 锁定下修改程序、场景 XML、引用资源或贡献 sidecar 会使 P01 收据失效；有意修改须发布新包版本。
+`runtime.mujoco_version`、`runtime.environment_variable` 和 `runtime.library` 保持原义。IsOS 在 Apply 和 Run 前检查 `MUJOCO_ROOT` 下所声明的 `3.3.1` 库；缺失或不兼容时返回不可用原因。包不内置该库。文件名符合要求并不自动证明 ABI 兼容；启动/就绪边界须在报告 ready 前确定实际加载的版本。P01 先验证精确发布收据、全部载荷字节和路径包含关系；P02 再以该已验证句柄检查场景/profile 与设备映射语义。固定 `0.1.2` 锁定下修改程序、场景 XML、引用资源或贡献 sidecar 会使 P01 收据失效；有意修改须发布新包版本。
 
 P02 描述符固定于 [`target-descriptor.json`](../../../tests/fixtures/scene_catalog/target-descriptor.json)；[`legacy-descriptor.json`](../../../tests/fixtures/scene_catalog/legacy-descriptor.json) 固定精确旧结构。构建工具根据复制后的 XML 计算两个 SHA-256，并在打包前检查 profile 标记、声明的模型元素与引用资源。MJCF 相对资源路径可以从场景目录向上遍历，但必须留在已验证包内；缺失、逃逸或符号链接资源均失败。真实引擎加载与回放仍由 CTest 验证。
 
 ## P02 声明与图边界
 
-包在 `eos/process/mujoco` 贡献唯一新进程类型 `eos.process.mujoco@v0.1`，并为已验证旧读取器保留精确的 `eos.process.mujoco@v1.0` 历史标识。新类型带非空 `description`；其 `scene` 设置有非空描述和 `selector:{"provider":"package","resource":"scene","package_from":"node.package"}`。`socket`（仅所有者可访问的 Unix 套接字路径）、可选 `env`（字符串表）和 `start_timeout_ms`（正整数毫秒）具有明确的类型、用途与验证。`status` 和 `health` 输出有完整描述、`in_process` 传输和 `state` 数据类。进程实例锁定 `node.package:{"id":"island/mujoco-sim","version":"0.1.1"}`；设置中不存解析后的程序或场景路径。此 sidecar 不增设执行器或安全适配器路线。
+包在 `eos/process/mujoco` 贡献唯一新进程类型 `eos.process.mujoco@v0.1`，并为已验证旧读取器保留精确的 `eos.process.mujoco@v1.0` 历史标识。新类型带非空 `description`；其 `scene` 设置有非空描述和 `selector:{"provider":"package","resource":"scene","package_from":"node.package"}`。`socket`（仅所有者可访问的 Unix 套接字路径）、可选 `env`（字符串表）和 `start_timeout_ms`（正整数毫秒）具有明确的类型、用途与验证。`status` 和 `health` 输出有完整描述、`in_process` 传输和 `state` 数据类。进程实例锁定 `node.package:{"id":"island/mujoco-sim","version":"0.1.2"}`；设置中不存解析后的程序或场景路径。此 sidecar 不增设执行器或安全适配器路线。
 
 `sim-hardware` 新图节点集是 `0.1.0` 草稿模板，不提供执行权限。它包含包拥有的新进程类型、EOS 通用相机/底盘/机械臂 `@v0.1` 类型、EOS 通用底盘/机械臂 primitive 绑定 `@v0.1` 和 EOS 相机门 `@v0.1`。IsOS 初始图已有 `eos.dispatcher.control@v0.1`，节点集不得重复。每个通用硬件实例在 `node.adapter.package` 中精确锁定 MuJoCo 包、引用进程节点，并在适配器设置中存所选 `device_id` 及一致的 `simulator_node`。包不贡献、重命名或覆盖 EOS 通用类型。旧 `isos.ui.vision@v1.0` 不进入此 `0.1.0` 节点集，直至其所有者注册兼容类型；包不能虚构 IsOS UI 标识。此前验证过的旧 sidecar 与已保存的 `1.0.0` 图按原有行为可读；新预设和旧图读取均不静默改写它们。
 
@@ -98,16 +98,16 @@ IsOS 保留 P01 诊断结构 `{code,path,message,id,version,stage}` 和 HTTP 422
 目标描述符示例摘录（完整样本含两个场景、三台设备）：
 
 ```json
-{"schema_version":"2.0.0","catalog_version":"0.1.0","package":{"id":"island/mujoco-sim","version":"0.1.1"},"scenes":[{"id":"pick-place","label":"Pick and place","description":"Reach, grasp and place an object","profile":"eos_benchmark_pick_place_v1","path":"assets/scene.xml","sha256":"6c677b07597ddf3d18cf7b30dddd407a09d1c53086d61c919592d16723d32aea"}],"devices":{"camera":"cam-0","base":"base-0","manipulator":"arm-0"}}
+{"schema_version":"2.0.0","catalog_version":"0.1.0","package":{"id":"island/mujoco-sim","version":"0.1.2"},"scenes":[{"id":"pick-place","label":"Pick and place","description":"Reach, grasp and place an object","profile":"eos_benchmark_pick_place_v1","path":"assets/scene.xml","sha256":"6c677b07597ddf3d18cf7b30dddd407a09d1c53086d61c919592d16723d32aea"}],"devices":{"camera":"cam-0","base":"base-0","manipulator":"arm-0"}}
 ```
 
 若所选 `navigation` 场景的 XML 却声明 `eos_benchmark_pick_place_v1`，IsOS 在进程的 `settings.scene` 路径报告场景/profile 不匹配，已保存及已激活修订不变。若 `navigation` 的设备支持列表缺少 `arm-0`，机械臂选项不可用并附有有界原因，Apply 在其适配器设置处失败。若 `MUJOCO_ROOT` 缺少所需库，包可以保留安装，但所选场景不能就绪。MuJoCo 构建工具使用这些 P02 代码分类直接描述符错误；IsOS 配套切片将图时失败映射到上表精确路径。
 
 通用 `release.json` 字段（ID、版本、校验值、架构、源码、许可证、资源）遵循 IsOS 包契约。本包贡献新进程类型及保留的历史类型、`mujoco-v2` 适配器系列和 `sim-hardware` 节点集。包只拥有模拟器进程类型；相机、底盘、机械臂、门和 primitive 绑定类型仍归 EOS。实例的 `description` 描述配置好的实例；注册进程的 `NodeType.description` 描述可复用类型。缺少类型描述的旧版已验证 sidecar 继续使用兼容默认。
 
-### 原生 `0.1.1` 资源要求
+### 原生 `0.1.2` 资源要求
 
-发布归档包含 CMake 安装后的 `bin/eos-mujoco-sim`，其中没有构建目录的绝对 `RPATH` 或 `RUNPATH`。`release.json` 资源中的 `libc` 是在原生构建主机测得的 `glibc>=主版本.次版本`，`tested_ubuntu` 是该主机的 Ubuntu 版本，`required_libraries` 是已安装程序解析出的、排序后的 SONAME 依赖闭包。在 Ubuntu 24.04 验收主机上，保守的 libc 要求是 `glibc>=2.39`。直接依赖和实际解析的 MuJoCo SONAME 必须恰好为 `libmujoco.so.3.16.0`，并位于所选 `MUJOCO_ROOT/lib` 下；缺失、版本不符或任何未解析库都会阻止归档生成。归档不包含外部 MuJoCo 库。IsOS 解析 `MUJOCO_ROOT`，并通过 `LD_LIBRARY_PATH` 将库目录传给 EOS 管理的模拟器子进程；图设置和包锁定均不嵌入构建主机路径。`required_libraries` 与 `tested_ubuntu` 描述已测原生目标，不代表未测试主机也兼容。
+候选归档包含 CMake 安装后的 `bin/eos-mujoco-sim`，其中没有构建目录的绝对 `RPATH` 或 `RUNPATH`。`release.json` 资源中的 `libc` 是在原生构建主机测得的 `glibc>=主版本.次版本`，`tested_ubuntu` 是该主机的 Ubuntu 版本，`required_libraries` 是已安装程序解析出的、排序后的 SONAME 依赖闭包。在 Ubuntu 24.04 验收主机上，保守的 libc 要求是 `glibc>=2.39`。直接依赖和实际解析的 MuJoCo SONAME 必须恰好为 `libmujoco.so.3.3.1`，并位于所选 `MUJOCO_ROOT/lib` 下；缺失、版本不符或任何未解析库都会阻止归档生成。归档不包含外部 MuJoCo 库。IsOS 解析 `MUJOCO_ROOT`，并通过 `LD_LIBRARY_PATH` 将库目录传给 EOS 管理的模拟器子进程；图设置和包锁定均不嵌入构建主机路径。`required_libraries` 与 `tested_ubuntu` 描述已测原生目标，不代表未测试主机也兼容。
 
 ## 历史声明的兼容性
 

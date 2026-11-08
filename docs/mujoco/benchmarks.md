@@ -1,32 +1,45 @@
-# Robotic agent benchmarks
+# RoboCasa benchmark
 
-[Package overview](README.md) · [Usage](usage.md)
+[Package overview](README.md) · [Usage](usage.md) · [中文](../../docs_cn/mujoco/benchmarks_cn.md)
 
-The catalog tests agents through the same EOS robot interface they would use outside this package. Each scene defines its own reset variation and success rule. Evaluators use the private benchmark service to establish the seed and read ground truth; an agent, including EGIA, sees only EOS discovery, observations, and primitives. The tasks are original package benchmarks inspired by academic robotics evaluation, including [LIBERO](https://arxiv.org/abs/2306.03310) and [ManiSkill3](https://arxiv.org/abs/2410.00425). They are not official ports of either benchmark, and their scores are not directly comparable to those suites.
+The active benchmark is the upstream RoboCasa365 `CloseFridge` atomic task. The first local episode uses the official `robocasa/CloseFridge` Gym environment, target split, seed 42, and RoboCasa's own success check: the selected fridge door must be closed. The script in `tools/robocasahrun.py` takes 20 bounded random actions with base motion held at zero as a smoke baseline. Its result demonstrates environment launch and scoring, not a trained policy or a comparable leaderboard score. RoboCasa recommends 20 episodes per task for evaluation; retain seeds, assets, policy revision, and horizon when reporting a benchmark result.
 
-## Scene catalog
+`./launch.sh` runs this episode by default. It checks `ROBOCASA_ROOT` from root `config.toml` and then `.env`; an empty value resolves to ignored `.local/robocasa`. If source, runtime, or assets are missing, it asks before setup. `./launch.sh --robocasa --seed 42 --steps 20` makes the task and budget explicit. The setup helper pins RoboCasa source and robosuite revisions, installs a private Python 3.11 runtime, and downloads textures and general fixtures from the pinned official RoboCasa asset dataset plus the Lightwheel fixture and object archives from checksum-verified community mirrors. These files remain ignored under `.local/`. The Python runtime pins MuJoCo 3.3.1; the C++ build also targets 3.3.1.
 
-| Scene | Task and variation | Success reported by `Score` |
-| --- | --- | --- |
-| [`assets/scene.xml`](../../assets/scene.xml) | Navigate the mobile manipulator to the table, lift the cube with sustained bilateral gripper contact, then release it in the marked tray. Reset varies cube and two obstacle positions from the seed. | `navigation`, `grasp`, and `placement` are separate Boolean goals. `collisions` records robot contact events with the table or obstacles; `elapsed_sim_s` is simulated time. |
-| [`assets/scenes/navigation/scene.xml`](../../assets/scenes/navigation/scene.xml) | Drive the base through a cluttered scene to the `navigation_goal` at world XY `(0.45, -1.30)`. Reset varies the Y positions of two obstacles from the seed. | `navigation` is true while base XY is within 0.18 m of the goal and absolute yaw is below 0.15 rad. `grasp` and `placement` are inapplicable and remain false; evaluate collision count and simulated time separately. |
+RoboCasa source is [MIT licensed](https://github.com/robocasa/robocasa/blob/main/LICENSE); its [README](https://github.com/robocasa/robocasa#license) identifies assets and datasets as CC BY 4.0. The task implementation and success rule are in upstream `robocasa/environments/kitchen/atomic/kitchen_doors.py`. The [RoboCasa365 paper](https://robocasa.ai/assets/robocasa365_iclr26.pdf) describes the benchmark. Keep the downloaded asset attribution with any redistributed results or assets.
 
-The pick-and-place oracle in `tests/engine.cpp` demonstrates one deterministic seed-42 completion using the same base, arm, and gripper commands exposed through EOS. It is a regression test for the engine and score, not a policy for other seeds or an agent benchmark result. The navigation engine test uses a two-leg route as a deterministic score check. Neither oracle should be presented to an evaluated agent as privileged task state.
+The former package-authored pick-and-place and navigation tasks are legacy simulator fixtures for compatibility tests and are not active benchmarks. Their private C++ benchmark RPC remains outside EOS and EGIA. This RoboCasa episode currently runs in the upstream environment; EOS agent control of RoboCasa requires a dedicated adapter before it can be claimed as an end-to-end EOS evaluation.
 
-## Episode method
+## List and select a task
 
-Pin the package revision, scene path and asset hashes, EOS and agent revisions, task budget, seed list, and scoring rules before a run. Use the same seed list and duration for each compared agent. Start the scene and agent, then run `build/benchmark-eval --benchmark-socket /absolute/benchmark.sock --task navigation --seed 42 --duration-s 30` for one timed episode. The evaluator resets, resumes real-time simulation, waits the requested wall-clock duration, pauses, reads `Score`, and emits a JSON object. The agent acts independently through EOS. For deterministic command replay, keep the engine paused and use `Step(steps)` at explicit points through the private RPC instead of the timed evaluator.
+```sh
+./launch.sh --show-config
+./launch.sh --list-benchmarks --filter Fridge
+./launch.sh --list-kitchens
+./launch.sh --benchmark CloseFridge --split target --seed 42 --steps 20
+./launch.sh --list-scenes
+./launch.sh --scene navigation --no-gui
+```
 
-Report each scene and seed separately, then aggregate success rate across the fixed list. `benchmark-eval` sets `success` to the conjunction of navigation, grasp, and placement for pick and place, or to navigation alone for the navigation task. Also report collisions and elapsed simulated time as separate measures; a successful goal may still have collision events. Report failed resets, unavailable EOS devices, agent timeouts, and incomplete episodes rather than silently dropping them. Do not use private state or scores in the agent's prompts, tools, or observations.
+The benchmark list comes from the pinned RoboCasa task registry. By default it shows the tasks that have a `target` dataset entry; use `--split pretrain` or `--split all` to see other sets. Each row includes the upstream episode horizon and a local asset status. `--list-kitchens` shows kitchen layout and style candidates; individual tasks may exclude a candidate. The target split uses paired scenes `1:1` through `10:10`; omit `--kitchen-scene` for RoboCasa's seeded scene choice. `CloseFridge` is the verified smoke task. Other registered tasks or a fixed kitchen scene need the full object collections. The launcher and default `./build.sh` ask before downloading about 8 GB compressed plus extraction when the configured selection needs them; a declined download leaves the first-task setup intact. Full asset setup can also be requested explicitly with `./tools/robocasasetup.sh --full`. This broader catalog is registered upstream but is not yet smoke verified task by task. The native scene list comes from the package-owned catalog and shows the two compatibility scene IDs.
 
-EGIA may be evaluated as an EOS client without changing its southbound protocol. Configure its connection profile to the running EOS gateway, check that expected device capabilities are discovered and healthy, and use its normal mission and primitive path. The evaluator's episode log should retain the EGIA/EOS versions, robot alias and runtime identity, seed, scene revision, and final score so a result can be reproduced. EOS discovery does not currently supply station or reachability bindings; task instructions must not assume those are discoverable.
+Set `[task].name`, `split`, `scene`, `seed`, and `steps` in `config/benchmarks/robocasa.toml` to change shared defaults. Root `config.toml` selects this file with `BENCHMARK_CONFIG`. The ignored `.env` can override each value with `export BENCHMARK_TASK=...` and similar assignments, including `export BENCHMARK_SCENE=1:1`. Command-line flags override both. Run `./launch.sh` for the configured benchmark or `./launch.sh --native` for the configured native `SIM_SCENE`. `--show-config` prints the effective selection. The JSON result records the actual kitchen `scene` as `layout:style`. The upstream horizon is task metadata; this runner's `--steps` is a shorter smoke budget and does not claim a full evaluation episode.
 
-## Adding a scene
+The checked-in [RoboCasa preset](../../config/benchmarks/robocasa.toml) groups the task selection, camera observation, and GUI display settings. To use another checked-in preset, set `BENCHMARK_CONFIG` in root `config.toml` to its path. The loader rejects missing sections, missing fields, unknown fields, and wrong TOML types before starting a run.
 
-Keep each new MJCF scene and its local assets together under `assets/scenes/<short-name>/`; retain the existing `assets/scene.xml` path for the first profile. Add a focused scene page or catalog entry with the research citation, source revision, license, imported-model provenance, robot capabilities, seed distribution, task instruction, private success rule, and known score limitations. Keep source asset licenses beside the assets and update [model provenance](../../assets/MODELS.md) when importing models.
+## Camera and display configuration
 
-Implement explicit engine admission for the scene's required names and geometry, deterministic reset, ground-truth state, and score. Avoid interpreting arbitrary loadable XML as a supported benchmark. Select the scene with `--scene` for direct runs or in the applied IsOS/EOS v2 graph for managed runs. Add a model-loading check, seeded replay check, positive and negative success checks, and a service smoke check before listing the scene here.
+RoboCasa provides three RGB views: `robot0_agentview_left`, `robot0_agentview_right`, and `robot0_eye_in_hand`. `BENCHMARK_CAMERA` selects the view shown in the dev GUI; it does not remove the other camera observations. `BENCHMARK_CAMERA_WIDTH` and `BENCHMARK_CAMERA_HEIGHT` set the rendered observation size (64–2048 pixels each; default 256×256). Changing them affects image pixels and runtime, so record them with a benchmark result. `BENCHMARK_GUI_WIDTH` scales the displayed window only (256–3840 pixels; default 768); it preserves the observation resolution and image aspect ratio. The result JSON records the camera and rendered dimensions.
 
-Version a scene by its package revision plus its XML and asset contents. If reset bounds, geometry, success thresholds, or scoring logic change, treat resulting scores as a new benchmark version and do not merge them into an earlier aggregate without identifying the change. Keep the exact seeds and evaluation budgets with published results.
+Set `[camera]` and `[gui]` values in `config/benchmarks/robocasa.toml`, override them with the corresponding `BENCHMARK_*` variables in `.env`, or use one-run flags:
 
-**Related:** [Design](design.md) · [Benchmark interface](interfaces/benchmark.md) · [Usage](usage.md)
+```sh
+./launch.sh --benchmark CloseFridge --camera robot0_agentview_right --gui-width 960
+./launch.sh --benchmark CloseFridge --camera-width 512 --camera-height 512 --gui-width 960
+```
+
+The first command enlarges the window while retaining 256×256 benchmark observations. The second renders 512×512 observations and uses more GPU time and memory. Use `--no-gui` to run without a window.
+
+## Local verification
+
+On 2026-11-08, `./launch.sh --robocasa --seed 42 --steps 20` completed twice with the same task instruction, 20 steps, and `success: false`. This confirms the upstream task loads and its success rule is queried; it does not establish an agent policy score. The C++ MuJoCo 3.3.1 build passed 27/27 CTest cases.
