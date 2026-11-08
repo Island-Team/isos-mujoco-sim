@@ -4,7 +4,7 @@
 
 **Status:** owner source checks, selected-source Q03 final-17 replay, and merged-head Q04 final-5 replay passed. Independent Q04 archive review found no P1/P2 findings. The `v0.1.1` tag is published, and the later five-owner released-asset replay passed its stated Q04/M5 gate; see the [package release record](package-release.md) and [EOS Q04 qualification](https://github.com/Island-Team/Island-eos/blob/master/docs/island/q04-merged-qualification.md). The simulator owns scene loading, deterministic reset, physics, rendering, its private socket, and benchmark scoring. EOS owns the robot-facing route. Never expose benchmark ground truth through EOS, EGIA, or UI.
 
-**Q03 owner baseline (2026-11-03):** the direct socket harness is implemented in `tests/q03_socket_bench.py`, with private `benchmark-reset` and negative unit tests. The measured run is local evidence, not the cross-owner installed replay or release approval. Complete initial output remains in ignored `logs/test/20261103-q03-mujoco/`; the final renderer-probe bundle is in `logs/test/20261103-q03-mujoco-review-final/`, and the collision-free raw samples and six child logs are in `logs/test/20261103-q03-mujoco-review-final-2/`.
+**Q03 owner baseline (2026-11-03):** the direct socket harness is implemented in `tests/q03bench.py`, with private `benchmark-reset` and negative unit tests. The measured run is local evidence, not the cross-owner installed replay or release approval. Complete initial output remains in ignored `logs/test/20261103-q03-mujoco/`; the final renderer-probe bundle is in `logs/test/20261103-q03-mujoco-review-final/`, and the collision-free raw samples and six child logs are in `logs/test/20261103-q03-mujoco-review-final-2/`.
 
 ## Fixed inputs and owner checks
 
@@ -30,13 +30,13 @@ ctest --test-dir build-q03 --output-on-failure
 ctest --test-dir build-q03 -R 'strict-socket|strict-capacity|strict-stop|v2-socket|benchmark-eval|engine-test|scene-catalog|bundle-catalog|q03-socket' --output-on-failure
 python3 tests/fixtures/strict_socket/check.py
 python3 tests/fixtures/strict_stop_lane/check.py
-python3 tests/node_contributions.py
-python3 tools/build-backend-bundle.py --build-dir build-q03 --output logs/test/20261103-q03-mujoco-review-final/bundle
-python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco-review-final-2/pick-place.json
-python3 tests/q03_socket_bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scenes/navigation/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco-review-final-2/navigation.json
+python3 tests/nodes.py
+python3 tools/bundle.py --build-dir build-q03 --output logs/test/20261103-q03-mujoco-review-final/bundle
+python3 tests/q03bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco-review-final-2/pick-place.json
+python3 tests/q03bench.py --sim build-q03/eos-mujoco-sim --reset build-q03/benchmark-reset --scene assets/scenes/navigation/scene.xml --warmup 20 --observe 200 --capture 20 --repetitions 3 --json logs/test/20261103-q03-mujoco-review-final-2/navigation.json
 ```
 
-The post-format full CTest passed 25/25 and the focused set passed 16/16. The static R05 and R06 fixture matrices passed 31 and 48 cases; the node contribution checker passed. The first formatting check failed in three pre-existing files (`tests/smoke.cpp`, `src/service.cpp`, `src/gui.cpp`, 86 diagnostics); a separate formatting-only commit corrected them and the final tracked C++ check passed. The final package builder produced `mujoco-sim-v0.1.1-linux-x86_64.tar.gz` with SHA-256 `05a9346db26f43510c1986ff7431038ae29197ac85300a2f1efd1211f3458fe6`. At this initial owner baseline, the installed IsOS→EOS replay was still open for the cross-owner gate.
+The post-format full CTest passed 25/25 and the focused set passed 16/16. The static R05 and R06 fixture matrices passed 31 and 48 cases; the node contribution checker passed. The first formatting check failed in three pre-existing files (`tests/smoke.cpp`, `src/isos/service.cpp`, `src/mujoco/gui.cpp`, 86 diagnostics); a separate formatting-only commit corrected them and the final tracked C++ check passed. The final package builder produced `mujoco-sim-v0.1.1-linux-x86_64.tar.gz` with SHA-256 `05a9346db26f43510c1986ff7431038ae29197ac85300a2f1efd1211f3458fe6`. At this initial owner baseline, the installed IsOS→EOS replay was still open for the cross-owner gate.
 
 On this x86_64 Linux host, C++ is GCC 13.3.0, MuJoCo is the installed 3.16.0 tree, and the benchmark uses the package EGL path without a GUI. `environment.json` records the kernel, tool versions, source pin, binaries, scenes, library and archive hashes. The runtime probe resolved EGL vendor `NVIDIA` and GL renderer `NVIDIA GeForce RTX 2080 Ti/PCIe/SSE2` for all six processes. With seed 42, paused scenes, 20 warm-up observations, three fresh processes per scene and 200 observations plus 20 captures per process, the final raw run recorded:
 

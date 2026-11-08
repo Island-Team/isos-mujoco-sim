@@ -12,7 +12,7 @@ The socket is an owner-only Unix stream (`0600`) under a private runtime directo
 
 In strict mode a successful `health` response includes `features:["strict-socket-v1"]` and `accepted:true`; direct legacy mode has no `strict-socket-v1` feature. Camera health also probes a real render and returns `device_unavailable` without that feature if EGL or JPEG rendering fails. EOS checks the version, echoed request ID, `ok`, `accepted` and exact feature before declaring the backend or any MuJoCo adapter ready. Merely connecting to the socket is insufficient. A missing, malformed or contradictory feature fails readiness, and EOS terminates/reaps the unready child. The child never claims this feature until all strict checks and legacy-listener suppression are active.
 
-The managed child compiles stable device IDs and scene support from the package-owned P02 catalog in `tools/scene_catalog.py`, then matches the device to the profile of the loaded MuJoCo model. The model supplies the six named joint ranges. EOS must supply the verified scene path and check the applied graph's selected device mapping; the child cannot infer an authored graph path from a socket request.
+The managed child compiles stable device IDs and scene support from the package-owned P02 catalog in `tools/catalog.py`, then matches the device to the profile of the loaded MuJoCo model. The model supplies the six named joint ranges. EOS must supply the verified scene path and check the applied graph's selected device mapping; the child cannot infer an authored graph path from a socket request.
 
 | Field | Type / unit | Purpose and owner | Default / validation / compatibility |
 | --- | --- | --- | --- |

@@ -1,55 +1,61 @@
-# EOS MuJoCo benchmark simulator
+# IsOS MuJoCo simulator
 
-The 0.x integration design starts at [first use](docs/mujoco/usage.md), then [package contract](docs/mujoco/interfaces/package.md), [socket contract](docs/mujoco/interfaces/socket.md), [algorithms](docs/mujoco/design.md), and [TODO](docs/mujoco/todo.md). Target behavior is distinguished from the current simulator.
+[中文](README_cn.md) · [First-run guide](docs/mujoco/usage/start.md) · [Documentation map](docs/mujoco/doc_index.md)
 
-[中文](README_cn.md)
+This repository has two runnable paths. The active benchmark is upstream RoboCasa365 `CloseFridge`, launched locally through its Python environment. The C++ MuJoCo simulator supplies a native development core and an IsOS/EOS package wrapper. Its pick-and-place and navigation scenes remain compatibility fixtures. EOS connects to the wrapper for robot-facing devices and primitives; a trusted evaluator alone uses its private benchmark socket. RoboCasa does not yet have an EOS adapter.
 
-[GitHub repository](https://github.com/Island-Team/isos-mujoco-sim)
+## Build everything
 
-This independent C++ package runs robotic benchmark scenes in MuJoCo. EOS connects to its simulator socket and exposes normal robot discovery, observations, and primitives to agents such as EGIA. A trusted evaluator alone connects to the separate benchmark socket for seeded resets, manual stepping, ground truth, and scores.
-
-The catalog starts with [pick and place](assets/scene.xml) and [navigation](assets/scenes/navigation/scene.xml). Select one scene at process startup with `--scene` for direct runs or in the IsOS v2 graph for managed runs. Read the [documentation map](docs/mujoco/doc_index.md) for setup, benchmark methods, interfaces, model provenance, and the path for adding a scene.
-
-For the IsOS/EOS 2.0.0 graph and framed socket path, use the
-[v2 backend guide](docs/mujoco/backend.md). It stages a local backend
-bundle with `tools/build-backend-bundle.py`. Set `MUJOCO_GUI=1` in the IsOS
-backend node environment to view the running simulator's live state.
-
-## Quick start
-
-For the current IsOS/EOS deployment, verify and install the published [`island/mujoco-sim@0.1.1`](https://github.com/Island-Team/isos-mujoco-sim/releases/tag/v0.1.1) package, or build and link a local bundle; preview its `sim-hardware` node set and apply the resulting shared graph. IsOS verifies the package and scene; EOS starts the simulator as its direct child. See the [v2 backend guide](docs/mujoco/backend.md) and [package usage](docs/mujoco/usage.md). MuJoCo 3.16.0 remains an operator-provided dependency through `MUJOCO_ROOT`. The published v1.0.1 release is a separate legacy package; see [release history](docs/mujoco/package-release.md).
-
-The following source build is useful for development and direct runs.
-
-Requires C++20, CMake 3.22+, MuJoCo 3.16.0, protobuf, gRPC, and libjpeg. Copy [.env.example](.env.example) to the ignored `.env`, set `MUJOCO_ROOT` to your actual MuJoCo installation directory, then source it before building. The directory must contain `include/mujoco/mujoco.h`, `lib/libmujoco.so`, `bin/compile`, and `bin/simulate`.
+On Linux, install MuJoCo **3.3.1**, a C++20 compiler, CMake 3.22+, protobuf, gRPC, libjpeg, Python 3, `git`, `wget`, and `uv`. Copy the sample environment file and set `MUJOCO_ROOT` to the absolute MuJoCo installation directory. It must contain `include/mujoco/mujoco.h`, `lib/libmujoco.so.3.3.1`, `bin/compile`, and `bin/simulate`.
 
 ```sh
-. ./.env
-: "${MUJOCO_ROOT:?Set MUJOCO_ROOT to your installed MuJoCo 3.16.0 directory}"
-cmake -S . -B build -DMUJOCO_ROOT="$MUJOCO_ROOT"
-cmake --build build -j
+cp .env.example .env
+# Edit .env: export MUJOCO_ROOT=/absolute/path/to/mujoco-3.3.1
+./build.sh
 ctest --test-dir build --output-on-failure
+build/mujoco-core --scene "$PWD/assets/scene.xml" --seed 42 --steps 20
 ```
 
-For a standalone background run, `launch.sh` uses the configured scene and creates owner-only sockets under `.run/mujoco/`. It loads the local `.env` automatically; `kill.sh` stops only processes started by this launcher. Copy [launch.conf.example](launch.conf.example) to the ignored `launch.conf` to change defaults.
+`config.toml` holds repository-wide defaults and points to `config/benchmarks/robocasa.toml` for benchmark settings; the ignored `.env` overrides matching values. `./build.sh` builds every C++ target in `build/`, including `mujoco-core` and `eos-mujoco-sim`. In dev mode it also checks RoboCasa source, private Python runtime, and assets, asking before any needed download. To start the wrapper locally and stop it afterward:
+
+The committed `SIM_PROFILE = "isos-pkg"` selects the IsOS package build. For local development, add `export SIM_PROFILE=dev` to `.env`; then `./build.sh` also prepares RoboCasa and `./launch.sh` opens its live camera GUI by default. `--no-gui` runs without a window. In `isos-pkg`, `./build.sh` builds the native targets and `./build.sh --output ABSOLUTE_EMPTY_DIRECTORY` creates the package asset. IsOS server integration remains in the managed backend guide.
 
 ```sh
 ./launch.sh --scene pick-place --no-gui
 ./kill.sh
 ```
 
-Use `--scene navigation` for the navigation task or `--gui` to open a separate MuJoCo viewer of the selected XML. The viewer does not display the running simulator's live state. For a direct run, pass absolute paths; the second socket is private to the evaluator.
+The wrapper runs in the background, reports its socket paths, and logs to `logs/dev/native/latest.log`. Use `--scene navigation` for the other compatibility fixture. In dev mode, `--scene` opens a separate static viewer by default; it requires a desktop display. The launcher removes stale sockets only after checking that no process owns them. See the [first-run guide](docs/mujoco/usage/start.md#build-and-run-the-native-simulator) for configuration fields, expected results, and troubleshooting.
+
+## Find and select a task
 
 ```sh
-build/eos-mujoco-sim \
-  --socket /tmp/eos-simulator.sock \
-  --benchmark-socket /tmp/eos-benchmark.sock \
-  --v2-socket /tmp/eos-v2.sock \
-  --scene "$PWD/assets/scene.xml"
+./launch.sh --show-config
+./launch.sh --list-benchmarks --filter Fridge
+./launch.sh --list-kitchens
+./launch.sh --benchmark CloseFridge --split target --seed 42 --steps 20
+./launch.sh --list-scenes
+./launch.sh --scene navigation --no-gui
 ```
 
-Use `tools/scene-view.sh --scene "$PWD/assets/scene.xml"` for an interactive MuJoCo preview, or add `--check` for a headless model-loading check. `build/benchmark-eval` runs a timed private episode while the agent acts through EOS. See [usage](docs/mujoco/usage.md) for EOS launch, the navigation scene, and evaluator flags.
+`--list-benchmarks` reads RoboCasa's registered tasks for the selected split; the default `target` split has 50 tasks in the pinned checkout. `--filter` narrows the list. `CloseFridge` is the verified local smoke task. Selecting another task or a fixed kitchen scene with `--kitchen-scene 1:1` makes the launcher or default build prompt before downloading about 8 GB of additional compressed object assets; the default seeded scene needs only the first-task assets. `--list-scenes` shows the two native compatibility scenes. Save the default benchmark task, split, kitchen scene, seed, and step budget in `config/benchmarks/robocasa.toml` or override them in `.env`; `./launch.sh` uses those defaults. See the [selection guide](docs/mujoco/benchmarks.md#list-and-select-a-task).
 
-## License
+## Run RoboCasa
 
-Original package code and documentation are [Apache-2.0](LICENSE). Imported Menagerie models retain their [UR5e](assets/menagerie/universal_robots_ur5e/LICENSE) and [Robotiq 2F-85](assets/menagerie/robotiq_2f85/LICENSE) licenses. Keep the [model provenance](assets/MODELS.md) and source licenses with redistributed assets. MuJoCo is installed separately.
+After `./build.sh` completes, run the benchmark from the repository root:
+
+```sh
+./launch.sh --robocasa --seed 42 --steps 20
+```
+
+If RoboCasa is still missing, `./launch.sh` also asks before downloading the pinned source, robosuite, and task assets. By default, they live under ignored `.local/`; set `ROBOCASA_ROOT` in [config.toml](config.toml) or `.env` to use another source checkout. The script installs a private Python 3.11 environment and prints a JSON result with the task, instruction, seed, action count, and success flag. It takes random bounded actions, so `success: false` is a valid smoke result. See the [first-run guide](docs/mujoco/usage/start.md#run-the-first-robocasa-task) and [benchmark method](docs/mujoco/benchmarks.md).
+
+In dev mode, RoboCasa shows its live camera frame during the episode and holds the final frame until a key is pressed in the image window. Run `./launch.sh --benchmark CloseFridge --no-gui` for terminal-only execution. Output is saved in `logs/dev/robocasa/latest.log`; each run also has a timestamped log. The optional robosuite model/IK/mimicgen messages and Gymnasium observation-space warnings come from the upstream environment and do not prevent this smoke run.
+
+The GUI is 768 pixels wide by default. Set `[gui].width` in `config/benchmarks/robocasa.toml` or `BENCHMARK_GUI_WIDTH` in `.env`, or pass `--gui-width 960`, to enlarge it without changing benchmark observations. Use `--camera robot0_agentview_right` or `--camera robot0_eye_in_hand` to switch views. `--camera-width` and `--camera-height` change the actual rendered observation resolution; see the [camera configuration](docs/mujoco/benchmarks.md#camera-and-display-configuration).
+
+## Use with IsOS and EOS
+
+The local `island/mujoco-sim@0.1.2` candidate packages the C++ wrapper for an IsOS graph. Build a bundle, verify its manifest, link or install it in IsOS, then Validate, Apply, and Run the graph. EOS owns the simulator child and exposes ordinary device capabilities to agents. Follow the [managed backend guide](docs/mujoco/backend.md) for the exact package and graph commands, readiness checks, logs, and stop procedure. The published `0.1.1` release used MuJoCo 3.16.0; these source instructions target 3.3.1.
+
+The [documentation map](docs/mujoco/doc_index.md) links the interfaces, source ownership, benchmark provenance, design, and verification records. [GitHub repository](https://github.com/Island-Team/isos-mujoco-sim).

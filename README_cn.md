@@ -1,20 +1,61 @@
-# EOS MuJoCo 基准模拟器
+# IsOS MuJoCo 模拟器
 
-0.x 集成设计从[首次使用](docs_cn/mujoco/usage_cn.md)开始，依次阅读[包契约](docs_cn/mujoco/interfaces/package_cn.md)、[套接字契约](docs_cn/mujoco/interfaces/socket_cn.md)、[算法](docs_cn/mujoco/design_cn.md)与 [TODO](docs_cn/mujoco/todo_cn.md)。目标行为与当前模拟器明确区分。
+[English](README.md) · [首次运行指南](docs_cn/mujoco/usage/start_cn.md) · [文档导航](docs_cn/mujoco/doc_index_cn.md)
 
-[English](README.md) · [文档导航](docs_cn/mujoco/doc_index_cn.md)
+本仓库有两条可运行路径。当前基准是上游 RoboCasa365 `CloseFridge`，通过其 Python 环境在本地启动。C++ MuJoCo 模拟器提供直接开发用的核心和 IsOS/EOS 软件包包装层；抓取放置与导航场景保留为兼容性测试场景。EOS 连接包装层，向代理提供机器人设备与 primitive；只有可信评测器使用独立的私有 benchmark 套接字。RoboCasa 目前尚无 EOS 适配器。
 
-此独立 C++ 软件包在 MuJoCo 中运行机器人基准场景。EOS 通过模拟器套接字取得普通设备发现、观察与 primitive，并交给 EGIA 等代理。只有可信评测器连接独立的 benchmark 套接字，用于带种子的重置、手动步进、真实状态和评分。场景包括[抓取放置](assets/scene.xml)与[导航](assets/scenes/navigation/scene.xml)。直接运行通过 `--scene` 选场景；IsOS/EOS v2 管理运行通过共享图选场景。
+## 构建全部内容
 
-当前 IsOS/EOS 路径可验证并安装已发布的 [`island/mujoco-sim@0.1.1`](https://github.com/Island-Team/isos-mujoco-sim/releases/tag/v0.1.1) 包，也可构建并链接本地包；预览 `sim-hardware` 节点集后应用共享图。IsOS 检查软件包与场景，EOS 将模拟器作为直接子进程启动。详见 [v2 后端](docs_cn/mujoco/backend_cn.md)与[使用指南](docs_cn/mujoco/usage_cn.md)。MuJoCo 3.16.0 由操作员通过 `MUJOCO_ROOT` 提供。已发布的 v1.0.1 版本是另一个旧包，见[发布历史](docs_cn/mujoco/package-release_cn.md)。
-
-独立源码构建需要 C++20、CMake 3.22+、MuJoCo 3.16.0、protobuf、gRPC 与 libjpeg。将 `.env.example` 复制为忽略的 `.env` 并设置 `MUJOCO_ROOT`；目录需有 `include/mujoco/mujoco.h`、`lib/libmujoco.so`、`bin/compile` 和 `bin/simulate`。
+在 Linux 上安装 MuJoCo **3.3.1**、C++20 编译器、CMake 3.22 或更新版本、protobuf、gRPC、libjpeg、Python 3、`git`、`wget` 和 `uv`。复制环境示例文件，将 `MUJOCO_ROOT` 设为 MuJoCo 安装目录的绝对路径。目录下需包含 `include/mujoco/mujoco.h`、`lib/libmujoco.so.3.3.1`、`bin/compile` 和 `bin/simulate`。
 
 ```sh
-. ./.env
-cmake -S . -B build -DMUJOCO_ROOT="$MUJOCO_ROOT"
-cmake --build build -j
+cp .env.example .env
+# 编辑 .env：export MUJOCO_ROOT=/absolute/path/to/mujoco-3.3.1
+./build.sh
 ctest --test-dir build --output-on-failure
+build/mujoco-core --scene "$PWD/assets/scene.xml" --seed 42 --steps 20
 ```
 
-独立后台运行用 `./launch.sh --scene pick-place --no-gui` 启动，用 `./kill.sh` 停止。`--scene navigation` 选择导航；`--gui` 打开独立的静态场景查看器，不显示运行中模拟器的实时状态。直接运行需为 `--socket`、`--benchmark-socket` 与 `--scene` 提供绝对路径；当前 v2 适配器还需要独立的 `--v2-socket`。详见[使用指南](docs_cn/mujoco/usage_cn.md)。
+`config.toml` 提供仓库级默认值，并指向基准配置文件 `config/benchmarks/robocasa.toml`；被忽略的 `.env` 覆盖同名配置。`./build.sh` 将全部 C++ 目标构建到 `build/`，包括 `mujoco-core` 和 `eos-mujoco-sim`。dev 模式还会检查 RoboCasa 源码、私有 Python 环境和资源，并在下载前询问。本地启动包装层并随后停止：
+
+仓库的 `SIM_PROFILE = "isos-pkg"` 默认选择 IsOS 包构建。本机开发时，在 `.env` 增加 `export SIM_PROFILE=dev`；此时 `./build.sh` 也准备 RoboCasa，`./launch.sh` 默认打开实时相机 GUI。使用 `--no-gui` 可关闭窗口。`isos-pkg` 下的 `./build.sh` 构建原生目标；`./build.sh --output 绝对路径空目录` 创建软件包资源。
+
+```sh
+./launch.sh --scene pick-place --no-gui
+./kill.sh
+```
+
+包装层在后台运行，报告套接字路径，并将日志写到 `logs/dev/native/latest.log`。另一个兼容性场景用 `--scene navigation`。dev 模式默认打开独立静态查看器，需要桌面显示环境；启动器仅在确认套接字没有进程占用后清理遗留套接字。配置项、预期结果和故障排查见[首次运行指南](docs_cn/mujoco/usage/start_cn.md#构建和运行原生模拟器)。
+
+## 查找并选择任务
+
+```sh
+./launch.sh --show-config
+./launch.sh --list-benchmarks --filter Fridge
+./launch.sh --list-kitchens
+./launch.sh --benchmark CloseFridge --split target --seed 42 --steps 20
+./launch.sh --list-scenes
+./launch.sh --scene navigation --no-gui
+```
+
+`--list-benchmarks` 从 RoboCasa 注册表列出指定划分的任务；固定版本的默认 `target` 划分有 50 个任务。`--filter` 缩小列表。`CloseFridge` 已通过本地冒烟验证。选择其他任务或以 `--kitchen-scene 1:1` 固定厨房场景时，启动器或默认构建会先询问是否下载约 8 GB 的额外压缩物体资源；默认的带种子场景只需要首个任务资源。`--list-scenes` 列出两个原生兼容性场景。在 `config/benchmarks/robocasa.toml` 保存默认任务、划分、厨房场景、种子和步数，或在 `.env` 中覆盖；`./launch.sh` 使用这些默认值。详见[选择指南](docs_cn/mujoco/benchmarks_cn.md#列出并选择任务)。
+
+## 运行 RoboCasa
+
+`./build.sh` 完成后，从仓库根目录运行基准：
+
+```sh
+./launch.sh --robocasa --seed 42 --steps 20
+```
+
+若仍缺少 RoboCasa，`./launch.sh` 也会在下载固定版本的源码、robosuite 和任务资源前先询问。默认存放在忽略的 `.local/` 下；可在 [config.toml](config.toml) 或 `.env` 设置 `ROBOCASA_ROOT`，使用其他源码目录。脚本安装私有 Python 3.11 环境，并输出包含任务、指令、种子、动作数与成功标志的 JSON。运行器使用有界随机动作，所以 `success: false` 仍是有效的冒烟结果。详见[首次运行指南](docs_cn/mujoco/usage/start_cn.md#运行首个-robocasa-任务)与[基准方法](docs_cn/mujoco/benchmarks_cn.md)。
+
+dev 模式运行 RoboCasa 时显示实时相机画面，并保留最终画面，直至在图像窗口按键。`./launch.sh --benchmark CloseFridge --no-gui` 可仅使用终端。输出保存在 `logs/dev/robocasa/latest.log`，每次运行另有带时间戳的日志。可选 robosuite 模型、IK、mimicgen 提示以及 Gymnasium observation-space 警告来自上游环境，不妨碍本次冒烟运行。
+
+GUI 默认宽 768 像素。可在 `config/benchmarks/robocasa.toml` 设置 `[gui].width`，或在 `.env` 设置 `BENCHMARK_GUI_WIDTH`，或传入 `--gui-width 960`，只放大窗口而不改变基准观测。使用 `--camera robot0_agentview_right` 或 `--camera robot0_eye_in_hand` 切换视角。`--camera-width` 和 `--camera-height` 则修改实际渲染的观测分辨率；详见[相机配置](docs_cn/mujoco/benchmarks_cn.md#相机和显示配置)。
+
+## 与 IsOS 和 EOS 一起使用
+
+本地 `island/mujoco-sim@0.1.2` 候选包将 C++ 包装层接入 IsOS 图。构建资源包、验证清单、在 IsOS 中链接或安装，然后 Validate、Apply 并 Run 图。EOS 管理模拟器子进程，向代理公开普通设备能力。精确的包与图命令、就绪检查、日志和停止流程见[受管理后端指南](docs_cn/mujoco/backend_cn.md)。已发布的 `0.1.1` 版本使用 MuJoCo 3.16.0；此处的源码说明针对 3.3.1。
+
+[文档导航](docs_cn/mujoco/doc_index_cn.md)提供接口、源码职责、基准来源、设计及验证记录。[GitHub 仓库](https://github.com/Island-Team/isos-mujoco-sim)。
