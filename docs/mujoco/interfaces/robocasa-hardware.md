@@ -30,4 +30,4 @@ hardware.close()
 
 **Target design — not implemented:** a RoboCasa process node will own environment lifecycle, and EOS hardware nodes will bind to the stable catalog IDs through a governed adapter. IsOS package and graph composition will follow that process contract. The current C++ scene catalog and EOS simulator protobuf do not describe this core.
 
-Verification: `PYTHONPATH=. .local/robocasa-venv/bin/python -m unittest discover -s tests -p 'robocasahardware.py' -v` runs stubbed boundary tests; `PYTHONPATH=. .local/robocasa-venv/bin/python tests/robocasareplay.py` runs two fixed-seed `CloseFridge` hardware replays.
+For saving commands and checking a selected local episode, use the [record and replay interface](robocasa-record.md). Verification: `PYTHONPATH=. .local/robocasa-venv/bin/python -m unittest discover -s tests -p 'robocasahardware.py' -v` runs stubbed boundary tests; `PYTHONPATH=. .local/robocasa-venv/bin/python tests/robocasareplay.py` runs two fixed-seed `CloseFridge` hardware replays.

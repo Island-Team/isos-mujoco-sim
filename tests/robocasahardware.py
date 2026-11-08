@@ -7,7 +7,6 @@ import numpy as np
 from robocasa_core import Hardware, HardwareError
 from robocasa_core.hardware import ACTION_SHAPES, CAMERA_KEYS, STATE_KEYS, STATE_SHAPES
 
-
 class Space:
   def __init__(self, shape):
     self.shape = shape
