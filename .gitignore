@@ -15,6 +15,7 @@ _deps/
 /.local/
 /logs/test/
 /logs/dev/
+/data/test/
 *.sock
 *.sock.lock
 MUJOCO_LOG.TXT

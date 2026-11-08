@@ -8,7 +8,7 @@ The active benchmark is the upstream RoboCasa365 `CloseFridge` atomic task. The 
 
 RoboCasa source is [MIT licensed](https://github.com/robocasa/robocasa/blob/main/LICENSE); its [README](https://github.com/robocasa/robocasa#license) identifies assets and datasets as CC BY 4.0. The task implementation and success rule are in upstream `robocasa/environments/kitchen/atomic/kitchen_doors.py`. The [RoboCasa365 paper](https://robocasa.ai/assets/robocasa365_iclr26.pdf) describes the benchmark. Keep the downloaded asset attribution with any redistributed results or assets.
 
-The former package-authored pick-and-place and navigation tasks are legacy simulator fixtures for compatibility tests and are not active benchmarks. Their private C++ benchmark RPC remains outside EOS and EGIA. This RoboCasa episode currently runs in the upstream environment; EOS agent control of RoboCasa requires a dedicated adapter before it can be claimed as an end-to-end EOS evaluation.
+The former package-authored pick-and-place and navigation tasks are legacy simulator fixtures for compatibility tests and are not active benchmarks. Their private C++ benchmark RPC remains outside EOS and EGIA. RoboCasa runs in the upstream environment; the [Python robot hardware core](../../interfaces/robocasa-hardware.md) now controls and observes its PandaOmron robot in process. EOS agent control still requires a governed adapter before it can be claimed as an end-to-end EOS evaluation.
 
 ## List and select a task
 
