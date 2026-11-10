@@ -5,7 +5,7 @@ import argparse
 import os
 from pathlib import Path
 
-os.environ.setdefault("MUJOCO_GL", "egl")
+os.environ.setdefault("MUJOCO_GL", "glfw" if os.name == "nt" else "egl")
 
 import gymnasium as gym  # noqa: E402
 import robocasa  # noqa: F401,E402

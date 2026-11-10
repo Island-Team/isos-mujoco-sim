@@ -2,7 +2,7 @@
 
 import os
 
-os.environ.setdefault("MUJOCO_GL", "egl")
+os.environ.setdefault("MUJOCO_GL", "glfw" if os.name == "nt" else "egl")
 
 import gymnasium as gym
 import numpy as np

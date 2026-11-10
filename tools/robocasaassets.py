@@ -3,8 +3,9 @@
 
 import argparse
 import hashlib
-import subprocess
 from pathlib import Path
+import shutil
+from urllib.request import Request, urlopen
 from zipfile import BadZipFile, ZipFile
 
 ARCHIVES = (
@@ -35,6 +36,15 @@ def valid_zip(path: Path) -> bool:
     return False
 
 
+def download_archive(url: str, partial: Path) -> None:
+  offset = partial.stat().st_size if partial.exists() else 0
+  request = Request(url, headers={"Range": f"bytes={offset}-"} if offset else {})
+  with urlopen(request) as response:
+    mode = "ab" if offset and response.status == 206 else "wb"
+    with partial.open(mode) as destination:
+      shutil.copyfileobj(response, destination)
+
+
 def main() -> None:
   parser = argparse.ArgumentParser(description=__doc__)
   parser.add_argument("source", type=Path)
@@ -51,8 +61,10 @@ def main() -> None:
   for filename, repo, revision, digest in archives:
     archive = downloads / filename
     if not valid_zip(archive):
-      url = f"https://huggingface.co/datasets/{repo}/resolve/{revision}/{filename}"
-      subprocess.run(["wget", "-q", "-c", url, "-O", str(archive)], check=True)
+      url = f"https://hf-mirror.com/datasets/{repo}/resolve/{revision}/{filename}"
+      partial = archive.with_suffix(archive.suffix + ".part")
+      download_archive(url, partial)
+      partial.replace(archive)
     if not valid_zip(archive):
       raise ValueError(f"incomplete asset archive: {filename}")
     if digest:

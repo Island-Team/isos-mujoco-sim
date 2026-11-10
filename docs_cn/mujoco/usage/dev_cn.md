@@ -6,7 +6,18 @@
 
 ## 前提条件
 
-在 Linux 上从仓库根目录执行命令。RoboCasa 设置需要 `git`、`wget`、`uv`、Python 3.11，以及下载源码和资源所需的网络连接。私有 Python 环境位于 `.local/robocasa-venv`。首次下载包含多个较大的归档，请确认仓库所在磁盘有足够空间。
+Linux 命令从仓库根目录执行。RoboCasa Python 冒烟运行也支持 Windows PowerShell，使用 `tools/robocasasetup.ps1` 和 `tools/robocasarun.ps1`；C++ 构建和原生启动器仍是 Linux 流程。RoboCasa 设置需要 `git`、`uv`、Python 3.11，以及下载源码和资源所需的网络连接。私有 Python 环境位于 `.local/robocasa-venv`。首次下载包含多个较大的归档，请确认仓库所在磁盘有足够空间。
+
+Windows 上先安装 Python 3.11、Git for Windows 和 `uv`，再从仓库根目录打开 PowerShell 运行。运行器使用 MuJoCo GLFW 后端，默认打开图形窗口；`-NoGui` 关闭图像窗口（渲染相机仍需要支持 OpenGL 的桌面会话）。设置 `$env:ROBOCASA_ROOT` 可更换源码和资源目录。其他任务或固定厨房场景需要较大的完整资源集时使用 `-Full`。
+
+```powershell
+.\tools\robocasasetup.ps1
+.\tools\robocasarun.ps1 -Task CloseFridge -Seed 42 -Steps 20
+# 不打开图像窗口：
+.\tools\robocasarun.ps1 -Task CloseFridge -Seed 42 -Steps 20 -NoGui
+```
+
+若 PowerShell 阻止本地脚本，仅对当前进程放行：`Set-ExecutionPolicy -Scope Process Bypass`。
 
 C++ 构建需要 **MuJoCo 3.3.1** 安装目录、C++20 编译器、CMake 3.22 或更新版本、protobuf、gRPC、libjpeg，以及供构建工具使用的 Python 3。`MUJOCO_ROOT` 应指向绝对路径，其下需有 `include/mujoco/mujoco.h`、`lib/libmujoco.so.3.3.1`、`bin/compile` 和 `bin/simulate`。RoboCasa 的私有 Python 环境会安装自己的 MuJoCo 3.3.1 软件包；原生库路径供本仓库的 C++ 构建和包装层使用。
 

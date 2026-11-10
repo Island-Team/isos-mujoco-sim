@@ -2,15 +2,16 @@
 """List and run registered RoboCasa tasks with explicit episode settings."""
 
 import argparse
+import base64
 from contextlib import nullcontext, redirect_stderr, redirect_stdout
 from difflib import get_close_matches
-from io import StringIO
+from io import BytesIO, StringIO
 import json
 import os
 import re
 import sys
 
-os.environ.setdefault("MUJOCO_GL", "egl")
+os.environ.setdefault("MUJOCO_GL", "glfw" if os.name == "nt" else "egl")
 
 quiet = any(flag in sys.argv for flag in ("--list", "--list-kitchens", "--validate"))
 with redirect_stdout(StringIO()) if quiet else nullcontext(), \
@@ -123,12 +124,36 @@ def main() -> None:
     parser.error(f"task {selected!r} is not registered for split {args.split!r}.{hint} List choices with ./launch.sh --list-benchmarks --split {args.split}")
   if args.validate:
     return
-  if args.gui and not (os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
+  if args.gui and os.name != "nt" and not (
+      os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY")):
     parser.error("GUI needs a desktop display; use --no-gui for a headless run")
   cv2 = None
+  tkinter = None
+  window = None
+  image_view = None
+  image_encoder = None
+  window_open = [False]
   if args.gui:
     import cv2 as cv2_module
     cv2 = cv2_module
+    if os.name == "nt":
+      import tkinter as tkinter_module
+      from PIL import Image
+      tkinter = tkinter_module
+      image_encoder = Image
+      window = tkinter.Tk()
+      window.title("RoboCasa benchmark (press any key to close)")
+      image_view = tkinter.Label(window)
+      image_view.pack()
+      window_open[0] = True
+
+      def close_window(_event=None) -> None:
+        if window_open[0]:
+          window_open[0] = False
+          window.destroy()
+
+      window.bind("<Key>", close_window)
+      window.protocol("WM_DELETE_WINDOW", close_window)
 
   def show_frame(observation: dict, delay: int) -> None:
     if cv2 is None:
@@ -137,9 +162,19 @@ def main() -> None:
     if frame is not None:
       display_height = round(frame.shape[0] * args.gui_width / frame.shape[1])
       frame = cv2.resize(frame, (args.gui_width, display_height), interpolation=cv2.INTER_LINEAR)
-      cv2.imshow("RoboCasa benchmark (press Q or Esc to close)",
-                 cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
-      cv2.waitKey(delay)
+      if tkinter is not None:
+        if window_open[0]:
+          encoded = BytesIO()
+          image_encoder.fromarray(frame).save(encoded, format="PNG")
+          image = tkinter.PhotoImage(
+              data=base64.b64encode(encoded.getvalue()).decode("ascii"))
+          image_view.configure(image=image)
+          image_view.image = image
+          window.update()
+      else:
+        cv2.imshow("RoboCasa benchmark (press Q or Esc to close)",
+                   cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+        cv2.waitKey(delay)
 
   task = f"robocasa/{selected}"
   scene_kwargs = ({"split": args.split} if scene is None else
@@ -177,10 +212,14 @@ def main() -> None:
                       "success": success}, sort_keys=True))
     if args.gui:
       print("RoboCasa GUI: press any key in the image window to close.", flush=True)
-      cv2.waitKey(0)
+      if tkinter is not None:
+        if window_open[0]:
+          window.mainloop()
+      else:
+        cv2.waitKey(0)
   finally:
     env.close()
-    if cv2 is not None:
+    if cv2 is not None and tkinter is None:
       cv2.destroyAllWindows()
 
 
