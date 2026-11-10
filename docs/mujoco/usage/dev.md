@@ -6,7 +6,18 @@ This guide has two local workflows. `./launch.sh` runs the active upstream RoboC
 
 ## Prerequisites
 
-Run the commands from the repository root on Linux. The RoboCasa setup uses `git`, `wget`, `uv`, Python 3.11, and a network connection for its source and asset downloads. It creates a private Python environment under `.local/robocasa-venv`. The initial download includes several large archives, so ensure the checkout has enough free disk space.
+Run the shell commands from the repository root on Linux. RoboCasa's Python smoke runner also supports Windows PowerShell through `tools/robocasasetup.ps1` and `tools/robocasarun.ps1`; the C++ build and native launcher remain Linux workflows. The RoboCasa setup uses `git`, `uv`, Python 3.11, and a network connection for its source and asset downloads. It creates a private Python environment under `.local/robocasa-venv`. The initial download includes several large archives, so ensure the checkout has enough free disk space.
+
+On Windows, install Python 3.11, Git for Windows, and `uv`, then run these commands from the repository root in PowerShell. The runner uses MuJoCo's GLFW backend and opens a GUI by default; `-NoGui` runs without the image window (a desktop/OpenGL-capable session is still needed for camera rendering). Set `$env:ROBOCASA_ROOT` to use a different source/assets directory. `-Full` fetches the larger asset collection needed by other tasks or fixed kitchen scenes.
+
+```powershell
+.\tools\robocasasetup.ps1
+.\tools\robocasarun.ps1 -Task CloseFridge -Seed 42 -Steps 20
+# Or run without the image window:
+.\tools\robocasarun.ps1 -Task CloseFridge -Seed 42 -Steps 20 -NoGui
+```
+
+If PowerShell blocks local scripts, allow them for the current process only with `Set-ExecutionPolicy -Scope Process Bypass`.
 
 The C++ build requires a MuJoCo **3.3.1** installation, a C++20 compiler, CMake 3.22 or newer, protobuf, gRPC, libjpeg, and Python 3 for build tooling. Set `MUJOCO_ROOT` to an absolute directory containing `include/mujoco/mujoco.h`, `lib/libmujoco.so.3.3.1`, `bin/compile`, and `bin/simulate`. RoboCasa's private Python environment installs its own MuJoCo 3.3.1 package; the native library path is for this repository's C++ build and wrapper.
 
