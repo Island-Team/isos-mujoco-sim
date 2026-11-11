@@ -67,6 +67,7 @@ class NodeContributionTests(unittest.TestCase):
       self.assertEqual(profile["adapter"]["settings"]["device_id"], f"${{{selected}}}")
       self.assertEqual(profile["adapter"]["settings"]["simulator_node"], f"${{{selected}}}")
       self.assertEqual(profile["capabilities"], ["jpeg"])
+      self.assertEqual(profile["observation"]["max_payload_bytes"], 12582912)
     self.assertNotIn("drive", nodes)
     self.assertNotIn("arm", nodes)
 

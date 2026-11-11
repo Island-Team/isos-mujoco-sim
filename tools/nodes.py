@@ -63,7 +63,7 @@ def hardware_profile(id: str, type_id: str, label: str, description: str,
 def contributions(version: str = "0.2.0") -> dict:
   camera = hardware_profile(
     "front", CAMERA, "Front JPEG camera", "MuJoCo JPEG camera frame",
-    "front_camera_optical", ["jpeg"], "${camera_device}", 30.0, 8388608, version,
+    "front_camera_optical", ["jpeg"], "${camera_device}", 30.0, 12582912, version,
   )
   current = node_type(
     BACKEND, "process", "software", "process", ["process"], [],

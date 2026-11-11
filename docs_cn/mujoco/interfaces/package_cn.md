@@ -71,7 +71,7 @@ P02 描述符固定于 [`target-descriptor.json`](../../../tests/fixtures/scene_
 
 包在 `eos/process/mujoco` 贡献唯一新进程类型 `eos.process.mujoco.simulator@v0.2`；先前已验证发布包中的 `eos.process.mujoco@v1.0` 仍按原有路径读取。新类型声明 `implementation:{"kind":"managed_process","interface":"mujoco-v2","version":"1","lifecycle_adapter":"mujoco-v2"}`，并带非空 `description`；其 `scene` 设置有非空描述和 `selector:{"provider":"package","resource":"scene","package_from":"node.package"}`。`socket`（仅所有者可访问的 Unix 套接字路径）、可选 `env`（字符串表）和 `start_timeout_ms`（正整数毫秒）具有明确的类型、用途与验证。进程状态与健康由运行时拥有，不作为图端口。进程实例锁定 `node.package:{"id":"island/mujoco-sim","version":"0.2.0"}`；设置中不存解析后的程序或场景路径。此 sidecar 不增设执行器或安全适配器路线。
 
-当前 `sim-hardware` 节点集面向 `0.2.1` 图，只含包拥有的进程与一个 EOS 通用 JPEG 相机 `device@v0.2`。相机实例固定 MuJoCo 适配器并引用进程节点。底盘和机械臂仍在资源目录中，但 EOS 完成执行器 Stop 证明前不贡献其托管实例。本包不贡献或覆盖 EOS 通用类型。包验证与链接不能证明图 Apply 或运行就绪。历史已保存图保留原有读取路径。
+当前 `sim-hardware` 节点集面向 `0.2.1` 图，只含包拥有的进程与一个 EOS 通用 JPEG 相机（观测 JSON 上限 12 MiB） `device@v0.2`。相机实例固定 MuJoCo 适配器并引用进程节点。底盘和机械臂仍在资源目录中，但 EOS 完成执行器 Stop 证明前不贡献其托管实例。本包不贡献或覆盖 EOS 通用类型。包验证与链接不能证明图 Apply 或运行就绪。历史已保存图保留原有读取路径。
 
 **目标图准入。** P02 节点集声明稳定参数 `scene`、`camera_device`、`base_device`、`manipulator_device` 和仅所有者可访问的 `socket`。默认场景为 `pick-place`，三个设备默认值为 `cam-0`、`base-0`、`arm-0`。在 IsOS 与 EOS 的图准入路径可用后，预览与 Apply 必须要求所选 ID 属于精确验证过的描述符、符合硬件类别和所选场景，并通过整图准入。已准入图保存 ID 和精确包锁定。IsOS 拥有组合及修订 compare-and-swap；改选场景必须生成新的已保存修订，仅在 Restart 后作用于子进程。不能原地修改运行中模拟器的场景。当前包验证与链接通过，但预览受 IsOS/EOS 验证命令不匹配阻塞，且当前 EOS 所有者尚未编译 `mujoco-v2`。
 
