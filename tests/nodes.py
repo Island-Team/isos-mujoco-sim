@@ -27,10 +27,9 @@ class NodeContributionTests(unittest.TestCase):
     contract = contributions()
     node_set = contract["node_sets"][0]
     refs = {node["ref"] for node in node_set["nodes"]}
-    self.assertEqual(refs, {"simulator", "front", "drive", "arm", "base-velocity",
-                            "arm-movej", "camera-gate"})
+    self.assertEqual(refs, {"simulator", "front", "drive", "arm"})
     contributed_types = {node_type["id"] for node_type in contract["node_types"]}
-    self.assertEqual(contributed_types, {"eos.process.mujoco@v0.2"})
+    self.assertEqual(contributed_types, {"eos.process.mujoco.simulator@v0.2"})
     for definition in contract["node_types"]:
       self.assertTrue(definition["description"].strip())
       for setting in definition["settings"]:
@@ -48,16 +47,6 @@ class NodeContributionTests(unittest.TestCase):
         for parameter in re.findall(r"\$\{([^}]+)\}", value):
           self.assertIn(parameter, declared)
 
-  def test_new_graph_uses_generic_types_and_no_unregistered_ui_type(self) -> None:
-    nodes = {node["ref"]: node for node in contributions()["node_sets"][0]["nodes"]}
-    gate = nodes["camera-gate"]
-    self.assertEqual(gate["profile"]["inputs"]["frame"],
-                     {"node": "@front", "output": "frame"})
-    self.assertEqual((gate["core"], gate["layer"], gate["group"]),
-                     ("eos", "interface", "gate"))
-    self.assertEqual(gate["profile"]["node_type"], "eos.interface.camera_gate@v0.1")
-    self.assertNotIn("vision", nodes)
-
   def test_each_device_uses_one_package_pinned_adapter_and_typed_binding(self) -> None:
     contract = contributions()
     nodes = {node["ref"]: node for node in contract["node_sets"][0]["nodes"]}
@@ -70,7 +59,7 @@ class NodeContributionTests(unittest.TestCase):
       self.assertEqual((node["core"], node["layer"], node["group"]),
                        ("eos", "hardware", kind))
       profile = node["profile"]
-      self.assertEqual(profile["node_type"], f"eos.hardware.{kind}@v0.1")
+      self.assertEqual(profile["node_type"], f"eos.hardware.{kind}.device@v0.2")
       self.assertNotIn("package", profile)
       self.assertEqual(profile["adapter"]["type"], family["id"])
       self.assertEqual(profile["adapter"]["package"],
@@ -79,12 +68,8 @@ class NodeContributionTests(unittest.TestCase):
                   "arm": "manipulator_device"}[ref]
       self.assertEqual(profile["adapter"]["settings"]["device_id"], f"${{{selected}}}")
       self.assertEqual(profile["adapter"]["settings"]["simulator_node"], f"${{{selected}}}")
-    for device, binding, primitive in (("drive", "base-velocity", "base.velocity"),
-                                       ("arm", "arm-movej", "arm.movej")):
-      self.assertEqual(nodes[device]["profile"]["inputs"]["command"],
-                       [{"node": f"@{binding}", "output": "command"}])
-      self.assertEqual(nodes[binding]["profile"]["settings"]["primitive_name"], primitive)
-      self.assertEqual(nodes[binding]["profile"]["settings"]["primitive_version"], "1.0.0")
+    self.assertNotIn("inputs", nodes["drive"]["profile"])
+    self.assertNotIn("inputs", nodes["arm"]["profile"])
 
   def test_ports_describe_frequency_transport_and_data_class(self) -> None:
     contract = contributions()

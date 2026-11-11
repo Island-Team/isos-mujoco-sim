@@ -1,25 +1,10 @@
 """Declarative EOS node types and graph set shipped with the MuJoCo package."""
 
 
-BACKEND = "eos.process.mujoco@v0.2"
-CAMERA = "eos.hardware.camera@v0.1"
-BASE = "eos.hardware.base@v0.1"
-MANIPULATOR = "eos.hardware.manipulator@v0.1"
-CAMERA_GATE = "eos.interface.camera_gate@v0.1"
-BASE_PRIMITIVE = "eos.dispatcher.primitive_base@v0.1"
-MANIPULATOR_PRIMITIVE = "eos.dispatcher.primitive_manipulator@v0.1"
-
-
-def port(name: str, data_type: str, required: bool = False,
-         description: str = "", expected_rate_hz: float | None = None,
-         data_class: str = "state") -> dict:
-  result = {"name": name, "data_type": data_type, "required": required,
-            "description": description, "transport": "in_process",
-            "data_class": data_class,
-            "contract": {"owner": "eos", "id": data_type, "version": "0.2"}}
-  if expected_rate_hz is not None:
-    result["expected_rate_hz"] = expected_rate_hz
-  return result
+BACKEND = "eos.process.mujoco.simulator@v0.2"
+CAMERA = "eos.hardware.camera.device@v0.2"
+BASE = "eos.hardware.base.device@v0.2"
+MANIPULATOR = "eos.hardware.manipulator.device@v0.2"
 
 
 def node_type(id: str, layer: str, kind: str, lifecycle: str,
@@ -91,7 +76,6 @@ def contributions() -> dict:
     "limits": {"max_linear_m_s": 1.0, "max_angular_rad_s": 1.5,
                "max_velocity_lease_ms": 500},
   }
-  base["inputs"] = {"command": [{"node": "@base-velocity", "output": "command"}]}
   arm = hardware_profile(
     "arm", MANIPULATOR, "Six axis arm", "MuJoCo six-joint position controller",
     "arm_base", ["joint_positions"], "${manipulator_device}", 50.0, 4096,
@@ -101,11 +85,9 @@ def contributions() -> dict:
     "modes": ["joint_positions"],
     "limits": {"max_joint_position_rad": 3.14, "max_joint_speed_rad_s": 1.0},
   }
-  arm["inputs"] = {"command": [{"node": "@arm-movej", "output": "command"}]}
   current = node_type(
     BACKEND, "process", "software", "process", ["process"], [],
-    [port("status", "status", description="Simulator process lifecycle"),
-     port("health", "health", description="Simulator process health")],
+    [],
     [setting("scene", "string", True, "Stable verified scene ID",
              {"provider": "package", "resource": "scene", "package_from": "node.package"}),
      setting("socket", "string", True, "Owner-only simulator Unix socket path"),
@@ -163,27 +145,6 @@ def contributions() -> dict:
          "profile": base},
         {"ref": "arm", "core": "eos", "layer": "hardware", "group": "manipulator",
          "profile": arm},
-        {"ref": "base-velocity", "core": "eos", "layer": "dispatcher", "group": "base",
-         "profile": {
-           "id": "base-velocity", "node_type": BASE_PRIMITIVE,
-           "label": "Base velocity primitive", "description": "Admitted base.velocity binding for the drive device",
-           "settings": {"primitive_name": "base.velocity", "primitive_version": "1.0.0",
-                        "movement_type": "body_velocity"},
-         }},
-        {"ref": "arm-movej", "core": "eos", "layer": "dispatcher", "group": "manipulator",
-         "profile": {
-           "id": "arm-movej", "node_type": MANIPULATOR_PRIMITIVE,
-           "label": "Arm joint primitive", "description": "Admitted arm.movej binding for the six-joint arm",
-           "settings": {"primitive_name": "arm.movej", "primitive_version": "1.0.0",
-                        "movement_type": "joint_positions"},
-         }},
-        {"ref": "camera-gate", "core": "eos", "layer": "interface", "group": "gate",
-         "profile": {
-           "id": "front-preview", "node_type": CAMERA_GATE,
-           "label": "Front camera preview gate",
-           "description": "Publishes a bounded preview of the MuJoCo front camera",
-           "inputs": {"frame": {"node": "@front", "output": "frame"}},
-         }},
       ],
     }],
   }
