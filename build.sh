@@ -78,4 +78,4 @@ if [[ -z $archive ]]; then
 fi
 mkdir -p -- "$output"
 cp -- "$scratch/bundle/release.json" "$output/release.json"
-cp -- "$archive" "$output/asset.tar.gz"
+cp -- "$archive" "$output/$(basename -- "$archive")"
