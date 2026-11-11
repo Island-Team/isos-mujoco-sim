@@ -38,7 +38,7 @@ def setting(name: str, data_type: str, required: bool = False,
 
 def hardware_profile(id: str, type_id: str, label: str, description: str,
                      frame_id: str, capabilities: list[str], device_id: str,
-                     max_rate_hz: float, max_payload_bytes: int) -> dict:
+                     max_rate_hz: float, max_payload_bytes: int, version: str) -> dict:
   return {
     "id": id,
     "node_type": type_id,
@@ -49,7 +49,7 @@ def hardware_profile(id: str, type_id: str, label: str, description: str,
     "references": ["@simulator"],
     "adapter": {
       "type": "mujoco-v2",
-      "package": {"id": "island/mujoco-sim", "version": "0.1.2"},
+      "package": {"id": "island/mujoco-sim", "version": version},
       "settings": {
         "backend": "@simulator",
         "socket_path": "${socket}",
@@ -62,14 +62,14 @@ def hardware_profile(id: str, type_id: str, label: str, description: str,
   }
 
 
-def contributions() -> dict:
+def contributions(version: str = "0.2.0") -> dict:
   camera = hardware_profile(
     "front", CAMERA, "Front RGB camera", "MuJoCo JPEG camera decoded to RGB8",
-    "front_camera_optical", ["rgb8"], "${camera_device}", 30.0, 8388608,
+    "front_camera_optical", ["rgb8"], "${camera_device}", 30.0, 8388608, version,
   )
   base = hardware_profile(
     "drive", BASE, "Planar base", "MuJoCo base velocity controller",
-    "base_link", ["body_velocity"], "${base_device}", 50.0, 4096,
+    "base_link", ["body_velocity"], "${base_device}", 50.0, 4096, version,
   )
   base["movement"] = {
     "modes": ["body_velocity"],
@@ -78,7 +78,7 @@ def contributions() -> dict:
   }
   arm = hardware_profile(
     "arm", MANIPULATOR, "Six axis arm", "MuJoCo six-joint position controller",
-    "arm_base", ["joint_positions"], "${manipulator_device}", 50.0, 4096,
+    "arm_base", ["joint_positions"], "${manipulator_device}", 50.0, 4096, version,
   )
   arm["joint_names"] = ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6"]
   arm["movement"] = {
@@ -120,7 +120,7 @@ def contributions() -> dict:
       "device_kinds": ["camera", "base", "manipulator"],
       "transport": "unix_socket",
       "description": "EOS-owned MuJoCo simulator socket adapter for camera, base, and manipulator devices",
-      "supported_primitives": ["base.velocity@1.0.0", "arm.movej@1.0.0"],
+      "supported_primitives": [],
     }],
     "node_sets": [{
       "id": "sim-hardware",

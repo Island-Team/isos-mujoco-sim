@@ -2,14 +2,14 @@
 set -euo pipefail
 
 usage() {
-  echo 'Usage: ./build.sh [--output <empty-absolute-directory>]' >&2
+  echo 'Usage: ./build.sh [--output <empty-absolute-directory> --version 0.2.x]' >&2
   exit 2
 }
 
-if [[ $# -ne 0 && ( $# -ne 2 || $1 != --output || $2 != /* ) ]]; then
+if [[ $# -ne 0 && ( $# -ne 4 || $1 != --output || $2 != /* || $3 != --version || ! $4 =~ ^0\.2\.[0-9]+$ ) ]]; then
   usage
 fi
-if [[ $# -eq 2 ]]; then
+if [[ $# -eq 4 ]]; then
   output=$2
   if [[ -e $output && ! -d $output ]]; then usage; fi
   if [[ -d $output && -n $(find "$output" -mindepth 1 -maxdepth 1 -print -quit) ]]; then
@@ -70,7 +70,7 @@ cmake -S "$root" -B "$scratch/build" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_
 cmake --build "$scratch/build" --parallel "${BUILD_JOBS:-4}"
 python3 "$root/tools/bundle.py" \
   --build-dir "$scratch/build" --mujoco-root "$MUJOCO_ROOT" \
-  --output "$scratch/bundle"
+  --output "$scratch/bundle" --version "$4"
 archive=$(find "$scratch" -maxdepth 1 -type f -name '*.tar.gz' -print -quit)
 if [[ -z $archive ]]; then
   echo 'Bundle builder produced no archive' >&2

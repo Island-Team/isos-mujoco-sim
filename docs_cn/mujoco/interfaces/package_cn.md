@@ -111,3 +111,7 @@ IsOS 保留 P01 诊断结构 `{code,path,message,id,version,stage}` 和 HTTP 422
 ## 历史声明的兼容性
 
 历史已验证 sidecar 仅贡献 `eos.process.mujoco@v1.0`，缺少进程类型描述与选择器，且使用固定设备 ID 组合 `1.0.0` 图。读取方可为旧 sidecar 提供仅供目录显示的描述默认值，而不改变验证过的字节。当前构建工具输出一个 `eos.process.mujoco.simulator@v0.2` 进程类型和四节点 `0.2.1` 节点集；IsOS 先接受并验证新描述符，再把该预设发布为图选项。其他包资源以后可使用 P03 选项机制；本版本不定义 `egia.tensor` 执行。
+
+## 当前 v0.2.x 二进制适配器
+
+发布 schema `0.2.0` 声明 `adapters:[{"family":"mujoco-v2","library":"lib/libmujoco-eos-node.so","sha256":"<64 位小写十六进制>"}]`，且 `node_contributions.libraries` 使用相同路径和摘要。此动态库实现带版本的 `isos_node_v1` C ABI，不是第二个模拟器进程。EOS 将已准入的图实例传给 `create`，管理回调生命周期和模拟器子进程，并在卸载前调用 `stop`。插件 Stop 成功意味着观测回调已静止；EOS 仍须在终止子进程前通过严格 companion 套接字另行证明执行器停止。首个 `sim-hardware` 节点集只提供观测。

@@ -111,3 +111,7 @@ The candidate archive contains the CMake-installed `bin/eos-mujoco-sim`, with no
 ## Historical contribution compatibility
 
 Historical verified sidecars contributed only `eos.process.mujoco@v1.0`, had no process-type description or selector, and composed a `1.0.0` graph with fixed device IDs. Old sidecars may receive a catalog-only description fallback from their readers, without changed verified bytes. The current builder emits one `eos.process.mujoco.simulator@v0.2` process type and the four-node `0.2.1` set; IsOS accepts and verifies the new descriptor before publishing this preset as a graph option. Package assets may use the same P03 option mechanism later; this release defines no `egia.tensor` execution.
+
+## Current v0.2.x binary adapter
+
+The release schema `0.2.0` declares `adapters:[{"family":"mujoco-v2","library":"lib/libmujoco-eos-node.so","sha256":"<64 lowercase hex>"}]` and an identical `node_contributions.libraries` path/digest. This library implements the versioned `isos_node_v1` C ABI; it is not a second simulator process. EOS passes the admitted graph instance to `create`, owns callback lifetime and the simulator child, and calls `stop` before unloading. A successful plugin Stop means observation callbacks are quiescent; EOS separately proves actuator stop through the strict companion socket before child termination. The first `sim-hardware` set is observation-only.

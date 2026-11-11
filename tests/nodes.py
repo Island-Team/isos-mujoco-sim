@@ -52,8 +52,7 @@ class NodeContributionTests(unittest.TestCase):
     nodes = {node["ref"]: node for node in contract["node_sets"][0]["nodes"]}
     family = contract["adapter_families"][0]
     self.assertEqual(set(family["device_kinds"]), {"camera", "base", "manipulator"})
-    self.assertEqual(set(family["supported_primitives"]),
-                     {"base.velocity@1.0.0", "arm.movej@1.0.0"})
+    self.assertEqual(family["supported_primitives"], [])
     for ref, kind in (("front", "camera"), ("drive", "base"), ("arm", "manipulator")):
       node = nodes[ref]
       self.assertEqual((node["core"], node["layer"], node["group"]),
@@ -63,13 +62,21 @@ class NodeContributionTests(unittest.TestCase):
       self.assertNotIn("package", profile)
       self.assertEqual(profile["adapter"]["type"], family["id"])
       self.assertEqual(profile["adapter"]["package"],
-                       {"id": "island/mujoco-sim", "version": "0.1.2"})
+                       {"id": "island/mujoco-sim", "version": "0.2.0"})
       selected = {"front": "camera_device", "drive": "base_device",
                   "arm": "manipulator_device"}[ref]
       self.assertEqual(profile["adapter"]["settings"]["device_id"], f"${{{selected}}}")
       self.assertEqual(profile["adapter"]["settings"]["simulator_node"], f"${{{selected}}}")
     self.assertNotIn("inputs", nodes["drive"]["profile"])
     self.assertNotIn("inputs", nodes["arm"]["profile"])
+
+  def test_patch_release_uses_exact_package_pin(self) -> None:
+    contract = contributions("0.2.7")
+    for node in contract["node_sets"][0]["nodes"]:
+      adapter = node["profile"].get("adapter")
+      if adapter:
+        self.assertEqual(adapter["package"],
+                         {"id": "island/mujoco-sim", "version": "0.2.7"})
 
   def test_ports_describe_frequency_transport_and_data_class(self) -> None:
     contract = contributions()
