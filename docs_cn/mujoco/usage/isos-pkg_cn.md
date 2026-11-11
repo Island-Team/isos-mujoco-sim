@@ -70,7 +70,7 @@ isos pkg link island/mujoco-sim 0.1.2 /absolute/path/to/mujoco-v2-bundle --manif
 isos pkg node-sets
 ```
 
-用 `isos build eos`、`isos version select eos <selector>`、`isos build isosui` 和 `isos version select isosui <selector>` 构建并显式选择版本。同一 EOS 提交有多个构建时，用源码指纹选择唯一收据。`isos init` 创建配置后退出。在一个终端运行 `isos serve`，用 `isos pkg preview-set` 或 IsOS API 预览 `sim-hardware` 节点集，指定场景和仅所有者可访问的套接字，再通过按修订检查的 IsOS 接口 Validate 与 Apply。IsosUI 目录编辑器属于后续 U01 工作台门禁。该预设添加 EOS 持有的模拟器进程、三个通用硬件适配器、dispatcher 绑定和有类型连接；已有图会保留至操作员显式应用新修订。
+用 `isos build eos`、`isos version select eos <selector>`、`isos build isosui` 和 `isos version select isosui <selector>` 构建并显式选择版本。同一 EOS 提交有多个构建时，用源码指纹选择唯一收据。`isos init` 创建配置后退出。在一个终端运行 `isos serve`，用 `isos pkg preview-set` 或 IsOS API 预览 `sim-hardware` 节点集，指定场景和仅所有者可访问的套接字，再通过按修订检查的 IsOS 接口 Validate 与 Apply。IsosUI 目录编辑器属于后续 U01 工作台门禁。该节点集声明 EOS 持有的模拟器进程和三个通用硬件适配器；本候选包没有 Dispatcher 命令绑定。已有图会保留至操作员显式应用新修订。
 
 **P02 包目录与 IsOS 选择。** 构建工具现已输出 `0.1.0` 目录描述符和四节点 `0.2.1` 节点集，参数为稳定的 `scene`、`camera_device`、`base_device` 和 `manipulator_device`。用 `python3 tools/bundle.py --build-dir build --mujoco-root "$MUJOCO_ROOT" --output <空目录>` 构建并检查包；`backend-v2.json` 含两个场景 ID、标签、profile 和 SHA-256，以及三台设备的描述和场景支持列表。P01 验证精确的 `island/mujoco-sim@0.1.2` 收据后，IsOS P02/P03 切片现已展示可用 ID、依当前已保存修订 Validate 与 Apply 所选场景和设备，并保留不可用的已保存 ID 供修复。修改场景生成新的已保存修订，必须 Restart 才能替换 EOS 持有的子进程。详见 [P02 包契约](../interfaces/package_cn.md#p02-描述符扩展)和[负面样本](../../../tests/fixtures/scene_catalog/negative-cases.json)。
 
@@ -100,7 +100,7 @@ v2 图中的模拟器节点可以在 `settings.env` 设置 `MUJOCO_GUI=1`，以�
 
 **操作员可见变化。** IsOS 可以验证并安装 `island/mujoco-sim@0.1.1`，列出两个场景及可用的相机、底盘、机械臂设备，预览 `sim-hardware` 节点集，并对选定图执行 Validate/Apply。EOS 将已验证仿真器作为直接子进程启动，读取真实相机帧，经 Dispatcher 准入运动，并在终止和回收子进程前确认物理 Stop。选定的干净主目录运行还覆盖子进程故障、受治理重启、软件包与边拒绝，以及显式图迁移。[Q03 验证记录](../architecture_cn.md)及 [EOS Q04 重放记录](https://github.com/Island-Team/Island-eos/blob/master/docs_cn/island/q04-merged-qualification_cn.md)说明范围和原始证据。
 
-**兼容与迁移。** 此包采用 IsOS schema v4，节点集面向 `0.2.1` 图和已注册的 `@v0.2` 类型。保留旧 `eos.process.mujoco@v1.0` 贡献供已验证的旧图读取；迁移须显式执行并检查修订。已发布的 `v1.0.1` 包使用退役图形态，属于另一版本。软件包要求操作员提供 MuJoCo 3.16.0 库；选定资产记录 Ubuntu 24.04、`glibc>=2.39` 和 x86_64。原生依赖规则见[软件包契约](../interfaces/package_cn.md)。
+**兼容与迁移。** 此包采用 IsOS schema v4，节点集面向 `0.2.1` 图和已注册的 `@v0.2` 类型。先前已验证发布包中的 `eos.process.mujoco@v1.0` 仍由旧读取器处理；本候选包不贡献该类型。迁移须显式执行并检查修订。已发布的 `v1.0.1` 包使用退役图形态，属于另一版本。当前 `0.1.2` 候选包要求操作员提供 MuJoCo 3.3.1 库。已发布 `v0.1.1` 资产使用 MuJoCo 3.16.0，并记录 Ubuntu 24.04、`glibc>=2.39` 和 x86_64。原生依赖规则见[软件包契约](../interfaces/package_cn.md)。
 
 **发布后的安装或升级。** 将 `MUJOCO_ROOT` 指向已安装的 MuJoCo 3.16.0 目录，按下文验证已发布清单和归档，再按[后端指南](isos-pkg_cn.md)安装或链接精确的 `0.1.1` 软件包，选择场景和设备，执行 Validate/Apply，启动 EOS。已保存的旧图在操作员请求迁移前保持原字节。
 
