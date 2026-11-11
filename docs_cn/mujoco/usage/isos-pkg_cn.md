@@ -7,6 +7,8 @@
 
 运行 `isos pkg check --source` 前，导出 `MUJOCO_ROOT` 指向本地 3.3.1 安装；显式环境值优先于 `config.toml` 和 `.env`。`python3 tests/build_env.py` 在不下载内容的情况下验证此构建输入边界。清单将 IsOS 兼容范围限定为 `[0.2.3,0.3.0)`，并要求 IsOS `package-process-v1` 与 EOS `native-plugin-v1`；发布检查仍记录实际验证的 IsOS 构建。`.so` 是 Linux C++/protobuf 二进制文件，需要 IsOS 主机的 ABI 表和匹配的运行库。仅构建文件不足以证明兼容：IsOS 检查清单和摘要，EOS 检查 ABI 与回调，托管资格检查模拟器子进程、数据 schema、就绪和 Stop。其他平台及进程内 Python 是未来工作；Python 可使用受监督进程接口。`python3 tests/plugin.py <已构建动态库>` 使用桩验证严格健康、观测、运动拒绝和 Stop。下面旧的 `0.1.2` 记录属于历史候选证据，不是当前源码的操作说明。
 
+在 2026-11-11 的 Linux x86_64 验证主机上，使用实际 MuJoCo 3.3.1 构建后，29 项 CTest 全部通过，包括原生适配器、包目录、严格套接字、相机故障、Stop 和场景查看检查。构建和包进程主机输入均设置 `MUJOCO_ROOT=<MuJoCo 3.3.1 绝对根目录>`。启动 IsOS 时还须设置 `LD_LIBRARY_PATH="$MUJOCO_ROOT/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"`，使 EOS 管理的模拟器子进程能加载 `libmujoco.so.3.3.1`；包归档不包含该库。已检查的 `0.2.0` 源码候选通过 `isos pkg check --source ... --version 0.2.0 --graph ...`，覆盖托管 Run、相机观测、日志和 Stop。本地完整构建与 CTest 输出位于被 Git 忽略的 `data/test/20261111-real-mujoco/`；IsOS 资格检查的证据由其检查输出保存。这是源码资格验证记录，不表示 GitHub 发布已完成。
+
 ## 历史 0.1.2 候选说明
 
 下述 `0.1.2` 软件包是使用 MuJoCo 3.3.1 的本地开发候选，尚未发布；本页后面的历史 `0.1.1` 证据仍对应 MuJoCo 3.16.0。
