@@ -48,7 +48,7 @@ def read_exact(connection, size):
     return result
 
 
-def serve(listener, operations):
+def serve(listener, operations, device):
     for expected in operations:
         connection, _ = listener.accept()
         with connection:
@@ -56,16 +56,22 @@ def serve(listener, operations):
             assert binary_size == 0
             request = json.loads(read_exact(connection, metadata_size))
             assert request["op"] == expected
-            assert request["node"] == "base-0"
+            assert request["node"] == device
             reply = {"version": "2.0.0", "id": request["id"], "ok": True,
                      "accepted": True, "timestamp_ns": 123, "sequence": 4}
             if expected == "health":
                 reply["features"] = ["strict-socket-v1"]
-            else:
+            elif expected == "base_observe":
                 reply.update(position_m=[1.0, 2.0], linear_velocity_m_s=[0.1, 0.2],
                              yaw_rad=0.5, angular_velocity_rad_s=0.3)
+            elif expected == "manipulator_observe":
+                reply.update(joint_positions_rad=[1, 2, 3, 4, 5, 6],
+                             joint_velocities_rad_s=[0, 0, 0, 0, 0, 0])
+            elif expected == "camera_capture":
+                reply.update(format="jpeg", width_px=2, height_px=2, rgb_length=4)
+            binary = b"jpeg" if expected == "camera_capture" else b""
             encoded = json.dumps(reply).encode()
-            connection.sendall(struct.pack("<II", len(encoded), 0) + encoded)
+            connection.sendall(struct.pack("<II", len(encoded), len(binary)) + encoded + binary)
 
 
 def main():
@@ -91,7 +97,7 @@ def main():
         listener.bind(path)
         listener.listen(4)
         worker = threading.Thread(target=serve,
-                                  args=(listener, ["health", "health", "base_observe"]),
+                                  args=(listener, ["health", "health", "base_observe"], "base-0"),
                                   daemon=True)
         worker.start()
         config, length = buffer({"run_id": "test", "revision": "a" * 64,
@@ -118,7 +124,43 @@ def main():
         worker.join(timeout=2)
         assert not worker.is_alive()
         listener.close()
-    print("MuJoCo C ABI strict health, observation, movement rejection and Stop: PASS")
+    for kind, device, operation, port in (
+            ("camera", "cam-0", "camera_capture", "frame"),
+            ("manipulator", "arm-0", "manipulator_observe", "state")):
+        emitted.clear()
+        with tempfile.TemporaryDirectory() as temporary:
+            path = str(Path(temporary) / "sim.sock")
+            listener = socket.socket(socket.AF_UNIX)
+            listener.bind(path)
+            listener.listen(4)
+            worker = threading.Thread(target=serve,
+                                      args=(listener, ["health", operation], device),
+                                      daemon=True)
+            worker.start()
+            config, length = buffer({"instance": {"node": {
+                "node_type": f"eos.hardware.{kind}.device@v0.2",
+                "adapter": {"settings": {"socket_path": path,
+                                          "simulator_node": device}}}}})
+            handle = ctypes.c_void_p()
+            assert api.create(config, length, ctypes.byref(host), ctypes.byref(handle)) == 0
+            assert api.start(handle) == 0
+            request, size = buffer({"op": "observe"})
+            assert api.input(handle, request, size) == 0
+            assert len(emitted) == 1 and emitted[0]["port"] == port
+            assert emitted[0]["payload"]["sample"]["frame_id"] == device
+            if kind == "camera":
+                assert emitted[0]["payload"]["data"] == "anBlZw=="
+                assert emitted[0]["payload"]["encoding"] == "jpeg"
+            else:
+                assert emitted[0]["payload"]["joint_names"] == [
+                    "joint1", "joint2", "joint3", "joint4", "joint5", "joint6"]
+                assert emitted[0]["payload"]["position_rad"] == [1, 2, 3, 4, 5, 6]
+            assert api.stop(handle) == 0
+            api.destroy(handle)
+            worker.join(timeout=2)
+            assert not worker.is_alive()
+            listener.close()
+    print("MuJoCo C ABI strict health, three observations, movement rejection and Stop: PASS")
 
 
 if __name__ == "__main__":
