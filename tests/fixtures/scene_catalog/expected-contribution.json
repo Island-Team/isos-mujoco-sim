@@ -2,7 +2,7 @@
   "graph_version": "0.1.0",
   "package": { "id": "island/mujoco-sim", "version": "0.1.2" },
   "process_type": {
-    "id": "eos.process.mujoco@v0.1",
+    "id": "eos.process.mujoco@v0.2",
     "core": "eos",
     "layer": "process",
     "group": "mujoco",
@@ -24,7 +24,7 @@
       "socket": null
     },
     "types": [
-      "eos.process.mujoco@v0.1",
+      "eos.process.mujoco@v0.2",
       "eos.hardware.camera@v0.1",
       "eos.hardware.base@v0.1",
       "eos.hardware.manipulator@v0.1",

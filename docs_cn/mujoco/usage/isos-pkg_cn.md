@@ -26,7 +26,7 @@ isos pkg link island/mujoco-sim 0.1.2 /absolute/path/to/mujoco-v2-bundle --manif
 
 包中包含 `bin/eos-mujoco-sim`、两个场景及其资源、`backend-v2.json` 和本地 schema v4 `release.json`。构建工具还会在包目录旁生成带 SHA-256 校验值的发布归档。后端描述文件声明 `mujoco-v2` 协议、`cam-0`、`base-0`、`arm-0` 设备 ID，以及外部 MuJoCo 3.3.1 库依赖。IsOS 在运行前验证可执行文件、场景、资源和库；安装包本身不会启用部署图。
 
-发布清单中的 `node_contributions` 声明 `sim-hardware` 节点集、`mujoco-v2` 适配器系列和由包拥有的 `eos.process.mujoco@v0.1` 进程类型。新的 `0.1.0` 图预设有七个节点：该进程、EOS 通用相机/底盘/机械臂适配器、通用 `@v0.1` 底盘/机械臂 primitive 绑定，以及相机门。IsOS 初始图提供 `eos.dispatcher.control@v0.1`，包不重复添加。每个硬件实例在 `node.adapter.package` 固定 `island/mujoco-sim@0.1.2`，选择 `mujoco-v2` 并保存所选设备 ID。EOS 验证编译的工厂，Dispatcher 仍拥有命令准入。预设只组合草稿图，并非执行授权；它不包含未注册的旧 IsOS Vision 类型。IsOS 在 Apply 前验证包和图。详见[包贡献契约](../interfaces/package_cn.md#p02-声明与图边界)。
+发布清单中的 `node_contributions` 声明 `sim-hardware` 节点集、`mujoco-v2` 适配器系列和由包拥有的 `eos.process.mujoco@v0.2` 进程类型。新的 `0.1.0` 图预设有七个节点：该进程、EOS 通用相机/底盘/机械臂适配器、通用 `@v0.1` 底盘/机械臂 primitive 绑定，以及相机门。IsOS 初始图提供 `eos.dispatcher.control@v0.1`，包不重复添加。每个硬件实例在 `node.adapter.package` 固定 `island/mujoco-sim@0.1.2`，选择 `mujoco-v2` 并保存所选设备 ID。EOS 验证编译的工厂，Dispatcher 仍拥有命令准入。预设只组合草稿图，并非执行授权；它不包含未注册的旧 IsOS Vision 类型。IsOS 在 Apply 前验证包和图。详见[包贡献契约](../interfaces/package_cn.md#p02-声明与图边界)。
 
 后端节点的 `settings.env` 可设置 `MUJOCO_GUI=1` 或 `MUJOCO_GUI=true`，在支持 X11 的主机上打开 `IsOS MuJoCo — live simulation` 窗口。窗口渲染来自同一个 `SimEngine` 的相机画面；默认不显示 GUI。若请求 GUI 但显示服务不可用，模拟器启动失败。`tools/view.sh` 仍用于独立的静态场景预览。
 

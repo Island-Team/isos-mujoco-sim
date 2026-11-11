@@ -1,7 +1,7 @@
 """Declarative EOS node types and graph set shipped with the MuJoCo package."""
 
 
-BACKEND = "eos.process.mujoco@v0.1"
+BACKEND = "eos.process.mujoco@v0.2"
 CAMERA = "eos.hardware.camera@v0.1"
 BASE = "eos.hardware.base@v0.1"
 MANIPULATOR = "eos.hardware.manipulator@v0.1"
@@ -15,7 +15,8 @@ def port(name: str, data_type: str, required: bool = False,
          data_class: str = "state") -> dict:
   result = {"name": name, "data_type": data_type, "required": required,
             "description": description, "transport": "in_process",
-            "data_class": data_class}
+            "data_class": data_class,
+            "contract": {"owner": "eos", "id": data_type, "version": "0.2"}}
   if expected_rate_hz is not None:
     result["expected_rate_hz"] = expected_rate_hz
   return result
@@ -112,6 +113,8 @@ def contributions() -> dict:
      setting("start_timeout_ms", "positive_integer",
              description="Simulator readiness deadline in milliseconds")],
   )
+  current["implementation"] = {"kind": "external", "interface": "mujoco-v2",
+                               "version": "1", "lifecycle_adapter": "mujoco-v2"}
   current["description"] = (
     "Starts one verified MuJoCo scene as an EOS-owned simulator child and supplies "
     "only the graph-declared simulated devices."

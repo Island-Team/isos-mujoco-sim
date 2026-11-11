@@ -30,7 +30,7 @@ class NodeContributionTests(unittest.TestCase):
     self.assertEqual(refs, {"simulator", "front", "drive", "arm", "base-velocity",
                             "arm-movej", "camera-gate"})
     contributed_types = {node_type["id"] for node_type in contract["node_types"]}
-    self.assertEqual(contributed_types, {"eos.process.mujoco@v0.1"})
+    self.assertEqual(contributed_types, {"eos.process.mujoco@v0.2"})
     for definition in contract["node_types"]:
       self.assertTrue(definition["description"].strip())
       for setting in definition["settings"]:
@@ -93,6 +93,8 @@ class NodeContributionTests(unittest.TestCase):
         self.assertTrue(port["description"])
         self.assertIn(port["data_class"],
                       {"image", "observation", "command", "event", "state", "opaque"})
+        self.assertEqual(port["contract"],
+                         {"owner": "eos", "id": port["data_type"], "version": "0.2"})
 
   def test_target_contribution_matches_frozen_projection(self) -> None:
     expected = json.loads((Path(__file__).resolve().parent /
@@ -104,6 +106,9 @@ class NodeContributionTests(unittest.TestCase):
                      (expected["process_type"]["core"], expected["process_type"]["layer"],
                       expected["process_type"]["group"]))
     self.assertTrue(current["description"].strip())
+    self.assertEqual(current["implementation"],
+                     {"kind": "external", "interface": "mujoco-v2",
+                      "version": "1", "lifecycle_adapter": "mujoco-v2"})
     self.assertEqual(next(setting for setting in current["settings"] if setting["name"] == "scene")["selector"],
                      expected["process_type"]["scene_selector"])
     node_set = contract["node_sets"][0]

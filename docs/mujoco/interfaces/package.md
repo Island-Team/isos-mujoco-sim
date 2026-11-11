@@ -2,11 +2,11 @@
 
 ## Generic package process declaration
 
-The schema v4 `release.json` adds `node_contributions.processes[]` for `eos.process.mujoco@v0.1`. IsOS verifies the declaration against archived bytes and the contributed process type. EOS implements the named lifecycle adapter. The historical `@v1.0` type retains its existing reader path. Graphs store the exact package pin and stable scene ID, never resolved paths.
+The schema v4 `release.json` adds `node_contributions.processes[]` for `eos.process.mujoco@v0.2`. IsOS verifies the declaration against archived bytes and the contributed process type. EOS implements the named lifecycle adapter. The historical `@v1.0` type retains its existing reader path. Graphs store the exact package pin and stable scene ID, never resolved paths.
 
 | Field | JSON type / unit | Purpose | Validation and default |
 | --- | --- | --- | --- |
-| `processes[].node_type` | string / — | Process type to launch | Required `eos.process.mujoco@v0.1`; must name a contributed process type; no default. |
+| `processes[].node_type` | string / — | Process type to launch | Required `eos.process.mujoco@v0.2`; must name a contributed process type; no default. |
 | `processes[].entrypoint` | relative path / — | Verified child executable | Required `bin/eos-mujoco-sim`; executable within the archive, without traversal or symlink escape; no default. |
 | `processes[].lifecycle_adapter` | string / — | EOS readiness and stop adapter | Required `mujoco-v2`; EOS must register it; no default. |
 | `processes[].resources[]` | array / — | Selector bindings | Required one scene binding; no default. |
@@ -16,12 +16,11 @@ The schema v4 `release.json` adds `node_contributions.processes[]` for `eos.proc
 | `processes[].host_inputs[]` | array / — | Host inputs for launch | Required one `MUJOCO_ROOT` directory declaration; no default. |
 | `host_inputs[].name` | string / — | Environment variable name | Required `MUJOCO_ROOT`; value is not stored in graph; no default. |
 | `host_inputs[].kind` | string / — | Host value type | Required `directory`; IsOS resolves an existing directory; no default. |
-| `host_inputs[].library_dir` | relative path / — | Library search directory beneath the host input | Required `lib`; IsOS checks containment and adds it to the EOS child library path; no default. |
 | `host_inputs[].required` | boolean / — | Whether launch needs the input | Required `true`; missing input blocks launch. |
 
 The package build entrypoint is `build.sh --output <empty-absolute-directory>`. It requires `MUJOCO_ROOT`, builds from the local source checkout, and writes `release.json` and `asset.tar.gz` into the output directory. The manifest digest and size cover those exact archive bytes. Installation does not activate a graph or restart a run.
 
-`package-resources.json` has integer `schema_version:1` and `resources[]`. A scene resource requires `kind:"scene"`, a unique stable string `id`, nonblank `label` and `description`, a contained relative `path` to MJCF, and its lowercase SHA-256 `sha256`. A device resource requires `kind:"device"`, unique stable string `id`, nonblank `label` and `description`, `device_kind` (`camera`, `base`, or `manipulator`), and nonempty unique `scene_ids[]` referencing declared scene IDs. All fields are required and have no default. The generic IsOS selector reads this file; `backend-v2.json` remains the MuJoCo-specific EOS adapter contract and legacy descriptor.
+`package-resources.json` has `contract:"isos.package-resources@v1"`, string `schema_version:"0.1.0"`, and `resources[]`. A scene resource requires `kind:"scene"`, a unique stable string `id`, nonblank `label` and `description`, a contained relative `path` to MJCF, and its lowercase SHA-256 `sha256`. A device resource requires `kind:"device"`, unique stable string `id`, nonblank `label` and `description`, `metadata.device_kind` (`camera`, `base`, or `manipulator`), and nonempty unique `metadata.scene_ids[]` referencing declared scene IDs. All fields are required and have no default. The generic IsOS selector reads this file; `backend-v2.json` remains the MuJoCo-specific EOS adapter contract and legacy descriptor.
 
 [中文](../../../docs_cn/mujoco/interfaces/package_cn.md) · [Socket](socket.md) · [Package release](../usage/isos-pkg.md#package-release-record)
 
@@ -69,7 +68,7 @@ The P02 descriptor is frozen in [`target-descriptor.json`](../../../tests/fixtur
 
 ## P02 contribution and graph boundary
 
-The package contributes one new process type, `eos.process.mujoco@v0.1`, at `eos/process/mujoco`, and retains the exact `eos.process.mujoco@v1.0` historical identity for verified legacy readers. The new type has a nonblank `description`; its `scene` setting has a nonblank description and `selector:{"provider":"package","resource":"scene","package_from":"node.package"}`. `socket` (owner-only Unix socket path), optional `env` (string table) and `start_timeout_ms` (positive integer milliseconds) have described types and validation. Its `status` and `health` outputs carry complete descriptions, `in_process` transport and `state` data class. The process instance pins `node.package:{"id":"island/mujoco-sim","version":"0.1.2"}`; it never stores a resolved executable or scene path in settings. This sidecar adds no actuator or safety adapter route.
+The package contributes one new process type, `eos.process.mujoco@v0.2`, at `eos/process/mujoco`, and retains the exact `eos.process.mujoco@v1.0` historical identity for verified legacy readers. The new type declares `implementation:{"kind":"external","interface":"mujoco-v2","version":"1","lifecycle_adapter":"mujoco-v2"}` and has a nonblank `description`; its `scene` setting has a nonblank description and `selector:{"provider":"package","resource":"scene","package_from":"node.package"}`. `socket` (owner-only Unix socket path), optional `env` (string table) and `start_timeout_ms` (positive integer milliseconds) have described types and validation. Its `status` and `health` outputs carry complete descriptions, `in_process` transport, `state` data class, and EOS-owned versioned port contracts. The process instance pins `node.package:{"id":"island/mujoco-sim","version":"0.1.2"}`; it never stores a resolved executable or scene path in settings. This sidecar adds no actuator or safety adapter route.
 
 The `sim-hardware` new-graph node set is a draft template for `0.1.0`, not executable authority. It includes the package-owned new process type, generic EOS camera/base/manipulator `@v0.1` types, generic EOS base/arm primitive bindings `@v0.1`, and an EOS camera gate `@v0.1`. The IsOS starter already supplies `eos.dispatcher.control@v0.1`; the set must not duplicate it. Each generic hardware instance uses `node.adapter.package` for the exact MuJoCo pin, references the process node, and stores the selected `device_id` and matching `simulator_node` in adapter settings. The package does not contribute, rename or override a generic EOS type. The old `isos.ui.vision@v1.0` is omitted from this `0.1.0` set until its owner registers a compatible type; a package must not invent an IsOS UI identity. Previously verified legacy sidecars and saved `1.0.0` graphs remain readable under their established behavior; neither a new preset nor a legacy read silently rewrites them.
 
