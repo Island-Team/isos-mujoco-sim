@@ -95,7 +95,7 @@ def contributions(version: str = "0.2.0") -> dict:
      setting("start_timeout_ms", "positive_integer",
              description="Simulator readiness deadline in milliseconds")],
   )
-  current["implementation"] = {"kind": "external", "interface": "mujoco-v2",
+  current["implementation"] = {"kind": "managed_process", "interface": "mujoco-v2",
                                "version": "1", "lifecycle_adapter": "mujoco-v2"}
   current["description"] = (
     "Starts one verified MuJoCo scene as an EOS-owned simulator child and supplies "

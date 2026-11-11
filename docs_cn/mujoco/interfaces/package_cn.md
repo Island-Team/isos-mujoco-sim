@@ -69,7 +69,7 @@ P02 描述符固定于 [`target-descriptor.json`](../../../tests/fixtures/scene_
 
 ## P02 声明与图边界
 
-包在 `eos/process/mujoco` 贡献唯一新进程类型 `eos.process.mujoco.simulator@v0.2`；先前已验证发布包中的 `eos.process.mujoco@v1.0` 仍按原有路径读取。新类型声明 `implementation:{"kind":"external","interface":"mujoco-v2","version":"1","lifecycle_adapter":"mujoco-v2"}`，并带非空 `description`；其 `scene` 设置有非空描述和 `selector:{"provider":"package","resource":"scene","package_from":"node.package"}`。`socket`（仅所有者可访问的 Unix 套接字路径）、可选 `env`（字符串表）和 `start_timeout_ms`（正整数毫秒）具有明确的类型、用途与验证。进程状态与健康由运行时拥有，不作为图端口。进程实例锁定 `node.package:{"id":"island/mujoco-sim","version":"0.1.2"}`；设置中不存解析后的程序或场景路径。此 sidecar 不增设执行器或安全适配器路线。
+包在 `eos/process/mujoco` 贡献唯一新进程类型 `eos.process.mujoco.simulator@v0.2`；先前已验证发布包中的 `eos.process.mujoco@v1.0` 仍按原有路径读取。新类型声明 `implementation:{"kind":"managed_process","interface":"mujoco-v2","version":"1","lifecycle_adapter":"mujoco-v2"}`，并带非空 `description`；其 `scene` 设置有非空描述和 `selector:{"provider":"package","resource":"scene","package_from":"node.package"}`。`socket`（仅所有者可访问的 Unix 套接字路径）、可选 `env`（字符串表）和 `start_timeout_ms`（正整数毫秒）具有明确的类型、用途与验证。进程状态与健康由运行时拥有，不作为图端口。进程实例锁定 `node.package:{"id":"island/mujoco-sim","version":"0.2.0"}`；设置中不存解析后的程序或场景路径。此 sidecar 不增设执行器或安全适配器路线。
 
 `sim-hardware` 节点集面向 `0.2.1` 图，只组合四个节点：包拥有的进程，以及 EOS 通用相机、底盘、机械臂 `device@v0.2` 类型。每个硬件实例固定 MuJoCo 适配器并引用进程节点。此首版节点集没有命令绑定或相机门；只有在 EOS Dispatcher 路线注册并连接后，底盘和机械臂才能接收命令，在此之前仅用于观测。包不贡献或覆盖 EOS 通用类型。包验证与链接不能证明图 Apply 或运行就绪。节点集不包含旧的 `isos.ui.vision@v1.0`；历史已保存图保持原有读取路径。
 

@@ -104,7 +104,7 @@ class NodeContributionTests(unittest.TestCase):
                       expected["process_type"]["group"]))
     self.assertTrue(current["description"].strip())
     self.assertEqual(current["implementation"],
-                     {"kind": "external", "interface": "mujoco-v2",
+                     {"kind": "managed_process", "interface": "mujoco-v2",
                       "version": "1", "lifecycle_adapter": "mujoco-v2"})
     self.assertEqual(next(setting for setting in current["settings"] if setting["name"] == "scene")["selector"],
                      expected["process_type"]["scene_selector"])
