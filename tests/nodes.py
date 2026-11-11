@@ -47,7 +47,7 @@ class NodeContributionTests(unittest.TestCase):
         for parameter in re.findall(r"\$\{([^}]+)\}", value):
           self.assertIn(parameter, declared)
 
-  def test_each_device_uses_one_package_pinned_adapter_and_typed_binding(self) -> None:
+  def test_each_device_uses_one_package_pinned_observation_adapter(self) -> None:
     contract = contributions()
     nodes = {node["ref"]: node for node in contract["node_sets"][0]["nodes"]}
     family = contract["adapter_families"][0]
