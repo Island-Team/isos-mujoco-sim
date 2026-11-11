@@ -3,8 +3,6 @@
 
 BACKEND = "eos.process.mujoco.simulator@v0.2"
 CAMERA = "eos.hardware.camera.device@v0.2"
-BASE = "eos.hardware.base.device@v0.2"
-MANIPULATOR = "eos.hardware.manipulator.device@v0.2"
 
 
 def node_type(id: str, layer: str, kind: str, lifecycle: str,
@@ -64,27 +62,9 @@ def hardware_profile(id: str, type_id: str, label: str, description: str,
 
 def contributions(version: str = "0.2.0") -> dict:
   camera = hardware_profile(
-    "front", CAMERA, "Front RGB camera", "MuJoCo JPEG camera decoded to RGB8",
-    "front_camera_optical", ["rgb8"], "${camera_device}", 30.0, 8388608, version,
+    "front", CAMERA, "Front JPEG camera", "MuJoCo JPEG camera frame",
+    "front_camera_optical", ["jpeg"], "${camera_device}", 30.0, 8388608, version,
   )
-  base = hardware_profile(
-    "drive", BASE, "Planar base", "MuJoCo base velocity controller",
-    "base_link", ["body_velocity"], "${base_device}", 50.0, 4096, version,
-  )
-  base["movement"] = {
-    "modes": ["body_velocity"],
-    "limits": {"max_linear_m_s": 1.0, "max_angular_rad_s": 1.5,
-               "max_velocity_lease_ms": 500},
-  }
-  arm = hardware_profile(
-    "arm", MANIPULATOR, "Six axis arm", "MuJoCo six-joint position controller",
-    "arm_base", ["joint_positions"], "${manipulator_device}", 50.0, 4096, version,
-  )
-  arm["joint_names"] = ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6"]
-  arm["movement"] = {
-    "modes": ["joint_positions"],
-    "limits": {"max_joint_position_rad": 3.14, "max_joint_speed_rad_s": 1.0},
-  }
   current = node_type(
     BACKEND, "process", "software", "process", ["process"], [],
     [],
@@ -129,8 +109,6 @@ def contributions(version: str = "0.2.0") -> dict:
       "parameters": {
         "scene": {"type": "string", "default": "pick-place"},
         "camera_device": {"type": "string", "default": "cam-0"},
-        "base_device": {"type": "string", "default": "base-0"},
-        "manipulator_device": {"type": "string", "default": "arm-0"},
         "socket": {"type": "string"},
       },
       "nodes": [
@@ -143,10 +121,6 @@ def contributions(version: str = "0.2.0") -> dict:
          }},
         {"ref": "front", "core": "eos", "layer": "hardware", "group": "camera",
          "profile": camera},
-        {"ref": "drive", "core": "eos", "layer": "hardware", "group": "base",
-         "profile": base},
-        {"ref": "arm", "core": "eos", "layer": "hardware", "group": "manipulator",
-         "profile": arm},
       ],
     }],
   }

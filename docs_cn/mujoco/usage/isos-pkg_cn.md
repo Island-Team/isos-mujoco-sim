@@ -3,7 +3,7 @@
 
 ## v0.2.x 外部适配器候选（当前源码）
 
-当前源码默认构建 `island/mujoco-sim@0.2.0`。`./build.sh --output <绝对路径空目录> --version 0.2.x` 选择尚未发布的补丁候选；每次已发布版本的修复使用新的补丁号。发布清单使用 `isos.package@v1`、schema `0.2.0`，通过 `lib/libmujoco-eos-node.so` 贡献 `mujoco-v2` 适配器系列。清单在 `adapters` 和 `node_contributions.libraries` 中记录同一 SHA-256；归档固定相同字节。输出目录保留清单中的资产文件名，例如 `mujoco-sim-v0.2.0-linux-x86_64.tar.gz`。`bin/eos-mujoco-sim` 仍是经过验证、受监督的子进程。动态库导出 `isos_node_v1` 的 create/start/input/health/stop/destroy，读取已准入节点的 `adapter.settings`，探测 `strict-socket-v1`，并将相机、底盘和机械臂观测转换成通用 `@v0.2` 载荷。它只接受 `{"op":"observe"}` 输入，拒绝直接运动命令。发布命令节点集前，EOS 必须负责 Dispatcher 准入和物理停止证明。
+当前源码默认构建 `island/mujoco-sim@0.2.0`。`./build.sh --output <绝对路径空目录> --version 0.2.x` 选择尚未发布的补丁候选；每次已发布版本的修复使用新的补丁号。发布清单使用 `isos.package@v1`、schema `0.2.0`，通过 `lib/libmujoco-eos-node.so` 贡献 `mujoco-v2` 适配器系列。清单在 `adapters` 和 `node_contributions.libraries` 中记录同一 SHA-256；归档固定相同字节。输出目录保留清单中的资产文件名，例如 `mujoco-sim-v0.2.0-linux-x86_64.tar.gz`。`bin/eos-mujoco-sim` 仍是经过验证、受监督的子进程。动态库导出 `isos_node_v1` 的 create/start/input/health/stop/destroy，读取已准入节点的 `adapter.settings`，探测 `strict-socket-v1`，并将相机、底盘和机械臂观测转换成通用 `@v0.2` 载荷。它只接受 `{"op":"observe"}` 输入，拒绝直接运动命令。当前 `sim-hardware` 节点集只含模拟器进程与 JPEG 相机，能力标记为 `jpeg`；底盘和机械臂仍在资源目录中，但在执行器 Stop 证明完成前不纳入托管图。发布命令节点集前，EOS 必须负责 Dispatcher 准入和物理停止证明。
 
 运行 `isos pkg check --source` 前，导出 `MUJOCO_ROOT` 指向本地 3.3.1 安装；显式环境值优先于 `config.toml` 和 `.env`。`python3 tests/build_env.py` 在不下载内容的情况下验证此构建输入边界。清单将 IsOS 兼容范围限定为 `[0.2.3,0.3.0)`，并要求 IsOS `package-process-v1` 与 EOS `native-plugin-v1`；发布检查仍记录实际验证的 IsOS 构建。`.so` 是 Linux C++/protobuf 二进制文件，需要 IsOS 主机的 ABI 表和匹配的运行库。仅构建文件不足以证明兼容：IsOS 检查清单和摘要，EOS 检查 ABI 与回调，托管资格检查模拟器子进程、数据 schema、就绪和 Stop。其他平台及进程内 Python 是未来工作；Python 可使用受监督进程接口。`python3 tests/plugin.py <已构建动态库>` 使用桩验证严格健康、观测、运动拒绝和 Stop。下面旧的 `0.1.2` 记录属于历史候选证据，不是当前源码的操作说明。
 
@@ -61,7 +61,7 @@ v2 Unix 套接字帧以八字节小端长度头开头，后接 JSON 元数据和
 
 2026-10-30，旧版六节点预设及端口元数据通过 `python3 tests/nodes.py` 的四个测试。`python3 tools/bundle.py --build-dir build --output logs/test/20261030-general-interfaces/bundle-r3` 成功生成当时的发布候选包，`ctest --test-dir build --output-on-failure` 的十个模拟器测试全部通过。完整本地输出保存在 `logs/test/20261030-general-interfaces/`。当时的八节点预设也用相同的 Python 命令检查；2026-10-31 的模拟器基线十个测试通过，日志在 `logs/test/20261031-generic-device-preset/`。
 
-随后，独立的 IsOS 目录链接旧版 `bundle-r3`，使用场景和套接字参数预览 `sim-hardware`，并通过 EOS `aether-profile` 验证生成的图。该预览添加六个节点，只在当时四个 MuJoCo 类型上保留包引用，并报告三个由 IsOS 管理的进程。复现细节见 `logs/test/20261030-general-interfaces/graph-preview.log`。这属于历史回放证据；当前四节点 `0.2.1` 节点集仍需新的跨所有者回放。
+随后，独立的 IsOS 目录链接旧版 `bundle-r3`，使用场景和套接字参数预览 `sim-hardware`，并通过 EOS `aether-profile` 验证生成的图。该预览添加六个节点，只在当时四个 MuJoCo 类型上保留包引用，并报告三个由 IsOS 管理的进程。复现细节见 `logs/test/20261030-general-interfaces/graph-preview.log`。这属于历史回放证据；当前两节点 `0.2.1` 相机节点集仍需新的跨所有者回放。
 
 ## 软件包 0.1.2 检查（2026-10-31）
 

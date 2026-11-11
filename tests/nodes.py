@@ -27,7 +27,7 @@ class NodeContributionTests(unittest.TestCase):
     contract = contributions()
     node_set = contract["node_sets"][0]
     refs = {node["ref"] for node in node_set["nodes"]}
-    self.assertEqual(refs, {"simulator", "front", "drive", "arm"})
+    self.assertEqual(refs, {"simulator", "front"})
     contributed_types = {node_type["id"] for node_type in contract["node_types"]}
     self.assertEqual(contributed_types, {"eos.process.mujoco.simulator@v0.2"})
     for definition in contract["node_types"]:
@@ -53,7 +53,7 @@ class NodeContributionTests(unittest.TestCase):
     family = contract["adapter_families"][0]
     self.assertEqual(set(family["device_kinds"]), {"camera", "base", "manipulator"})
     self.assertEqual(family["supported_primitives"], [])
-    for ref, kind in (("front", "camera"), ("drive", "base"), ("arm", "manipulator")):
+    for ref, kind in (("front", "camera"),):
       node = nodes[ref]
       self.assertEqual((node["core"], node["layer"], node["group"]),
                        ("eos", "hardware", kind))
@@ -63,12 +63,12 @@ class NodeContributionTests(unittest.TestCase):
       self.assertEqual(profile["adapter"]["type"], family["id"])
       self.assertEqual(profile["adapter"]["package"],
                        {"id": "island/mujoco-sim", "version": "0.2.0"})
-      selected = {"front": "camera_device", "drive": "base_device",
-                  "arm": "manipulator_device"}[ref]
+      selected = {"front": "camera_device"}[ref]
       self.assertEqual(profile["adapter"]["settings"]["device_id"], f"${{{selected}}}")
       self.assertEqual(profile["adapter"]["settings"]["simulator_node"], f"${{{selected}}}")
-    self.assertNotIn("inputs", nodes["drive"]["profile"])
-    self.assertNotIn("inputs", nodes["arm"]["profile"])
+      self.assertEqual(profile["capabilities"], ["jpeg"])
+    self.assertNotIn("drive", nodes)
+    self.assertNotIn("arm", nodes)
 
   def test_patch_release_uses_exact_package_pin(self) -> None:
     contract = contributions("0.2.7")

@@ -71,7 +71,7 @@ P02 描述符固定于 [`target-descriptor.json`](../../../tests/fixtures/scene_
 
 包在 `eos/process/mujoco` 贡献唯一新进程类型 `eos.process.mujoco.simulator@v0.2`；先前已验证发布包中的 `eos.process.mujoco@v1.0` 仍按原有路径读取。新类型声明 `implementation:{"kind":"managed_process","interface":"mujoco-v2","version":"1","lifecycle_adapter":"mujoco-v2"}`，并带非空 `description`；其 `scene` 设置有非空描述和 `selector:{"provider":"package","resource":"scene","package_from":"node.package"}`。`socket`（仅所有者可访问的 Unix 套接字路径）、可选 `env`（字符串表）和 `start_timeout_ms`（正整数毫秒）具有明确的类型、用途与验证。进程状态与健康由运行时拥有，不作为图端口。进程实例锁定 `node.package:{"id":"island/mujoco-sim","version":"0.2.0"}`；设置中不存解析后的程序或场景路径。此 sidecar 不增设执行器或安全适配器路线。
 
-`sim-hardware` 节点集面向 `0.2.1` 图，只组合四个节点：包拥有的进程，以及 EOS 通用相机、底盘、机械臂 `device@v0.2` 类型。每个硬件实例固定 MuJoCo 适配器并引用进程节点。此首版节点集没有命令绑定或相机门；只有在 EOS Dispatcher 路线注册并连接后，底盘和机械臂才能接收命令，在此之前仅用于观测。包不贡献或覆盖 EOS 通用类型。包验证与链接不能证明图 Apply 或运行就绪。节点集不包含旧的 `isos.ui.vision@v1.0`；历史已保存图保持原有读取路径。
+当前 `sim-hardware` 节点集面向 `0.2.1` 图，只含包拥有的进程与一个 EOS 通用 JPEG 相机 `device@v0.2`。相机实例固定 MuJoCo 适配器并引用进程节点。底盘和机械臂仍在资源目录中，但 EOS 完成执行器 Stop 证明前不贡献其托管实例。本包不贡献或覆盖 EOS 通用类型。包验证与链接不能证明图 Apply 或运行就绪。历史已保存图保留原有读取路径。
 
 **目标图准入。** P02 节点集声明稳定参数 `scene`、`camera_device`、`base_device`、`manipulator_device` 和仅所有者可访问的 `socket`。默认场景为 `pick-place`，三个设备默认值为 `cam-0`、`base-0`、`arm-0`。在 IsOS 与 EOS 的图准入路径可用后，预览与 Apply 必须要求所选 ID 属于精确验证过的描述符、符合硬件类别和所选场景，并通过整图准入。已准入图保存 ID 和精确包锁定。IsOS 拥有组合及修订 compare-and-swap；改选场景必须生成新的已保存修订，仅在 Restart 后作用于子进程。不能原地修改运行中模拟器的场景。当前包验证与链接通过，但预览受 IsOS/EOS 验证命令不匹配阻塞，且当前 EOS 所有者尚未编译 `mujoco-v2`。
 
@@ -111,8 +111,8 @@ IsOS 保留 P01 诊断结构 `{code,path,message,id,version,stage}` 和 HTTP 422
 
 ## 历史声明的兼容性
 
-历史已验证 sidecar 仅贡献 `eos.process.mujoco@v1.0`，缺少进程类型描述与选择器，且使用固定设备 ID 组合 `1.0.0` 图。读取方可为旧 sidecar 提供仅供目录显示的描述默认值，而不改变验证过的字节。当前构建工具输出一个 `eos.process.mujoco.simulator@v0.2` 进程类型和四节点 `0.2.1` 节点集；IsOS 先接受并验证新描述符，再把该预设发布为图选项。其他包资源以后可使用 P03 选项机制；本版本不定义 `egia.tensor` 执行。
+历史已验证 sidecar 仅贡献 `eos.process.mujoco@v1.0`，缺少进程类型描述与选择器，且使用固定设备 ID 组合 `1.0.0` 图。读取方可为旧 sidecar 提供仅供目录显示的描述默认值，而不改变验证过的字节。当前构建工具输出一个 `eos.process.mujoco.simulator@v0.2` 进程类型和仅含两节点的 `0.2.1` 相机节点集；IsOS 先接受并验证新描述符，再把该预设发布为图选项。其他包资源以后可使用 P03 选项机制；本版本不定义 `egia.tensor` 执行。
 
 ## 当前 v0.2.x 二进制适配器
 
-发布 schema `0.2.0` 声明 `adapters:[{"family":"mujoco-v2","library":"lib/libmujoco-eos-node.so","sha256":"<64 位小写十六进制>"}]`，且 `node_contributions.libraries` 使用相同路径和摘要。此动态库实现带版本的 `isos_node_v1` C ABI，不是第二个模拟器进程。EOS 将已准入的图实例传给 `create`，管理回调生命周期和模拟器子进程，并在卸载前调用 `stop`。插件 Stop 成功意味着观测回调已静止；EOS 仍须在终止子进程前通过严格 companion 套接字另行证明执行器停止。首个 `sim-hardware` 节点集只提供观测。
+发布 schema `0.2.0` 声明 `adapters:[{"family":"mujoco-v2","library":"lib/libmujoco-eos-node.so","sha256":"<64 位小写十六进制>"}]`，且 `node_contributions.libraries` 使用相同路径和摘要。此动态库实现带版本的 `isos_node_v1` C ABI，不是第二个模拟器进程。EOS 将已准入的图实例传给 `create`，管理回调生命周期和模拟器子进程，并在卸载前调用 `stop`。插件 Stop 成功意味着观测回调已静止；EOS 仍须在终止子进程前通过严格 companion 套接字另行证明执行器停止。首个 `sim-hardware` 节点集只含模拟器进程与 JPEG 相机。底盘和机械臂仍作为目录资源列出，但在 EOS 证明执行器 Stop 前不得用于托管执行。

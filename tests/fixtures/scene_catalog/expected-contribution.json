@@ -1,6 +1,9 @@
 {
   "graph_version": "0.2.1",
-  "package": { "id": "island/mujoco-sim", "version": "0.1.2" },
+  "package": {
+    "id": "island/mujoco-sim",
+    "version": "0.2.0"
+  },
   "process_type": {
     "id": "eos.process.mujoco.simulator@v0.2",
     "core": "eos",
@@ -19,15 +22,11 @@
     "parameters": {
       "scene": "pick-place",
       "camera_device": "cam-0",
-      "base_device": "base-0",
-      "manipulator_device": "arm-0",
       "socket": null
     },
     "types": [
       "eos.process.mujoco.simulator@v0.2",
-      "eos.hardware.camera.device@v0.2",
-      "eos.hardware.base.device@v0.2",
-      "eos.hardware.manipulator.device@v0.2"
+      "eos.hardware.camera.device@v0.2"
     ],
     "omitted_legacy_type": "isos.ui.vision@v1.0",
     "adapter_family": "mujoco-v2"
