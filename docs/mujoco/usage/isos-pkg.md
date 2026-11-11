@@ -7,13 +7,15 @@ The current source builds `island/mujoco-sim@0.2.0` by default. `./build.sh --ou
 
 For `isos pkg check --source`, export `MUJOCO_ROOT` to the local 3.3.1 installation; the explicit environment value takes precedence over `config.toml` and `.env`. `python3 tests/build_env.py` verifies this build input boundary without downloading anything. The manifest bounds IsOS compatibility to `[0.2.3,0.3.0)` and requires IsOS `package-process-v1` plus EOS `native-plugin-v1`; the release check still records the exact qualified IsOS build. The `.so` is a Linux C++/protobuf binary and requires the IsOS host's ABI table plus matching runtime libraries. Building the file alone does not establish compatibility: IsOS checks the manifest and digest, EOS checks the ABI and callbacks, and managed qualification checks the simulator child, data schemas, readiness, and Stop. Other platforms and in-process Python remain future work; Python may use a supervised process interface. `python3 tests/plugin.py <built-lib>` exercises strict health, observation, movement rejection, and Stop against a stub. The older `0.1.2` notes below are historical candidate evidence, not instructions for this source release.
 
+## Historical 0.1.2 candidate notes
+
 The `0.1.2` bundle below is a local development candidate using MuJoCo 3.3.1. It is not a published release; historical `0.1.1` evidence later on this page remains tied to MuJoCo 3.16.0.
 
 **Current implementation:** This page records the existing bundle and integration path. [Package descriptor and contributions](../interfaces/package.md) and [simulator socket](../interfaces/socket.md) are the owner-specific field contracts; [architecture](../architecture.md) explains integration and [remaining qualification](../architecture.md#remaining-qualification) records the open checks. The `v2` in a protocol or generated descriptor filename is retained for compatibility; this topic page has no version suffix.
 
 [中文](../../../docs_cn/mujoco/usage/isos-pkg_cn.md)
 
-For a fresh local source install, set `MUJOCO_ROOT` and run `isos pkg install --source /absolute/path/to/isos-mujoco-sim --allow-source-build`. IsOS invokes this repository's executable `build.sh --output <empty-staging-directory>`, verifies `release.json` and `asset.tar.gz`, then installs the package. The package declares its process entrypoint and generic scene/device catalog; IsOS does not need a MuJoCo-specific launch path. Validate and Apply the node set, then explicitly Run or Restart the deployment. Installation alone does not change an active run.
+For a fresh local source install, set `MUJOCO_ROOT` and run `isos pkg install --source /absolute/path/to/isos-mujoco-sim --allow-source-build`. IsOS invokes this repository's executable `build.sh --output <empty-staging-directory>`, verifies `release.json` and the manifest-named archive, then installs the package. The package declares its process entrypoint and generic scene/device catalog; IsOS does not need a MuJoCo-specific launch path. Validate and Apply the node set, then explicitly Run or Restart the deployment. Installation alone does not change an active run.
 
 Build the simulator and stage a local `island/mujoco-sim@0.1.2` bundle:
 

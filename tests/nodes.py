@@ -78,6 +78,11 @@ class NodeContributionTests(unittest.TestCase):
         self.assertEqual(adapter["package"],
                          {"id": "island/mujoco-sim", "version": "0.2.7"})
 
+  def test_managed_process_declares_verified_inputs(self) -> None:
+    process = contributions()["processes"][0]
+    self.assertEqual(process["args"], ["--managed-strict-socket", "--v2-socket",
+                                       "${socket}", "--scene", "${resource.scene.path}"])
+
   def test_ports_describe_frequency_transport_and_data_class(self) -> None:
     contract = contributions()
     for node_type in contract["node_types"]:

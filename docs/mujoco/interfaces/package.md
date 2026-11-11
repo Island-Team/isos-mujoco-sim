@@ -2,13 +2,14 @@
 
 ## Generic package process declaration
 
-The schema v4 `release.json` adds `node_contributions.processes[]` for `eos.process.mujoco.simulator@v0.2`. IsOS verifies the declaration against archived bytes and the contributed process type. EOS implements the named lifecycle adapter. Previously verified releases containing the historical `@v1.0` type remain readable through their existing reader path; this manifest does not contribute that type. Graphs store the exact package pin and stable scene ID, never resolved paths.
+The current `isos.package@v1` schema `0.2.0` `release.json` adds `node_contributions.processes[]` for `eos.process.mujoco.simulator@v0.2`. IsOS verifies the declaration against archived bytes and the contributed process type. EOS implements the named lifecycle adapter. Previously verified releases containing the historical `@v1.0` type remain readable through their existing reader path; this manifest does not contribute that type. Graphs store the exact package pin and stable scene ID, never resolved paths.
 
 | Field | JSON type / unit | Purpose | Validation and default |
 | --- | --- | --- | --- |
 | `processes[].node_type` | string / — | Process type to launch | Required `eos.process.mujoco.simulator@v0.2`; must name a contributed process type; no default. |
 | `processes[].entrypoint` | relative path / — | Verified child executable | Required `bin/eos-mujoco-sim`; executable within the archive, without traversal or symlink escape; no default. |
 | `processes[].lifecycle_adapter` | string / — | EOS readiness and stop adapter | Required `mujoco-v2`; EOS must register it; no default. |
+| `processes[].args` | string array / — | Verified child argument template | `--managed-strict-socket --v2-socket ${socket} --scene ${resource.scene.path}`; EOS binds the private socket and verified scene path at Run. |
 | `processes[].resources[]` | array / — | Selector bindings | Required one scene binding; no default. |
 | `resources[].setting` | string / — | Process setting holding the resource ID | Required `scene`; must match the node setting; no default. |
 | `resources[].kind` | string / — | Catalog resource class | Required `scene`; selected value is a stable scene ID; no default. |
@@ -18,15 +19,15 @@ The schema v4 `release.json` adds `node_contributions.processes[]` for `eos.proc
 | `host_inputs[].kind` | string / — | Host value type | Required `directory`; IsOS resolves an existing directory; no default. |
 | `host_inputs[].required` | boolean / — | Whether launch needs the input | Required `true`; missing input blocks launch. |
 
-The package build entrypoint is `build.sh --output <empty-absolute-directory>`. It requires `MUJOCO_ROOT`, builds from the local source checkout, and writes `release.json` and `asset.tar.gz` into the output directory. The manifest digest and size cover those exact archive bytes. Installation does not activate a graph or restart a run.
+The package build entrypoint is `build.sh --output <empty-absolute-directory>`. It requires `MUJOCO_ROOT`, builds from the local source checkout, and writes `release.json` and the manifest-named archive, such as `mujoco-sim-v0.2.0-linux-x86_64.tar.gz`, into the output directory. The manifest digest and size cover those exact archive bytes. Installation does not activate a graph or restart a run.
 
 `package-resources.json` has `contract:"isos.package-resources@v1"`, string `schema_version:"0.1.0"`, and `resources[]`. A scene resource requires `kind:"scene"`, a unique stable string `id`, nonblank `label` and `description`, a contained relative `path` to MJCF, and its lowercase SHA-256 `sha256`. A device resource requires `kind:"device"`, unique stable string `id`, nonblank `label` and `description`, `metadata.device_kind` (`camera`, `base`, or `manipulator`), and nonempty unique `metadata.scene_ids[]` referencing declared scene IDs. All fields are required and have no default. The generic IsOS selector reads this file; `backend-v2.json` remains the MuJoCo-specific EOS adapter contract and legacy descriptor.
 
 [中文](../../../docs_cn/mujoco/interfaces/package_cn.md) · [Socket](socket.md) · [Package release](../usage/isos-pkg.md#package-release-record)
 
-**Owner and status.** This repository owns the MuJoCo-specific `backend-v2.json` descriptor and `node_contributions` in its schema v4 `release.json`. IsOS owns the general release-manifest schema, [verified receipt and package admission](https://github.com/Island-Team/isos/blob/master/docs/isos/interfaces/package-verification.md), graph revision, and `/node-options` response. `tools/bundle.py` emits the P02 catalog and `@v0.2` process contribution; IsOS semantic admission and the generic P03 option API are implemented in their owner repository; the pinned R05 replay verifies their use with this package. `backend-v2.json`, schema `2.0.0`, protocol name `mujoco-v2`, and socket wire `2.0.0` remain compatibility identities when the authored graph format is `0.2.1`.
+**Owner and status.** This repository owns the MuJoCo-specific `backend-v2.json` descriptor and `node_contributions` in its current release manifest. The P02 sections below document the historical 0.1.2 candidate; the current source uses the 0.2.0 contract above. IsOS owns the general release-manifest schema, [verified receipt and package admission](https://github.com/Island-Team/isos/blob/master/docs/isos/interfaces/package-verification.md), graph revision, and `/node-options` response. `tools/bundle.py` emits the P02 catalog and `@v0.2` process contribution; IsOS semantic admission and the generic P03 option API are implemented in their owner repository; the pinned R05 replay verifies their use with this package. `backend-v2.json`, schema `2.0.0`, protocol name `mujoco-v2`, and socket wire `2.0.0` remain compatibility identities when the authored graph format is `0.2.1`.
 
-## Current descriptor fields
+## Historical 0.1.2 descriptor fields
 
 | Field | Type / unit | Purpose / owner | Default, validation and compatibility |
 | --- | --- | --- | --- |

@@ -105,6 +105,8 @@ def contributions(version: str = "0.2.0") -> dict:
     "processes": [{
       "node_type": BACKEND,
       "entrypoint": "bin/eos-mujoco-sim",
+      "args": ["--managed-strict-socket", "--v2-socket", "${socket}",
+               "--scene", "${resource.scene.path}"],
       "lifecycle_adapter": "mujoco-v2",
       "resources": [{"setting": "scene", "kind": "scene",
                      "descriptor": "package-resources.json"}],

@@ -7,13 +7,15 @@
 
 运行 `isos pkg check --source` 前，导出 `MUJOCO_ROOT` 指向本地 3.3.1 安装；显式环境值优先于 `config.toml` 和 `.env`。`python3 tests/build_env.py` 在不下载内容的情况下验证此构建输入边界。清单将 IsOS 兼容范围限定为 `[0.2.3,0.3.0)`，并要求 IsOS `package-process-v1` 与 EOS `native-plugin-v1`；发布检查仍记录实际验证的 IsOS 构建。`.so` 是 Linux C++/protobuf 二进制文件，需要 IsOS 主机的 ABI 表和匹配的运行库。仅构建文件不足以证明兼容：IsOS 检查清单和摘要，EOS 检查 ABI 与回调，托管资格检查模拟器子进程、数据 schema、就绪和 Stop。其他平台及进程内 Python 是未来工作；Python 可使用受监督进程接口。`python3 tests/plugin.py <已构建动态库>` 使用桩验证严格健康、观测、运动拒绝和 Stop。下面旧的 `0.1.2` 记录属于历史候选证据，不是当前源码的操作说明。
 
+## 历史 0.1.2 候选说明
+
 下述 `0.1.2` 软件包是使用 MuJoCo 3.3.1 的本地开发候选，尚未发布；本页后面的历史 `0.1.1` 证据仍对应 MuJoCo 3.16.0。
 
 **当前实现：** 本页记录现有包与集成路径。[包描述符与声明](../interfaces/package_cn.md)和[模拟器套接字](../interfaces/socket_cn.md)是本包拥有的字段契约；[架构](../architecture_cn.md)说明集成方式，[后续验证](../architecture_cn.md#后续验证)记录尚未完成的检查。协议或已生成描述符文件名中的 `v2` 为兼容而保留；本主题页文件名不带版本后缀。
 
 [English](../../../docs/mujoco/usage/isos-pkg.md)
 
-从本地源码全新安装时，先设置 `MUJOCO_ROOT`，再运行 `isos pkg install --source /absolute/path/to/isos-mujoco-sim --allow-source-build`。IsOS 调用本仓库可执行的 `build.sh --output <空暂存目录>`，验证 `release.json` 和 `asset.tar.gz` 后安装包。包声明进程入口及通用场景和设备目录，IsOS 无需 MuJoCo 专用启动路径。随后验证并应用节点集，再明确运行或重启部署；仅安装包不会改变当前运行实例。
+从本地源码全新安装时，先设置 `MUJOCO_ROOT`，再运行 `isos pkg install --source /absolute/path/to/isos-mujoco-sim --allow-source-build`。IsOS 调用本仓库可执行的 `build.sh --output <空暂存目录>`，验证 `release.json` 和清单指定名称的归档后安装包。包声明进程入口及通用场景和设备目录，IsOS 无需 MuJoCo 专用启动路径。随后验证并应用节点集，再明确运行或重启部署；仅安装包不会改变当前运行实例。
 
 先构建模拟器，再生成本地 `island/mujoco-sim@0.1.2` 包：
 

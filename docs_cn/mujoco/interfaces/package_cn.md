@@ -2,13 +2,14 @@
 
 ## 通用包进程声明
 
-schema v4 `release.json` 为 `eos.process.mujoco.simulator@v0.2` 增加 `node_contributions.processes[]`。IsOS 根据归档字节和已贡献的进程类型验证声明，EOS 实现指定的生命周期适配器。先前已验证发布包中的历史 `@v1.0` 类型仍按原有路径读取；本清单不贡献该类型。图只保存准确包版本和稳定场景 ID，不保存解析后的路径。
+当前 `isos.package@v1` schema `0.2.0` 的 `release.json` 为 `eos.process.mujoco.simulator@v0.2` 增加 `node_contributions.processes[]`。IsOS 根据归档字节和已贡献的进程类型验证声明，EOS 实现指定的生命周期适配器。先前已验证发布包中的历史 `@v1.0` 类型仍按原有路径读取；本清单不贡献该类型。图只保存准确包版本和稳定场景 ID，不保存解析后的路径。
 
 | 字段 | JSON 类型 / 单位 | 用途 | 验证与默认值 |
 | --- | --- | --- | --- |
 | `processes[].node_type` | 字符串 / — | 要启动的进程类型 | 必需 `eos.process.mujoco.simulator@v0.2`，须为已贡献的进程类型；无默认值。 |
 | `processes[].entrypoint` | 相对路径 / — | 已验证的可执行文件 | 必需 `bin/eos-mujoco-sim`，不得越界或经符号链接逃逸；无默认值。 |
 | `processes[].lifecycle_adapter` | 字符串 / — | EOS 就绪和停止适配器 | 必需 `mujoco-v2`，EOS 必须注册；无默认值。 |
+| `processes[].args` | 字符串数组 / — | 已验证子进程参数模板 | `--managed-strict-socket --v2-socket ${socket} --scene ${resource.scene.path}`；EOS 在运行时绑定私有套接字及已验证场景路径。 |
 | `processes[].resources[]` | 数组 / — | 选择器绑定 | 必需一个场景绑定；无默认值。 |
 | `resources[].setting` | 字符串 / — | 存放资源 ID 的节点设置 | 必需 `scene`，须匹配节点设置；无默认值。 |
 | `resources[].kind` | 字符串 / — | 目录资源种类 | 必需 `scene`，值为稳定场景 ID；无默认值。 |
@@ -20,13 +21,13 @@ schema v4 `release.json` 为 `eos.process.mujoco.simulator@v0.2` 增加 `node_co
 
 `package-resources.json` 包含 `contract:"isos.package-resources@v1"`、字符串 `schema_version:"0.1.0"` 和 `resources[]`。场景资源必需 `kind:"scene"`、唯一稳定字符串 `id`、非空 `label` 和 `description`、归档内 MJCF 的相对 `path`，以及该文件的小写 SHA-256 `sha256`。设备资源必需 `kind:"device"`、唯一稳定字符串 `id`、非空 `label` 和 `description`、`metadata.device_kind`（`camera`、`base` 或 `manipulator`），以及引用已声明场景 ID 的非空且无重复的 `metadata.scene_ids[]`。所有字段均无默认值。通用 IsOS 选择器读取此文件，`backend-v2.json` 仍为 MuJoCo 专用 EOS 适配器协议及历史描述符。
 
-包的构建入口为 `build.sh --output <空的绝对目录>`。它要求 `MUJOCO_ROOT`，从本地源码构建，在输出目录写入 `release.json` 和 `asset.tar.gz`。清单中的摘要和大小覆盖归档的准确字节。安装不会激活图或重启运行实例。
+包的构建入口为 `build.sh --output <空的绝对目录>`。它要求 `MUJOCO_ROOT`，从本地源码构建，在输出目录写入 `release.json` 和清单指定名称的归档，例如 `mujoco-sim-v0.2.0-linux-x86_64.tar.gz`。清单中的摘要和大小覆盖归档的准确字节。安装不会激活图或重启运行实例。
 
 [English](../../../docs/mujoco/interfaces/package.md) · [套接字](socket_cn.md) · [包发布](../usage/isos-pkg_cn.md#软件包发布记录)
 
-**所有权与状态。** 本仓库拥有 MuJoCo 专用 `backend-v2.json` 描述符和 schema v4 `release.json` 中的 `node_contributions`。IsOS 拥有通用发布清单 schema、[已验证收据与包准入](https://github.com/Island-Team/isos/blob/master/docs_cn/isos/interfaces/package-verification_cn.md)、图修订和 `/node-options` 响应。`tools/bundle.py` 已输出 P02 目录和 `@v0.2` 进程声明；IsOS 的语义准入及通用 P03 选项 API 已在其所有者仓库实现；固定版本的 R05 回放验证了本包的实际使用。即使新图格式为 `0.2.1`，描述符 schema、协议和套接字线协议 `2.0.0` 仍是独立兼容性标识。
+**所有权与状态。** 本仓库拥有 MuJoCo 专用 `backend-v2.json` 描述符以及当前发布清单中的 `node_contributions`。以下 P02 小节记录 0.1.2 历史候选；当前源码的外部适配器以本页开头的 0.2.0 契约为准。IsOS 拥有通用发布清单 schema、[已验证收据与包准入](https://github.com/Island-Team/isos/blob/master/docs_cn/isos/interfaces/package-verification_cn.md)、图修订和 `/node-options` 响应。`tools/bundle.py` 已输出 P02 目录和 `@v0.2` 进程声明；IsOS 的语义准入及通用 P03 选项 API 已在其所有者仓库实现；固定版本的 R05 回放验证了本包的实际使用。即使新图格式为 `0.2.1`，描述符 schema、协议和套接字线协议 `2.0.0` 仍是独立兼容性标识。
 
-## 当前描述符字段
+## 历史 0.1.2 描述符字段
 
 | 字段 | 类型／单位 | 用途／所有者 | 默认、验证和兼容 |
 | --- | --- | --- | --- |
