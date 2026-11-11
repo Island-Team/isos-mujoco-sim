@@ -19,8 +19,12 @@ if [[ $# -eq 4 ]]; then
 fi
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 source "$root/tools/launcher.sh"
+explicit_mujoco_root=${MUJOCO_ROOT-}
 load_launch_config
-: "${MUJOCO_ROOT:?Set MUJOCO_ROOT in .env to a MuJoCo 3.3.1 installation}"
+if [[ -n $explicit_mujoco_root ]]; then
+  MUJOCO_ROOT=$explicit_mujoco_root
+fi
+: "${MUJOCO_ROOT:?Set MUJOCO_ROOT in the environment or .env to a MuJoCo 3.3.1 installation}"
 if [[ $# -eq 0 ]]; then
   cmake -S "$root" -B "$root/build" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release
   cmake --build "$root/build" --parallel "${BUILD_JOBS:-4}"

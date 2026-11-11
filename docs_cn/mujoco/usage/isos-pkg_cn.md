@@ -5,7 +5,7 @@
 
 当前源码默认构建 `island/mujoco-sim@0.2.0`。`./build.sh --output <绝对路径空目录> --version 0.2.x` 选择尚未发布的补丁候选；每次已发布版本的修复使用新的补丁号。发布清单使用 `isos.package@v1`、schema `0.2.0`，通过 `lib/libmujoco-eos-node.so` 贡献 `mujoco-v2` 适配器系列。清单在 `adapters` 和 `node_contributions.libraries` 中记录同一 SHA-256；归档固定相同字节。输出目录保留清单中的资产文件名，例如 `mujoco-sim-v0.2.0-linux-x86_64.tar.gz`。`bin/eos-mujoco-sim` 仍是经过验证、受监督的子进程。动态库导出 `isos_node_v1` 的 create/start/input/health/stop/destroy，读取已准入节点的 `adapter.settings`，探测 `strict-socket-v1`，并将相机、底盘和机械臂观测转换成通用 `@v0.2` 载荷。它只接受 `{"op":"observe"}` 输入，拒绝直接运动命令。发布命令节点集前，EOS 必须负责 Dispatcher 准入和物理停止证明。
 
-清单将 IsOS 兼容范围限定为 `[0.2.3,0.3.0)`，并要求 IsOS `package-process-v1` 与 EOS `native-plugin-v1`；发布检查仍记录实际验证的 IsOS 构建。`.so` 是 Linux C++/protobuf 二进制文件，需要 IsOS 主机的 ABI 表和匹配的运行库。仅构建文件不足以证明兼容：IsOS 检查清单和摘要，EOS 检查 ABI 与回调，托管资格检查模拟器子进程、数据 schema、就绪和 Stop。其他平台及进程内 Python 是未来工作；Python 可使用受监督进程接口。`python3 tests/plugin.py <已构建动态库>` 使用桩验证严格健康、观测、运动拒绝和 Stop。下面旧的 `0.1.2` 记录属于历史候选证据，不是当前源码的操作说明。
+运行 `isos pkg check --source` 前，导出 `MUJOCO_ROOT` 指向本地 3.3.1 安装；显式环境值优先于 `config.toml` 和 `.env`。`python3 tests/build_env.py` 在不下载内容的情况下验证此构建输入边界。清单将 IsOS 兼容范围限定为 `[0.2.3,0.3.0)`，并要求 IsOS `package-process-v1` 与 EOS `native-plugin-v1`；发布检查仍记录实际验证的 IsOS 构建。`.so` 是 Linux C++/protobuf 二进制文件，需要 IsOS 主机的 ABI 表和匹配的运行库。仅构建文件不足以证明兼容：IsOS 检查清单和摘要，EOS 检查 ABI 与回调，托管资格检查模拟器子进程、数据 schema、就绪和 Stop。其他平台及进程内 Python 是未来工作；Python 可使用受监督进程接口。`python3 tests/plugin.py <已构建动态库>` 使用桩验证严格健康、观测、运动拒绝和 Stop。下面旧的 `0.1.2` 记录属于历史候选证据，不是当前源码的操作说明。
 
 下述 `0.1.2` 软件包是使用 MuJoCo 3.3.1 的本地开发候选，尚未发布；本页后面的历史 `0.1.1` 证据仍对应 MuJoCo 3.16.0。
 
