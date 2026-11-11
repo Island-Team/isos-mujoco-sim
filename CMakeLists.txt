@@ -115,5 +115,6 @@ add_test(NAME strict-stop-publication COMMAND "${Python3_EXECUTABLE}" "${CMAKE_C
 add_test(NAME gui-unavailable COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/guifail.py" $<TARGET_FILE:eos-mujoco-sim> "${CMAKE_CURRENT_SOURCE_DIR}/assets/scene.xml")
 add_test(NAME scene-catalog COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/catalogtest.py")
 add_test(NAME bundle-catalog COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/bundle.py" $<TARGET_FILE:eos-mujoco-sim> "${MUJOCO_ROOT}")
+add_test(NAME deterministic-archive COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/archive.py")
 add_test(NAME native-release-check COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/native.py" $<TARGET_FILE:eos-mujoco-sim> "${MUJOCO_ROOT}")
 add_test(NAME q03-socket-bench-unit COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/tests/q03unit.py")

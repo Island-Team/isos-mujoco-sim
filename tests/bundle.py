@@ -56,6 +56,8 @@ def main() -> None:
         assert contributions["processes"] == [{
             "node_type": "eos.process.mujoco.simulator@v0.2",
             "entrypoint": "bin/eos-mujoco-sim",
+            "args": ["--managed-strict-socket", "--v2-socket", "${socket}",
+                     "--scene", "${resource.scene.path}"],
             "lifecycle_adapter": "mujoco-v2",
             "resources": [{"setting": "scene", "kind": "scene",
                            "descriptor": "package-resources.json"}],
@@ -64,7 +66,7 @@ def main() -> None:
         }]
         assert {node["id"] for node in contributions["node_types"]} == {
             "eos.process.mujoco.simulator@v0.2"}
-        assert len(contributions["node_sets"][0]["nodes"]) == 4
+        assert [node["ref"] for node in contributions["node_sets"][0]["nodes"]] == ["simulator", "front"]
         asset = release["assets"][0]
         assert asset["libc"] == f"glibc>={platform.libc_ver()[1]}", asset
         ubuntu = next(line.split("=", 1)[1].strip('"') for line in

@@ -21,7 +21,7 @@
 
 `package-resources.json` 包含 `contract:"isos.package-resources@v1"`、字符串 `schema_version:"0.1.0"` 和 `resources[]`。场景资源必需 `kind:"scene"`、唯一稳定字符串 `id`、非空 `label` 和 `description`、归档内 MJCF 的相对 `path`，以及该文件的小写 SHA-256 `sha256`。设备资源必需 `kind:"device"`、唯一稳定字符串 `id`、非空 `label` 和 `description`、`metadata.device_kind`（`camera`、`base` 或 `manipulator`），以及引用已声明场景 ID 的非空且无重复的 `metadata.scene_ids[]`。所有字段均无默认值。通用 IsOS 选择器读取此文件，`backend-v2.json` 仍为 MuJoCo 专用 EOS 适配器协议及历史描述符。
 
-包的构建入口为 `build.sh --output <空的绝对目录>`。它要求 `MUJOCO_ROOT`，从本地源码构建，在输出目录写入 `release.json` 和清单指定名称的归档，例如 `mujoco-sim-v0.2.0-linux-x86_64.tar.gz`。清单中的摘要和大小覆盖归档的准确字节。安装不会激活图或重启运行实例。
+包的构建入口为 `build.sh --output <空的绝对目录>`。它要求 `MUJOCO_ROOT`，从本地源码构建，在输出目录写入 `release.json` 和清单指定名称的归档，例如 `mujoco-sim-v0.2.0-linux-x86_64.tar.gz`。清单中的摘要和大小覆盖归档的准确字节。归档按路径排序，文件所有者与时间戳归零，gzip 时间戳为零；固定载荷字节的重复归档摘要应一致。`python3 tests/archive.py` 验证此边界。安装不会激活图或重启运行实例。
 
 [English](../../../docs/mujoco/interfaces/package.md) · [套接字](socket_cn.md) · [包发布](../usage/isos-pkg_cn.md#软件包发布记录)
 

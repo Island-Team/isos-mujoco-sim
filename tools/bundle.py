@@ -2,6 +2,7 @@
 """Stage a versioned island/mujoco-sim IsOS backend bundle."""
 
 import argparse
+import gzip
 import hashlib
 import json
 import os
@@ -22,6 +23,22 @@ PACKAGE_ID = "island/mujoco-sim"
 PACKAGE_VERSION = "0.2.0"
 SOURCE = "https://github.com/Island-Team/isos-mujoco-sim"
 MUJOCO_SONAME = "libmujoco.so.3.3.1"
+
+
+def write_deterministic_archive(bundle: Path, archive: Path) -> None:
+    """Encode a fixed payload tree without host ownership or timestamp metadata."""
+    with archive.open("wb") as raw:
+        with gzip.GzipFile(fileobj=raw, mode="wb", filename="", mtime=0) as compressed:
+            with tarfile.open(fileobj=compressed, mode="w", format=tarfile.USTAR_FORMAT) as tar:
+                for file in sorted(bundle.rglob("*")):
+                    member = tar.gettarinfo(str(file), arcname=file.relative_to(bundle).as_posix())
+                    member.uid = member.gid = member.mtime = 0
+                    member.uname = member.gname = ""
+                    if member.isfile():
+                        with file.open("rb") as source:
+                            tar.addfile(member, source)
+                    else:
+                        tar.addfile(member)
 
 
 def host_requirements() -> tuple[str, str]:
@@ -166,9 +183,7 @@ def main() -> None:
     arch = platform.machine()
     asset_name = f"mujoco-sim-v{args.version}-linux-{arch}.tar.gz"
     archive = bundle.parent / asset_name
-    with tarfile.open(archive, "w:gz") as tar:
-        for file in sorted(bundle.rglob("*")):
-            tar.add(file, arcname=file.relative_to(bundle).as_posix(), recursive=False)
+    write_deterministic_archive(bundle, archive)
     with archive.open("rb") as stream:
         digest = hashlib.file_digest(stream, "sha256").hexdigest()
     source_commit = subprocess.run(
