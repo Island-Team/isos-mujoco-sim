@@ -3,7 +3,23 @@ project(eos_mujoco_sim LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(Protobuf REQUIRED)
-find_package(gRPC REQUIRED)
+if(Protobuf_VERSION VERSION_LESS 3.12)
+  message(FATAL_ERROR "Protobuf 3.12 or newer is required for proto3 optional fields")
+endif()
+if(Protobuf_VERSION VERSION_LESS 3.15)
+  set(PROTO_OPTIONAL_ARGS --experimental_allow_proto3_optional)
+endif()
+find_package(gRPC CONFIG QUIET)
+if(NOT gRPC_FOUND)
+  # Ubuntu packages can provide pkg-config metadata without a CMake config.
+  find_package(PkgConfig REQUIRED)
+  pkg_check_modules(GRPC REQUIRED IMPORTED_TARGET grpc++)
+  add_library(gRPC::grpc++ ALIAS PkgConfig::GRPC)
+  find_program(GRPC_CPP_PLUGIN_EXECUTABLE NAMES grpc_cpp_plugin REQUIRED)
+  add_executable(gRPC::grpc_cpp_plugin IMPORTED)
+  set_target_properties(gRPC::grpc_cpp_plugin PROPERTIES
+    IMPORTED_LOCATION "${GRPC_CPP_PLUGIN_EXECUTABLE}")
+endif()
 find_package(Threads REQUIRED)
 find_package(JPEG REQUIRED)
 find_package(X11 REQUIRED)
@@ -33,7 +49,7 @@ add_custom_command(OUTPUT "${GENERATED_DIR}/scene_devices.h"
 add_custom_target(scene_devices_generated DEPENDS "${GENERATED_DIR}/scene_devices.h")
 foreach(NAME simulator benchmark)
   add_custom_command(OUTPUT "${GENERATED_DIR}/${NAME}.pb.cc" "${GENERATED_DIR}/${NAME}.pb.h" "${GENERATED_DIR}/${NAME}.grpc.pb.cc" "${GENERATED_DIR}/${NAME}.grpc.pb.h"
-    COMMAND protobuf::protoc --proto_path=${PROTO_DIR} --cpp_out=${GENERATED_DIR} --grpc_out=${GENERATED_DIR} --plugin=protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin> "${PROTO_DIR}/${NAME}.proto"
+    COMMAND protobuf::protoc ${PROTO_OPTIONAL_ARGS} --proto_path=${PROTO_DIR} --cpp_out=${GENERATED_DIR} --grpc_out=${GENERATED_DIR} --plugin=protoc-gen-grpc=$<TARGET_FILE:gRPC::grpc_cpp_plugin> "${PROTO_DIR}/${NAME}.proto"
     DEPENDS "${PROTO_DIR}/${NAME}.proto" VERBATIM)
   list(APPEND GENERATED_SOURCES "${GENERATED_DIR}/${NAME}.pb.cc" "${GENERATED_DIR}/${NAME}.grpc.pb.cc")
 endforeach()

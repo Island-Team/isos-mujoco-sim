@@ -8,6 +8,8 @@
 
 在 Linux 上安装 MuJoCo **3.3.1**、C++20 编译器、CMake 3.22 或更新版本、protobuf、gRPC、libjpeg、Python 3、`git`、`wget` 和 `uv`。复制环境示例文件，将 `MUJOCO_ROOT` 设为 MuJoCo 安装目录的绝对路径。目录下需包含 `include/mujoco/mujoco.h`、`lib/libmujoco.so.3.3.1`、`bin/compile` 和 `bin/simulate`。
 
+Protobuf 要求 3.12 或更新版本；低于 3.15 的版本会自动启用 proto3 optional 实验参数。在 Ubuntu 22.04 上，gRPC 依赖安装 `libgrpc++-dev`、`protobuf-compiler-grpc` 和 `pkg-config`。构建优先使用 gRPC 的 CMake 配置；若软件包未提供该配置，则通过 pkg-config 查找 `grpc++`，并单独查找 `grpc_cpp_plugin`。
+
 ```sh
 cp .env.example .env
 # 编辑 .env：export MUJOCO_ROOT=/absolute/path/to/mujoco-3.3.1

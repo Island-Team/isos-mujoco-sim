@@ -8,6 +8,8 @@ This repository has two runnable paths. The active benchmark is upstream RoboCas
 
 On Linux, install MuJoCo **3.3.1**, a C++20 compiler, CMake 3.22+, protobuf, gRPC, libjpeg, Python 3, `git`, `wget`, and `uv`. Copy the sample environment file and set `MUJOCO_ROOT` to the absolute MuJoCo installation directory. It must contain `include/mujoco/mujoco.h`, `lib/libmujoco.so.3.3.1`, `bin/compile`, and `bin/simulate`.
 
+Protobuf 3.12 or newer is required; versions before 3.15 use the experimental proto3 optional flag automatically. On Ubuntu 22.04, install `libgrpc++-dev`, `protobuf-compiler-grpc`, and `pkg-config` for gRPC. The build uses the gRPC CMake config when available, otherwise it discovers `grpc++` through pkg-config and locates `grpc_cpp_plugin` separately.
+
 ```sh
 cp .env.example .env
 # Edit .env: export MUJOCO_ROOT=/absolute/path/to/mujoco-3.3.1
