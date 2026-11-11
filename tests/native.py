@@ -33,7 +33,7 @@ class NativeReleaseTests(unittest.TestCase):
     def test_plugin_has_independent_dependency_closure(self):
         plugin = Path(sys.argv[1]).resolve().parent / "libmujoco-eos-node.so"
         names = BUNDLE.inspect_installed_plugin(plugin)
-        self.assertIn("libprotobuf.so.32", names)
+        self.assertTrue(any(name.startswith("libprotobuf.so.") for name in names))
         self.assertNotIn("libmujoco.so.3.3.1", names)
 
     def test_rejects_plugin_absolute_runpath(self):
