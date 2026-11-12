@@ -370,7 +370,8 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
           velocities->kind_case() != Value::kListValue ||
           positions->list_value().values_size() != 6 || velocities->list_value().values_size() != 6)
         return -1;
-      static constexpr const char* names[] = {"joint1", "joint2", "joint3", "joint4", "joint5", "joint6"};
+      static constexpr const char* names[] = {"shoulder_pan_joint", "shoulder_lift_joint",
+          "elbow_joint", "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"};
       auto* joints = (*data->mutable_fields())["joint_names"].mutable_list_value();
       for (const auto* name : names) joints->add_values()->set_string_value(name);
       *(*data->mutable_fields())["position_rad"].mutable_list_value() = positions->list_value();
