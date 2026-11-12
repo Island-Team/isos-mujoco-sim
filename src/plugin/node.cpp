@@ -255,11 +255,12 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
       const auto* positions = field(*values, "gripper_qpos");
       if (!positions || positions->kind_case() != Value::kListValue ||
           positions->list_value().values_size() != 2) return -1;
-      Struct* channels = (*data->mutable_fields())["channels"].mutable_struct_value();
+      auto* channels = (*data->mutable_fields())["channels"].mutable_list_value();
       for (int i = 0; i < 2; ++i) {
         const auto& value = positions->list_value().values(i);
         if (value.kind_case() != Value::kNumberValue || !std::isfinite(value.number_value())) return -1;
-        Struct* channel = (*channels->mutable_fields())[i == 0 ? "left_finger" : "right_finger"].mutable_struct_value();
+        Struct* channel = channels->add_values()->mutable_struct_value();
+        set(channel, "name", i == 0 ? "left_finger" : "right_finger");
         set(channel, "value", value.number_value());
         set(channel, "unit", "m");
       }
@@ -343,7 +344,11 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
     if (node->kind == "gripper") {
       const auto* opening = field(reply, "opening_percent");
       if (!opening || opening->kind_case() != Value::kNumberValue) return -1;
-      set(data, "opening_percent", opening->number_value());
+      auto* channel = (*data->mutable_fields())["channels"].mutable_list_value()
+                          ->add_values()->mutable_struct_value();
+      set(channel, "name", "opening");
+      set(channel, "value", opening->number_value());
+      set(channel, "unit", "%");
     } else if (node->kind == "base") {
       auto* position = field(reply, "position_m");
       auto* velocity = field(reply, "linear_velocity_m_s");
