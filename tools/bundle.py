@@ -169,7 +169,8 @@ def main() -> None:
             ': "${ISOS_PACKAGE_PYTHON:?configured Python interpreter is required}"\n'
             'root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)\n'
             'PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}" '
-            'exec "$ISOS_PACKAGE_PYTHON" "$root/bin/robocasa_worker.py" "$@"\n'
+            'PYTHONDONTWRITEBYTECODE=1 '
+            'exec "$ISOS_PACKAGE_PYTHON" -B "$root/bin/robocasa_worker.py" "$@"\n'
         )
         wrapper.chmod(0o755)
         shutil.copy2(ROOT / "config/package-config.json", bundle / "config/package-config.json")
