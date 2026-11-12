@@ -194,41 +194,49 @@ def serve(socket_path: Path, service: Service, stop_event: threading.Event | Non
         stop_listener.listen(8)
         try:
             data_slots = threading.BoundedSemaphore(8)
-            def handle(connection: socket.socket, stop_lane: bool, release_slot: bool) -> None:
+            def send_data(connection: socket.socket, result: dict[str, Any], binary: bytes) -> None:
                 try:
                     with connection:
-                        connection.settimeout(2)
                         try:
-                            size, payload_size = struct.unpack("<II", read_exact(connection, 8))
-                            if not 0 < size <= MAX_REQUEST or payload_size:
-                                return
-                            request = json.loads(read_exact(connection, size))
-                            if not isinstance(request, dict):
-                                raise ValueError("request must be an object")
-                            if stop_lane and request.get("op") not in ("stop", "health"):
-                                raise ValueError("stop lane accepts only stop or health")
-                            result = service.dispatch(request)
-                            binary = result.pop("_binary", b"")
-                            response(connection, {"ok": True, "id": request.get("id"), **result}, binary)
-                        except (ValueError, ConnectionError, TimeoutError, KeyError) as error:
-                            try:
-                                response(connection, {"ok": False, "error": type(error).__name__})
-                            except OSError:
-                                pass
+                            response(connection, result, binary)
+                        except OSError:
+                            pass
                 finally:
-                    if release_slot:
-                        data_slots.release()
+                    data_slots.release()
             while stop_event is None or not stop_event.is_set():
                 ready, _, _ = select.select([listener, stop_listener], [], [], 0.5)
                 if not ready:
                     continue
-                for chosen in ready:
+                for chosen in sorted(ready, key=lambda item: item is not stop_listener):
                     connection, _ = chosen.accept()
                     stop_lane = chosen is stop_listener
                     if not stop_lane and not data_slots.acquire(blocking=False):
                         connection.close()
                         continue
-                    threading.Thread(target=handle, args=(connection, stop_lane, not stop_lane), daemon=True).start()
+                    connection.settimeout(2)
+                    try:
+                        size, payload_size = struct.unpack("<II", read_exact(connection, 8))
+                        if not 0 < size <= MAX_REQUEST or payload_size:
+                            raise ValueError("invalid frame size")
+                        request = json.loads(read_exact(connection, size))
+                        if not isinstance(request, dict):
+                            raise ValueError("request must be an object")
+                        if stop_lane and request.get("op") not in ("stop", "health"):
+                            raise ValueError("stop lane accepts only stop or health")
+                        result = service.dispatch(request)
+                        binary = result.pop("_binary", b"")
+                        reply = {"ok": True, "id": request.get("id"), **result}
+                    except (ValueError, ConnectionError, TimeoutError, KeyError) as error:
+                        reply = {"ok": False, "error": type(error).__name__}
+                        binary = b""
+                    if stop_lane:
+                        try:
+                            response(connection, reply, binary)
+                        except OSError:
+                            pass
+                        connection.close()
+                    else:
+                        threading.Thread(target=send_data, args=(connection, reply, binary), daemon=True).start()
         finally:
             socket_path.unlink(missing_ok=True)
             stop_path.unlink(missing_ok=True)
