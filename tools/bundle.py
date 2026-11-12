@@ -161,7 +161,10 @@ def main() -> None:
     shutil.copytree(ROOT / "assets", bundle / "assets", dirs_exist_ok=True)
     shutil.copy2(ROOT / "LICENSE", bundle / "LICENSE")
     if args.version != "0.2.0":
-        shutil.copytree(ROOT / "robocasa_core", bundle / "robocasa_core")
+        shutil.copytree(
+            ROOT / "robocasa_core", bundle / "robocasa_core",
+            ignore=shutil.ignore_patterns("__pycache__", "*.pyc"),
+        )
         shutil.copy2(ROOT / "tools/robocasa_worker.py", bundle / "bin/robocasa_worker.py")
         wrapper = bundle / "bin/robocasa-worker"
         wrapper.write_text(
