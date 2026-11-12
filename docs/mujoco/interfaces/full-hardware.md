@@ -10,6 +10,8 @@ The RoboCasa preset exposes three RGB8 cameras, mobile base, right arm, right gr
 
 The RoboCasa service configuration also requires integer `camera_width` and `camera_height` in `[services.robocasa]`. Both default to 64 in the template and must be 64–512 pixels. The verified service handoff passes them as `ISOS_ROBOCASA_CAMERA_WIDTH` and `ISOS_ROBOCASA_CAMERA_HEIGHT`; the worker validates both before creating the Gym environment and uses the resulting dimensions for all three camera observations. A changed size takes effect on the next Run. The installed `0.2.2` package retains its fixed 64 × 64 behavior; use a new package version, import its updated configuration, and repin the graph to enable this field.
 
+The RoboCasa worker's private `observe` reply carries camera dimensions in `width_px` and `height_px` metadata and exactly `width_px × height_px × 3` RGB8 bytes in the socket payload. Metadata remains bounded to 64 KiB and the payload to 8 MiB. State observations keep their JSON `values` response. The plugin verifies the exact dimensions and byte count before emitting the graph's typed frame.
+
 Build the candidate with `./build.sh --output ABSOLUTE_EMPTY_DIRECTORY --version 0.2.2` or a later unused version. The published v0.2.0 and v0.2.1 tags remain unchanged. A candidate is publishable only after the IsOS `pkg check` replay succeeds for both presets, including rejection, crash, logs, and Stop cases.
 
 [中文](../../../docs_cn/mujoco/interfaces/full-hardware_cn.md) · [Package details](package.md) · [Socket](socket.md)

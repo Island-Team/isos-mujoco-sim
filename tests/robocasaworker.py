@@ -2,6 +2,10 @@
 """Exercise isolated worker admission, deduplication, failure, and Stop."""
 
 import sys
+import json
+import socket
+import struct
+from contextlib import closing
 from pathlib import Path
 import unittest
 from tempfile import TemporaryDirectory
@@ -9,7 +13,7 @@ from types import ModuleType
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from robocasa_worker import Service, camera_dimension, camera_size_from_environment, create_hardware  # noqa: E402
+from robocasa_worker import Service, camera_dimension, camera_size_from_environment, create_hardware, response  # noqa: E402
 
 
 class FakeHardware:
@@ -89,6 +93,24 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(hardware.seed, 42)
         self.assertEqual(calls[0][1]["camera_widths"], 256)
         self.assertEqual(calls[0][1]["camera_heights"], 192)
+
+    def test_camera_observation_uses_bounded_binary_payload(self):
+        class Image:
+            shape = (192, 256, 3)
+            def tobytes(self):
+                return b"\x7f" * (192 * 256 * 3)
+        hardware = FakeHardware()
+        hardware.observe = lambda: {"agentview-right": Image()}
+        result = Service(hardware).dispatch({"op": "observe", "node": "robocasa/camera/agentview-right"})
+        binary = result.pop("_binary")
+        self.assertEqual((result["width_px"], result["height_px"]), (256, 192))
+        sender, receiver = socket.socketpair()
+        with closing(sender), closing(receiver):
+            response(sender, result, binary)
+            metadata_size, payload_size = struct.unpack("<II", receiver.recv(8))
+            self.assertLess(metadata_size, 65536)
+            self.assertEqual(payload_size, len(binary))
+            self.assertEqual(json.loads(receiver.recv(metadata_size))["width_px"], 256)
 
     def test_duplicate_command_does_not_step_twice(self):
         hardware = FakeHardware()

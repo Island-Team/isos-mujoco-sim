@@ -10,6 +10,8 @@ RoboCasa 预设提供三路 RGB8 相机、移动底盘、右臂、右夹爪及�
 
 RoboCasa 服务配置还要求 `[services.robocasa]` 中的整数 `camera_width` 和 `camera_height`。模板默认均为 64，允许范围均为 64–512 像素。经过验证的服务交接将其作为 `ISOS_ROBOCASA_CAMERA_WIDTH` 和 `ISOS_ROBOCASA_CAMERA_HEIGHT` 传入；工作进程在创建 Gym 环境前验证两者，并将所得尺寸用于全部三路相机观测。尺寸修改在下次运行时生效。已安装的 `0.2.2` 软件包仍固定为 64 × 64；需使用新版本软件包、导入更新后的配置并更新图中的精确版本锁定，才能启用此字段。
 
+RoboCasa 工作进程的私有 `observe` 回复在元数据中携带 `width_px` 和 `height_px`，套接字负载恰好包含 `width_px × height_px × 3` 字节的 RGB8 数据。元数据仍限制为 64 KiB，负载限制为 8 MiB。状态观测继续使用 JSON `values` 回复。插件在发送图中的类型化帧前验证准确尺寸和字节数。
+
 使用 `./build.sh --output 绝对路径的空目录 --version 0.2.2` 或更高的未使用版本构建候选版。已发布的 v0.2.0 和 v0.2.1 标签保持不变。只有两套预设都通过 IsOS `pkg check` 回放，包括拒绝、崩溃、日志和停止场景，候选版才可发布。
 
 [English](../../../docs/mujoco/interfaces/full-hardware.md) · [软件包详情](package_cn.md) · [套接字](socket_cn.md)

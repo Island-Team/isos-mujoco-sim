@@ -21,7 +21,6 @@ from typing import Any
 
 
 MAX_REQUEST = 65536
-MAX_REPLY = 12 * 1024 * 1024
 
 
 def read_exact(stream: socket.socket, count: int) -> bytes:
@@ -34,11 +33,11 @@ def read_exact(stream: socket.socket, count: int) -> bytes:
     return bytes(result)
 
 
-def response(stream: socket.socket, payload: dict[str, Any]) -> None:
+def response(stream: socket.socket, payload: dict[str, Any], binary: bytes = b"") -> None:
     body = json.dumps(payload, separators=(",", ":"), allow_nan=False).encode()
-    if len(body) > MAX_REPLY:
+    if len(body) > MAX_REQUEST or len(binary) > 8 * 1024 * 1024:
         raise ValueError("reply exceeds bound")
-    stream.sendall(struct.pack("<II", len(body), 0) + body)
+    stream.sendall(struct.pack("<II", len(body), len(binary)) + body + binary)
 
 
 def camera_dimension(value: str) -> int:
@@ -109,6 +108,15 @@ class Service:
                 }.get(node)
                 if keys is None:
                     raise ValueError("unknown observation device")
+                if node.startswith("robocasa/camera/"):
+                    image = observation[keys[0]]
+                    height, width, channels = image.shape
+                    if channels != 3 or not 64 <= width <= 512 or not 64 <= height <= 512:
+                        raise ValueError("invalid camera shape")
+                    return {"generation_id": self.generation_id, "sequence": self.sequence,
+                            "timestamp_ns": time.monotonic_ns(), "node": node,
+                            "width_px": width, "height_px": height,
+                            "_binary": image.tobytes()}
                 values = {key: observation[key].tolist() for key in keys}
                 return {"generation_id": self.generation_id, "sequence": self.sequence,
                         "timestamp_ns": time.monotonic_ns(), "node": node, "values": values}
@@ -203,7 +211,8 @@ def serve(socket_path: Path, service: Service) -> None:
                         if chosen is stop_listener and request.get("op") not in ("stop", "health"):
                             raise ValueError("stop lane accepts only stop or health")
                         result = service.dispatch(request)
-                        response(connection, {"ok": True, "id": request.get("id"), **result})
+                        binary = result.pop("_binary", b"")
+                        response(connection, {"ok": True, "id": request.get("id"), **result}, binary)
                     except (ValueError, ConnectionError, TimeoutError, KeyError) as error:
                         response(connection, {"ok": False, "error": type(error).__name__})
         finally:
