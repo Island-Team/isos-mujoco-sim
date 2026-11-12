@@ -153,7 +153,8 @@ def main():
                 assert emitted[0]["payload"]["encoding"] == "jpeg"
             else:
                 assert emitted[0]["payload"]["joint_names"] == [
-                    "joint1", "joint2", "joint3", "joint4", "joint5", "joint6"]
+                    "shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint",
+                    "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"]
                 assert emitted[0]["payload"]["position_rad"] == [1, 2, 3, 4, 5, 6]
             assert api.stop(handle) == 0
             api.destroy(handle)
