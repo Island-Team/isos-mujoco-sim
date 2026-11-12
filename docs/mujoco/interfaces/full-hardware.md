@@ -1,6 +1,6 @@
-# Full robot hardware package (v0.2.1 candidate)
+# Full robot hardware package (next release candidate)
 
-`island/mujoco-sim@0.2.1` contributes **Native robot** and **RoboCasa robot** device presets. Their nodes are ordinary EOS hardware nodes grouped under camera, base, manipulator, gripper, and torso. A preset contains no process node. IsOS starts only the package service referenced by selected nodes, owns its child and logs, and passes a private service endpoint to EOS. EOS loads the verified `libmujoco-eos-node.so` through `isos_node_v2` and admits actuator commands through its Dispatcher.
+The next `island/mujoco-sim` release contributes seven EOS hardware type definitions and **Native robot** and **RoboCasa robot** device presets. Each instance pins the exact package both as its type owner and as its adapter owner. The types live in the EOS hardware layer under camera, base, manipulator, gripper, and torso groups; other packages may choose different layers and groups. A preset contains no process node. IsOS starts only the package service referenced by selected nodes, owns its child and logs, and passes a private service endpoint to EOS. EOS loads the verified `libmujoco-eos-node.so` through `isos_node_v2` and admits actuator commands through its Dispatcher.
 
 The native preset exposes `cam-0`, `base-0`, `arm-0`, and `gripper-0`. Its strict socket supports JPEG capture, SI base state/twist, six-joint state/position, gripper opening/close, generation-fenced commands, and whole-robot stop proof with separate base, arm, and gripper outcomes. The gripper observation has a named `opening` channel in percent. The scene is `pick-place` or `navigation`; the package's verified scene resource supplies the path.
 
@@ -8,6 +8,6 @@ The RoboCasa preset exposes three RGB8 cameras, mobile base, right arm, right gr
 
 `config/package-config.json` declares bilingual labels and descriptions for the generic IsOS package form. `config/package.toml` provides `[package]`, `[host]`, `[services.native]`, and `[services.robocasa]`. A selected native service needs a local MuJoCo 3.3.1 root. A selected RoboCasa service needs local assets and an explicitly selected Python interpreter. These large host resources are not downloaded with the release. Their paths are local deployment configuration, not graph node settings. Every hardware adapter setting selects a `service_instance`; IsOS resolves that instance at Apply and Run.
 
-The release builder is `./build.sh --output ABSOLUTE_EMPTY_DIRECTORY --version 0.2.1`. A candidate is publishable only after the IsOS `pkg check` replay succeeds for both presets, including rejection, crash, logs, and Stop cases. The published v0.2.0 record and its process-node graph remain unchanged.
+Build the candidate with `./build.sh --output ABSOLUTE_EMPTY_DIRECTORY --version 0.2.2` or a later unused version. The published v0.2.0 and v0.2.1 tags remain unchanged. A candidate is publishable only after the IsOS `pkg check` replay succeeds for both presets, including rejection, crash, logs, and Stop cases.
 
 [中文](../../../docs_cn/mujoco/interfaces/full-hardware_cn.md) · [Package details](package.md) · [Socket](socket.md)

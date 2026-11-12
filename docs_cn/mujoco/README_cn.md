@@ -1,6 +1,6 @@
 # MuJoCo 基准软件包
 
-[完整硬件软件包契约](interfaces/full-hardware_cn.md)说明 v0.2.1 候选版及 IsOS 管理的服务。
+[完整硬件软件包契约](interfaces/full-hardware_cn.md)说明下个发行候选版及 IsOS 管理的服务。
 
 模拟器在进程启动时加载场景，为 EOS 执行机器人命令并渲染观测；可信评测器通过独立的私有服务读取评分真值。EGIA 等智能体通过 EOS 的发现、资源和原语进行交互。
 

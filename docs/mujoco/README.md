@@ -1,6 +1,6 @@
 # MuJoCo benchmark package
 
-The [full hardware package contract](interfaces/full-hardware.md) describes the v0.2.1 candidate and its IsOS-owned services.
+The [full hardware package contract](interfaces/full-hardware.md) describes the next package candidate and its IsOS-owned services.
 
 The simulator loads one scene at process startup, executes robot commands and renders observations for EOS, and reports evaluation truth through a separate private service. EOS remains independent of MuJoCo. EGIA and other agents interact through EOS discovery, resources, and primitives; the evaluator controls episodes and reads scores.
 

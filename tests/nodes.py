@@ -74,10 +74,28 @@ class NodeContributionTests(unittest.TestCase):
   def test_patch_release_uses_exact_package_pin(self) -> None:
     contract = contributions("0.2.7")
     for node in contract["node_sets"][0]["nodes"]:
+      self.assertEqual(node["profile"]["package"],
+                       {"id": "island/mujoco-sim", "version": "0.2.7"})
       adapter = node["profile"].get("adapter")
       if adapter:
         self.assertEqual(adapter["package"],
                          {"id": "island/mujoco-sim", "version": "0.2.7"})
+
+  def test_current_hardware_types_are_package_declared(self) -> None:
+    contract = contributions("0.2.7")
+    definitions = {node["id"]: node for node in contract["node_types"]}
+    self.assertEqual(len(definitions), 7)
+    referenced = {node["profile"]["node_type"]
+                  for node_set in contract["node_sets"] for node in node_set["nodes"]}
+    self.assertEqual(referenced, set(definitions))
+    for node_set in contract["node_sets"]:
+      for node in node_set["nodes"]:
+        definition = definitions[node["profile"]["node_type"]]
+        self.assertEqual((definition["core"], definition["layer"], definition["group"]),
+                         (node["core"], node["layer"], node["group"]))
+        self.assertEqual(definition["implementation"],
+                         {"kind": "native_plugin", "abi": "isos_node_v2",
+                          "library": "lib/libmujoco-eos-node.so"})
 
   def test_managed_process_declares_verified_inputs(self) -> None:
     process = contributions()["processes"][0]
