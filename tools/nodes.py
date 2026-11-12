@@ -1,24 +1,8 @@
 """Declarative EOS node types and graph set shipped with the MuJoCo package."""
 
 
-BACKEND = "eos.process.mujoco@v0.1"
-CAMERA = "eos.hardware.camera@v0.1"
-BASE = "eos.hardware.base@v0.1"
-MANIPULATOR = "eos.hardware.manipulator@v0.1"
-CAMERA_GATE = "eos.interface.camera_gate@v0.1"
-BASE_PRIMITIVE = "eos.dispatcher.primitive_base@v0.1"
-MANIPULATOR_PRIMITIVE = "eos.dispatcher.primitive_manipulator@v0.1"
-
-
-def port(name: str, data_type: str, required: bool = False,
-         description: str = "", expected_rate_hz: float | None = None,
-         data_class: str = "state") -> dict:
-  result = {"name": name, "data_type": data_type, "required": required,
-            "description": description, "transport": "in_process",
-            "data_class": data_class}
-  if expected_rate_hz is not None:
-    result["expected_rate_hz"] = expected_rate_hz
-  return result
+BACKEND = "eos.process.mujoco.simulator@v0.2"
+CAMERA = "eos.hardware.camera.device@v0.2"
 
 
 def node_type(id: str, layer: str, kind: str, lifecycle: str,
@@ -52,7 +36,7 @@ def setting(name: str, data_type: str, required: bool = False,
 
 def hardware_profile(id: str, type_id: str, label: str, description: str,
                      frame_id: str, capabilities: list[str], device_id: str,
-                     max_rate_hz: float, max_payload_bytes: int) -> dict:
+                     max_rate_hz: float, max_payload_bytes: int, version: str) -> dict:
   return {
     "id": id,
     "node_type": type_id,
@@ -63,7 +47,7 @@ def hardware_profile(id: str, type_id: str, label: str, description: str,
     "references": ["@simulator"],
     "adapter": {
       "type": "mujoco-v2",
-      "package": {"id": "island/mujoco-sim", "version": "0.1.2"},
+      "package": {"id": "island/mujoco-sim", "version": version},
       "settings": {
         "backend": "@simulator",
         "socket_path": "${socket}",
@@ -76,35 +60,16 @@ def hardware_profile(id: str, type_id: str, label: str, description: str,
   }
 
 
-def contributions() -> dict:
+def contributions(version: str = "0.2.0") -> dict:
+  if version != "0.2.0":
+    return full_hardware_contributions(version)
   camera = hardware_profile(
-    "front", CAMERA, "Front RGB camera", "MuJoCo JPEG camera decoded to RGB8",
-    "front_camera_optical", ["rgb8"], "${camera_device}", 30.0, 8388608,
+    "front", CAMERA, "Front JPEG camera", "MuJoCo JPEG camera frame",
+    "front_camera_optical", ["jpeg"], "${camera_device}", 30.0, 12582912, version,
   )
-  base = hardware_profile(
-    "drive", BASE, "Planar base", "MuJoCo base velocity controller",
-    "base_link", ["body_velocity"], "${base_device}", 50.0, 4096,
-  )
-  base["movement"] = {
-    "modes": ["body_velocity"],
-    "limits": {"max_linear_m_s": 1.0, "max_angular_rad_s": 1.5,
-               "max_velocity_lease_ms": 500},
-  }
-  base["inputs"] = {"command": [{"node": "@base-velocity", "output": "command"}]}
-  arm = hardware_profile(
-    "arm", MANIPULATOR, "Six axis arm", "MuJoCo six-joint position controller",
-    "arm_base", ["joint_positions"], "${manipulator_device}", 50.0, 4096,
-  )
-  arm["joint_names"] = ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6"]
-  arm["movement"] = {
-    "modes": ["joint_positions"],
-    "limits": {"max_joint_position_rad": 3.14, "max_joint_speed_rad_s": 1.0},
-  }
-  arm["inputs"] = {"command": [{"node": "@arm-movej", "output": "command"}]}
   current = node_type(
     BACKEND, "process", "software", "process", ["process"], [],
-    [port("status", "status", description="Simulator process lifecycle"),
-     port("health", "health", description="Simulator process health")],
+    [],
     [setting("scene", "string", True, "Stable verified scene ID",
              {"provider": "package", "resource": "scene", "package_from": "node.package"}),
      setting("socket", "string", True, "Owner-only simulator Unix socket path"),
@@ -112,6 +77,8 @@ def contributions() -> dict:
      setting("start_timeout_ms", "positive_integer",
              description="Simulator readiness deadline in milliseconds")],
   )
+  current["implementation"] = {"kind": "managed_process", "interface": "mujoco-v2",
+                               "version": "1", "lifecycle_adapter": "mujoco-v2"}
   current["description"] = (
     "Starts one verified MuJoCo scene as an EOS-owned simulator child and supplies "
     "only the graph-declared simulated devices."
@@ -120,6 +87,8 @@ def contributions() -> dict:
     "processes": [{
       "node_type": BACKEND,
       "entrypoint": "bin/eos-mujoco-sim",
+      "args": ["--managed-strict-socket", "--v2-socket", "${socket}",
+               "--scene", "${resource.scene.path}"],
       "lifecycle_adapter": "mujoco-v2",
       "resources": [{"setting": "scene", "kind": "scene",
                      "descriptor": "package-resources.json"}],
@@ -135,15 +104,13 @@ def contributions() -> dict:
       "device_kinds": ["camera", "base", "manipulator"],
       "transport": "unix_socket",
       "description": "EOS-owned MuJoCo simulator socket adapter for camera, base, and manipulator devices",
-      "supported_primitives": ["base.velocity@1.0.0", "arm.movej@1.0.0"],
+      "supported_primitives": [],
     }],
     "node_sets": [{
       "id": "sim-hardware",
       "parameters": {
         "scene": {"type": "string", "default": "pick-place"},
         "camera_device": {"type": "string", "default": "cam-0"},
-        "base_device": {"type": "string", "default": "base-0"},
-        "manipulator_device": {"type": "string", "default": "arm-0"},
         "socket": {"type": "string"},
       },
       "nodes": [
@@ -156,31 +123,96 @@ def contributions() -> dict:
          }},
         {"ref": "front", "core": "eos", "layer": "hardware", "group": "camera",
          "profile": camera},
-        {"ref": "drive", "core": "eos", "layer": "hardware", "group": "base",
-         "profile": base},
-        {"ref": "arm", "core": "eos", "layer": "hardware", "group": "manipulator",
-         "profile": arm},
-        {"ref": "base-velocity", "core": "eos", "layer": "dispatcher", "group": "base",
-         "profile": {
-           "id": "base-velocity", "node_type": BASE_PRIMITIVE,
-           "label": "Base velocity primitive", "description": "Admitted base.velocity binding for the drive device",
-           "settings": {"primitive_name": "base.velocity", "primitive_version": "1.0.0",
-                        "movement_type": "body_velocity"},
-         }},
-        {"ref": "arm-movej", "core": "eos", "layer": "dispatcher", "group": "manipulator",
-         "profile": {
-           "id": "arm-movej", "node_type": MANIPULATOR_PRIMITIVE,
-           "label": "Arm joint primitive", "description": "Admitted arm.movej binding for the six-joint arm",
-           "settings": {"primitive_name": "arm.movej", "primitive_version": "1.0.0",
-                        "movement_type": "joint_positions"},
-         }},
-        {"ref": "camera-gate", "core": "eos", "layer": "interface", "group": "gate",
-         "profile": {
-           "id": "front-preview", "node_type": CAMERA_GATE,
-           "label": "Front camera preview gate",
-           "description": "Publishes a bounded preview of the MuJoCo front camera",
-           "inputs": {"frame": {"node": "@front", "output": "frame"}},
-         }},
       ],
     }],
+  }
+
+
+def full_hardware_contributions(version: str) -> dict:
+  """Package presets contain devices; IsOS activates their service implicitly."""
+  native = (
+    ("front", "camera", CAMERA, "cam-0", ["jpeg"], 30.0, 12582912),
+    ("drive", "base", "eos.hardware.base.device@v0.2", "base-0", ["body_velocity"], 50.0, 65536),
+    ("arm", "manipulator", "eos.hardware.manipulator.device@v0.2", "arm-0", ["joint_positions"], 50.0, 65536),
+    ("gripper", "gripper", "eos.hardware.gripper.binary@v0.2", "gripper-0", ["binary"], 50.0, 65536),
+  )
+  robocasa = (
+    ("left", "camera", CAMERA, "robocasa/camera/agentview-left", ["rgb8"], 30.0, 12582912),
+    ("right", "camera", CAMERA, "robocasa/camera/agentview-right", ["rgb8"], 30.0, 12582912),
+    ("wrist", "camera", CAMERA, "robocasa/camera/eye-in-hand", ["rgb8"], 30.0, 12582912),
+    ("mobile", "base", "eos.hardware.base.normalized_axes@v0.2", "robocasa/base/mobile-base", ["normalized_axes"], 50.0, 65536),
+    ("right-arm", "manipulator", "eos.hardware.manipulator.normalized_cartesian@v0.2", "robocasa/arm/right-arm", ["normalized_cartesian"], 50.0, 65536),
+    ("hand", "gripper", "eos.hardware.gripper.binary@v0.2", "robocasa/gripper/right-gripper", ["binary"], 50.0, 65536),
+    ("lift", "torso", "eos.hardware.torso.normalized_axes@v0.2", "robocasa/torso/torso", ["normalized_axes"], 50.0, 65536),
+  )
+
+  def profile(ref: str, kind: str, type_id: str, device: str, capabilities: list[str],
+              rate: float, size: int, service: str) -> dict:
+    item = hardware_profile(ref, type_id, device, f"{service} {kind} device", device,
+                            capabilities, device, rate, size, version)
+    item["references"] = []
+    item["adapter"]["settings"] = {"service_instance": service, "device_id": device}
+    if service == "native" and kind == "manipulator":
+      item["joint_names"] = ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint",
+                             "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"]
+    if kind == "torso":
+      item.pop("observation", None)
+    if kind != "camera":
+      mode = capabilities[0]
+      limits = {
+        "body_velocity": {"max_linear_m_s": 1.0, "max_angular_rad_s": 1.5,
+                          "max_velocity_lease_ms": 1000},
+        "joint_positions": {"max_joint_position_rad": 3.14, "max_joint_speed_rad_s": 1.0},
+        "normalized_axes": {"max_velocity_lease_ms": 1000},
+        "normalized_cartesian": {"max_velocity_lease_ms": 1000},
+        "binary": {},
+      }[mode]
+      item["movement"] = {"modes": [mode], "limits": limits}
+    return item
+
+  def preset(name: str, devices: tuple) -> dict:
+    labels = {
+      "native": ({"en": "Native robot", "cn": "原生机器人"},
+                 {"en": "MuJoCo scene camera, base, arm and gripper", "cn": "MuJoCo 场景相机、底盘、机械臂和夹爪"}),
+      "robocasa": ({"en": "RoboCasa robot", "cn": "RoboCasa 机器人"},
+                   {"en": "RoboCasa cameras, mobile base, arm, gripper and torso", "cn": "RoboCasa 相机、移动底盘、机械臂、夹爪和躯干"}),
+    }
+    return {"id": name, "label": labels[name][0], "description": labels[name][1],
+            "parameters": {}, "nodes": [
+      {"ref": ref, "core": "eos", "layer": "hardware", "group": kind,
+       "profile": profile(ref, kind, type_id, device, caps, rate, size, name)}
+      for ref, kind, type_id, device, caps, rate, size in devices]}
+
+  return {
+    "processes": [],
+    "node_types": [],
+    "safety_adapters": [],
+    "adapter_families": [{
+      "id": "mujoco-v2", "device_kinds": ["camera", "base", "manipulator", "gripper", "torso"],
+      "transport": "unix_socket",
+      "description": "IsOS-supervised native MuJoCo or isolated RoboCasa hardware service",
+      "supported_primitives": [],
+    }],
+    "runtime_services": [
+      {"id": "native", "entrypoint": "bin/eos-mujoco-sim",
+       "args": ["--managed-strict-socket", "--v2-socket", "${socket}",
+                "--scene", "${resource.scene.path}"],
+       "requirements": [{"path": "${config.host.mujoco_root}/lib/libmujoco.so.3.3.1", "kind": "file"}],
+       "environment": [{"name": "LD_LIBRARY_PATH",
+                        "value": "${config.host.mujoco_root}/lib"}],
+       "resources": [{"setting": "scene", "kind": "scene",
+                      "descriptor": "package-resources.json"}],
+       "config_service_type": "native", "node_types": sorted({item[2] for item in native})},
+      {"id": "robocasa", "entrypoint": "bin/robocasa-worker",
+       "args": ["--socket", "${socket}"], "config_service_type": "robocasa",
+       "environment": [
+         {"name": "ISOS_PACKAGE_PYTHON", "value": "${config.host.python_interpreter}"},
+         {"name": "ISOS_ROBOCASA_ASSETS", "value": "${config.host.robocasa_assets}"},
+         {"name": "ISOS_ROBOCASA_TASK", "value": "${config.service.task}"},
+         {"name": "ISOS_ROBOCASA_SEED", "value": "${config.service.seed}"},
+         {"name": "ISOS_PACKAGE_GENERATION", "value": "${generation_id}"},
+       ],
+       "node_types": sorted({item[2] for item in robocasa})},
+    ],
+    "node_sets": [preset("native", native), preset("robocasa", robocasa)],
   }

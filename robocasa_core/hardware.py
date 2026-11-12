@@ -91,6 +91,8 @@ class Hardware:
     self._closed = False
     self._faulted = False
     self._done = False
+    self._gripper = 0
+    self._mode = 0
     self._check_catalog()
 
   def _check_catalog(self) -> None:
@@ -125,6 +127,8 @@ class Hardware:
     self._observation = None
     self._faulted = True
     self._done = False
+    self._gripper = 0
+    self._mode = 0
     observation, _ = self._env.reset(seed=seed)
     self._observation = self._filter(observation)
     self._faulted = False
@@ -155,14 +159,16 @@ class Hardware:
   def step(self) -> Mapping[str, Any]:
     self._ready()
     pending, self._pending = self._pending, {}
+    self._gripper = pending.get("gripper", self._gripper)
+    self._mode = pending.get("mode", self._mode)
     arm = pending.get("arm", (np.zeros(3, dtype=np.float32), np.zeros(3, dtype=np.float32)))
     action = {
       "action.end_effector_position": arm[0],
       "action.end_effector_rotation": arm[1],
-      "action.gripper_close": np.array([pending.get("gripper", 0)], dtype=np.float32),
+      "action.gripper_close": np.array([self._gripper], dtype=np.float32),
       "action.base_motion": np.concatenate((pending.get("base", np.zeros(3, dtype=np.float32)),
                                              pending.get("torso", np.zeros(1, dtype=np.float32)))),
-      "action.control_mode": np.array([pending.get("mode", 0)], dtype=np.float32),
+      "action.control_mode": np.array([self._mode], dtype=np.float32),
     }
     try:
       observation, _, terminated, truncated, _ = self._env.step(action)
@@ -173,6 +179,28 @@ class Hardware:
       self._observation = None
       raise
     return {key: value.copy() for key, value in self._observation.items()}
+
+  def stop_motion(self) -> bool:
+    """Fence queued motion and prove the latched gripper has settled.
+
+    RoboCasa has no separate gripper brake. A bounded sequence of neutral
+    motion steps must show stable finger positions before Stop can be proven.
+    """
+    self._ready()
+    self._pending.clear()
+    self._mode = 0
+    prior = self._observation["gripper_qpos"].copy()
+    stable = 0
+    for _ in range(12):
+      self.command_arm([0, 0, 0], [0, 0, 0])
+      self.command_base([0, 0, 0])
+      self.command_torso([0])
+      observed = self.step()["gripper_qpos"]
+      stable = stable + 1 if np.allclose(observed, prior, rtol=0, atol=1e-4) else 0
+      if stable >= 2:
+        return True
+      prior = observed
+    return False
 
   def _filter(self, observation: Mapping[str, Any]) -> dict[str, Any]:
     result: dict[str, Any] = {}

@@ -3,7 +3,11 @@ set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 source "$root/tools/launcher.sh"
+explicit_mujoco_root=${MUJOCO_ROOT-}
 load_launch_config
+if [[ -n $explicit_mujoco_root ]]; then
+  MUJOCO_ROOT=$explicit_mujoco_root
+fi
 scene=$(resolve_launch_path "$SIM_SCENE")
 check_only=false
 snapshot=""

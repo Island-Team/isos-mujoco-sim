@@ -35,7 +35,13 @@ def mutate(document, mutation):
 
 class SceneCatalogTests(unittest.TestCase):
     def test_builder_matches_frozen_target_and_legacy_is_readable(self):
-        self.assertEqual(descriptor_for_bundle(ROOT), fixture("target-descriptor.json"))
+        current = descriptor_for_bundle(ROOT, include_gripper=True)
+        historical = fixture("target-descriptor.json")
+        self.assertEqual(current["scenes"], historical["scenes"])
+        self.assertEqual(current["devices"]["gripper"], "gripper-0")
+        self.assertEqual(len(current["device_catalog"]), len(historical["device_catalog"]) + 1)
+        self.assertEqual(validate_descriptor(ROOT, current), "target")
+        self.assertEqual(descriptor_for_bundle(ROOT), historical)
         self.assertEqual(validate_descriptor(ROOT, fixture("target-descriptor.json")), "target")
         self.assertEqual(validate_descriptor(ROOT, fixture("legacy-descriptor.json")), "legacy")
 

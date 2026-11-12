@@ -27,10 +27,9 @@ class NodeContributionTests(unittest.TestCase):
     contract = contributions()
     node_set = contract["node_sets"][0]
     refs = {node["ref"] for node in node_set["nodes"]}
-    self.assertEqual(refs, {"simulator", "front", "drive", "arm", "base-velocity",
-                            "arm-movej", "camera-gate"})
+    self.assertEqual(refs, {"simulator", "front"})
     contributed_types = {node_type["id"] for node_type in contract["node_types"]}
-    self.assertEqual(contributed_types, {"eos.process.mujoco@v0.1"})
+    self.assertEqual(contributed_types, {"eos.process.mujoco.simulator@v0.2"})
     for definition in contract["node_types"]:
       self.assertTrue(definition["description"].strip())
       for setting in definition["settings"]:
@@ -48,43 +47,42 @@ class NodeContributionTests(unittest.TestCase):
         for parameter in re.findall(r"\$\{([^}]+)\}", value):
           self.assertIn(parameter, declared)
 
-  def test_new_graph_uses_generic_types_and_no_unregistered_ui_type(self) -> None:
-    nodes = {node["ref"]: node for node in contributions()["node_sets"][0]["nodes"]}
-    gate = nodes["camera-gate"]
-    self.assertEqual(gate["profile"]["inputs"]["frame"],
-                     {"node": "@front", "output": "frame"})
-    self.assertEqual((gate["core"], gate["layer"], gate["group"]),
-                     ("eos", "interface", "gate"))
-    self.assertEqual(gate["profile"]["node_type"], "eos.interface.camera_gate@v0.1")
-    self.assertNotIn("vision", nodes)
-
-  def test_each_device_uses_one_package_pinned_adapter_and_typed_binding(self) -> None:
+  def test_each_device_uses_one_package_pinned_observation_adapter(self) -> None:
     contract = contributions()
     nodes = {node["ref"]: node for node in contract["node_sets"][0]["nodes"]}
     family = contract["adapter_families"][0]
     self.assertEqual(set(family["device_kinds"]), {"camera", "base", "manipulator"})
-    self.assertEqual(set(family["supported_primitives"]),
-                     {"base.velocity@1.0.0", "arm.movej@1.0.0"})
-    for ref, kind in (("front", "camera"), ("drive", "base"), ("arm", "manipulator")):
+    self.assertEqual(family["supported_primitives"], [])
+    for ref, kind in (("front", "camera"),):
       node = nodes[ref]
       self.assertEqual((node["core"], node["layer"], node["group"]),
                        ("eos", "hardware", kind))
       profile = node["profile"]
-      self.assertEqual(profile["node_type"], f"eos.hardware.{kind}@v0.1")
+      self.assertEqual(profile["node_type"], f"eos.hardware.{kind}.device@v0.2")
       self.assertNotIn("package", profile)
       self.assertEqual(profile["adapter"]["type"], family["id"])
       self.assertEqual(profile["adapter"]["package"],
-                       {"id": "island/mujoco-sim", "version": "0.1.2"})
-      selected = {"front": "camera_device", "drive": "base_device",
-                  "arm": "manipulator_device"}[ref]
+                       {"id": "island/mujoco-sim", "version": "0.2.0"})
+      selected = {"front": "camera_device"}[ref]
       self.assertEqual(profile["adapter"]["settings"]["device_id"], f"${{{selected}}}")
       self.assertEqual(profile["adapter"]["settings"]["simulator_node"], f"${{{selected}}}")
-    for device, binding, primitive in (("drive", "base-velocity", "base.velocity"),
-                                       ("arm", "arm-movej", "arm.movej")):
-      self.assertEqual(nodes[device]["profile"]["inputs"]["command"],
-                       [{"node": f"@{binding}", "output": "command"}])
-      self.assertEqual(nodes[binding]["profile"]["settings"]["primitive_name"], primitive)
-      self.assertEqual(nodes[binding]["profile"]["settings"]["primitive_version"], "1.0.0")
+      self.assertEqual(profile["capabilities"], ["jpeg"])
+      self.assertEqual(profile["observation"]["max_payload_bytes"], 12582912)
+    self.assertNotIn("drive", nodes)
+    self.assertNotIn("arm", nodes)
+
+  def test_patch_release_uses_exact_package_pin(self) -> None:
+    contract = contributions("0.2.7")
+    for node in contract["node_sets"][0]["nodes"]:
+      adapter = node["profile"].get("adapter")
+      if adapter:
+        self.assertEqual(adapter["package"],
+                         {"id": "island/mujoco-sim", "version": "0.2.7"})
+
+  def test_managed_process_declares_verified_inputs(self) -> None:
+    process = contributions()["processes"][0]
+    self.assertEqual(process["args"], ["--managed-strict-socket", "--v2-socket",
+                                       "${socket}", "--scene", "${resource.scene.path}"])
 
   def test_ports_describe_frequency_transport_and_data_class(self) -> None:
     contract = contributions()
@@ -93,6 +91,8 @@ class NodeContributionTests(unittest.TestCase):
         self.assertTrue(port["description"])
         self.assertIn(port["data_class"],
                       {"image", "observation", "command", "event", "state", "opaque"})
+        self.assertEqual(port["contract"],
+                         {"owner": "eos", "id": port["data_type"], "version": "0.2"})
 
   def test_target_contribution_matches_frozen_projection(self) -> None:
     expected = json.loads((Path(__file__).resolve().parent /
@@ -104,6 +104,9 @@ class NodeContributionTests(unittest.TestCase):
                      (expected["process_type"]["core"], expected["process_type"]["layer"],
                       expected["process_type"]["group"]))
     self.assertTrue(current["description"].strip())
+    self.assertEqual(current["implementation"],
+                     {"kind": "managed_process", "interface": "mujoco-v2",
+                      "version": "1", "lifecycle_adapter": "mujoco-v2"})
     self.assertEqual(next(setting for setting in current["settings"] if setting["name"] == "scene")["selector"],
                      expected["process_type"]["scene_selector"])
     node_set = contract["node_sets"][0]

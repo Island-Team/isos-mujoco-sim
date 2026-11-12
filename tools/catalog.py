@@ -34,8 +34,11 @@ DEVICES = (
     {"kind": "manipulator", "id": "arm-0", "label": "Six axis arm",
      "description": "Six joint position movement in the simulated scene",
      "scene_ids": ["pick-place", "navigation"]},
+    {"kind": "gripper", "id": "gripper-0", "label": "Parallel gripper",
+     "description": "Open and close the simulated parallel gripper",
+     "scene_ids": ["pick-place", "navigation"]},
 )
-DEVICE_KINDS = ("camera", "base", "manipulator")
+DEVICE_KINDS = ("camera", "base", "manipulator", "gripper")
 SCENE_FIELDS = {"id", "path", "label", "description", "profile", "sha256"}
 LEGACY_FIELDS = {"schema_version", "package", "entrypoint", "protocol", "scenes",
                  "devices", "runtime"}
@@ -152,6 +155,8 @@ def _supports(kind: str, profile: str, names: dict[str, set[str]]) -> bool:
     if kind == "base":
         return {"base_x", "base_y", "base_yaw"} <= names.get("joint", set()) and {
             "base_x_motor", "base_y_motor", "base_yaw_motor"} <= names.get("velocity", set())
+    if kind == "gripper":
+        return "gr_fingers_actuator" in names.get("general", set())
     joints = {"shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint",
               "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"}
     actuators = {"shoulder_pan", "shoulder_lift", "elbow", "wrist_1", "wrist_2", "wrist_3"}
@@ -175,9 +180,10 @@ def validate_descriptor(root: Path, descriptor: dict) -> str:
     devices = descriptor.get("devices")
     if not isinstance(scenes, list) or not scenes or not isinstance(devices, dict):
         _fail("mujoco_catalog_incomplete", "Provide scene and device entries")
-    if set(devices) != set(DEVICE_KINDS) or any(not _slug(value) for value in devices.values()):
+    selected_kinds = set(devices)
+    if selected_kinds not in ({"camera", "base", "manipulator"}, set(DEVICE_KINDS)) or any(not _slug(value) for value in devices.values()):
         _fail("mujoco_device_invalid", "Provide the declared simulator devices")
-    if len(set(devices.values())) != len(DEVICE_KINDS):
+    if len(set(devices.values())) != len(selected_kinds):
         _fail("mujoco_device_invalid", "Use distinct simulator device IDs")
     scene_ids: set[str] = set()
     models: dict[str, tuple[str, dict[str, set[str]]]] = {}
@@ -210,7 +216,7 @@ def validate_descriptor(root: Path, descriptor: dict) -> str:
     if not target:
         return "legacy"
     catalog = descriptor["device_catalog"]
-    if not isinstance(catalog, list) or len(catalog) != len(DEVICE_KINDS):
+    if not isinstance(catalog, list) or len(catalog) != len(selected_kinds):
         _fail("mujoco_catalog_incomplete", "Provide every device description")
     seen_kinds: set[str] = set()
     seen_ids: set[str] = set()
@@ -219,7 +225,7 @@ def validate_descriptor(root: Path, descriptor: dict) -> str:
                 "kind", "id", "label", "description", "scene_ids"}:
             _fail("mujoco_catalog_incomplete", "Provide a complete device entry")
         kind, device_id = device["kind"], device["id"]
-        if kind not in DEVICE_KINDS or kind in seen_kinds or not _slug(device_id) or device_id in seen_ids:
+        if kind not in selected_kinds or kind in seen_kinds or not _slug(device_id) or device_id in seen_ids:
             _fail("mujoco_device_invalid", "Use unique registered devices")
         seen_kinds.add(kind)
         seen_ids.add(device_id)
@@ -238,16 +244,17 @@ def validate_descriptor(root: Path, descriptor: dict) -> str:
     return "target"
 
 
-def descriptor_for_bundle(root: Path) -> dict:
+def descriptor_for_bundle(root: Path, include_gripper: bool = False) -> dict:
     scenes = [{**scene, "sha256": hashlib.sha256(_scene_file(root, scene["path"]).read_bytes()).hexdigest()}
               for scene in SCENES]
+    devices = DEVICES if include_gripper else DEVICES[:-1]
     descriptor = {
         "schema_version": "2.0.0", "catalog_version": CATALOG_VERSION,
         "package": {"id": "island/mujoco-sim", "version": "0.1.2"},
         "entrypoint": "bin/eos-mujoco-sim", "protocol": "mujoco-v2",
         "scenes": scenes,
-        "devices": {device["kind"]: device["id"] for device in DEVICES},
-        "device_catalog": [dict(device) for device in DEVICES],
+        "devices": {device["kind"]: device["id"] for device in devices},
+        "device_catalog": [dict(device) for device in devices],
         "runtime": {"mujoco_version": "3.3.1", "environment_variable": "MUJOCO_ROOT",
                     "library": "lib/libmujoco.so.3.3.1"},
     }

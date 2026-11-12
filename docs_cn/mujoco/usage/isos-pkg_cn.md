@@ -1,12 +1,23 @@
 # IsOS 管理的 MuJoCo 后端
 
+
+## v0.2.x 外部适配器候选（当前源码）
+
+当前源码默认构建 `island/mujoco-sim@0.2.0`。`./build.sh --output <绝对路径空目录> --version 0.2.x` 选择尚未发布的补丁候选；每次已发布版本的修复使用新的补丁号。发布清单使用 `isos.package@v1`、schema `0.2.0`，通过 `lib/libmujoco-eos-node.so` 贡献 `mujoco-v2` 适配器系列。清单在 `adapters` 和 `node_contributions.libraries` 中记录同一 SHA-256；归档固定相同字节。输出目录保留清单中的资产文件名，例如 `mujoco-sim-v0.2.0-linux-x86_64.tar.gz`。归档按路径排序，文件所有者与时间戳归零，gzip 时间戳为零；固定载荷字节的重复归档摘要应一致。`python3 tests/archive.py` 验证此边界。`bin/eos-mujoco-sim` 仍是经过验证、受监督的子进程。动态库导出 `isos_node_v1` 的 create/start/input/health/stop/destroy，读取已准入节点的 `adapter.settings`，探测 `strict-socket-v1`，并将相机、底盘和机械臂观测转换成通用 `@v0.2` 载荷。它只接受 `{"op":"observe"}` 输入，拒绝直接运动命令。当前 `sim-hardware` 节点集只含模拟器进程与 JPEG 相机（观测 JSON 上限 12 MiB），能力标记为 `jpeg`；底盘和机械臂仍在资源目录中，但在执行器 Stop 证明完成前不纳入托管图。发布命令节点集前，EOS 必须负责 Dispatcher 准入和物理停止证明。
+
+运行 `isos pkg check --source` 前，导出 `MUJOCO_ROOT` 指向本地 3.3.1 安装；显式环境值优先于 `config.toml` 和 `.env`。`python3 tests/build_env.py` 在不下载内容的情况下验证此构建输入边界。清单将 IsOS 兼容范围限定为 `[0.2.3,0.3.0)`，并要求 IsOS `package-process-v1` 与 EOS `native-plugin-v1`；发布检查仍记录实际验证的 IsOS 构建。`.so` 是 Linux C++/protobuf 二进制文件，需要 IsOS 主机的 ABI 表和匹配的运行库。仅构建文件不足以证明兼容：IsOS 检查清单和摘要，EOS 检查 ABI 与回调，托管资格检查模拟器子进程、数据 schema、就绪和 Stop。其他平台及进程内 Python 是未来工作；Python 可使用受监督进程接口。`python3 tests/plugin.py <已构建动态库>` 使用桩验证严格健康、观测、运动拒绝和 Stop。下面旧的 `0.1.2` 记录属于历史候选证据，不是当前源码的操作说明。
+
+在 2026-11-11 的 Linux x86_64 验证主机上，使用实际 MuJoCo 3.3.1 构建后，29 项 CTest 全部通过，包括原生适配器、包目录、严格套接字、相机故障、Stop 和场景查看检查。构建和包进程主机输入均设置 `MUJOCO_ROOT=<MuJoCo 3.3.1 绝对根目录>`。启动 IsOS 时还须设置 `LD_LIBRARY_PATH="$MUJOCO_ROOT/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"`，使 EOS 管理的模拟器子进程能加载 `libmujoco.so.3.3.1`；包归档不包含该库。已检查的 `0.2.0` 源码候选通过 `isos pkg check --source ... --version 0.2.0 --graph ...`，覆盖托管 Run、相机观测、日志和 Stop。本地完整构建与 CTest 输出位于被 Git 忽略的 `data/test/20261111-real-mujoco/`；IsOS 资格检查的证据由其检查输出保存。这是源码资格验证记录，不表示 GitHub 发布已完成。
+
+## 历史 0.1.2 候选说明
+
 下述 `0.1.2` 软件包是使用 MuJoCo 3.3.1 的本地开发候选，尚未发布；本页后面的历史 `0.1.1` 证据仍对应 MuJoCo 3.16.0。
 
 **当前实现：** 本页记录现有包与集成路径。[包描述符与声明](../interfaces/package_cn.md)和[模拟器套接字](../interfaces/socket_cn.md)是本包拥有的字段契约；[架构](../architecture_cn.md)说明集成方式，[后续验证](../architecture_cn.md#后续验证)记录尚未完成的检查。协议或已生成描述符文件名中的 `v2` 为兼容而保留；本主题页文件名不带版本后缀。
 
 [English](../../../docs/mujoco/usage/isos-pkg.md)
 
-从本地源码全新安装时，先设置 `MUJOCO_ROOT`，再运行 `isos pkg install --source /absolute/path/to/isos-mujoco-sim --allow-source-build`。IsOS 调用本仓库可执行的 `build.sh --output <空暂存目录>`，验证 `release.json` 和 `asset.tar.gz` 后安装包。包声明进程入口及通用场景和设备目录，IsOS 无需 MuJoCo 专用启动路径。随后验证并应用节点集，再明确运行或重启部署；仅安装包不会改变当前运行实例。
+从本地源码全新安装时，先设置 `MUJOCO_ROOT`，再运行 `isos pkg install --source /absolute/path/to/isos-mujoco-sim --allow-source-build`。IsOS 调用本仓库可执行的 `build.sh --output <空暂存目录>`，验证 `release.json` 和清单指定名称的归档后安装包。包声明进程入口及通用场景和设备目录，IsOS 无需 MuJoCo 专用启动路径。随后验证并应用节点集，再明确运行或重启部署；仅安装包不会改变当前运行实例。
 
 先构建模拟器，再生成本地 `island/mujoco-sim@0.1.2` 包：
 
@@ -26,7 +37,7 @@ isos pkg link island/mujoco-sim 0.1.2 /absolute/path/to/mujoco-v2-bundle --manif
 
 包中包含 `bin/eos-mujoco-sim`、两个场景及其资源、`backend-v2.json` 和本地 schema v4 `release.json`。构建工具还会在包目录旁生成带 SHA-256 校验值的发布归档。后端描述文件声明 `mujoco-v2` 协议、`cam-0`、`base-0`、`arm-0` 设备 ID，以及外部 MuJoCo 3.3.1 库依赖。IsOS 在运行前验证可执行文件、场景、资源和库；安装包本身不会启用部署图。
 
-发布清单中的 `node_contributions` 声明 `sim-hardware` 节点集、`mujoco-v2` 适配器系列和由包拥有的 `eos.process.mujoco@v0.1` 进程类型。新的 `0.1.0` 图预设有七个节点：该进程、EOS 通用相机/底盘/机械臂适配器、通用 `@v0.1` 底盘/机械臂 primitive 绑定，以及相机门。IsOS 初始图提供 `eos.dispatcher.control@v0.1`，包不重复添加。每个硬件实例在 `node.adapter.package` 固定 `island/mujoco-sim@0.1.2`，选择 `mujoco-v2` 并保存所选设备 ID。EOS 验证编译的工厂，Dispatcher 仍拥有命令准入。预设只组合草稿图，并非执行授权；它不包含未注册的旧 IsOS Vision 类型。IsOS 在 Apply 前验证包和图。详见[包贡献契约](../interfaces/package_cn.md#p02-声明与图边界)。
+发布清单中的 `node_contributions` 声明 `sim-hardware` 节点集、`mujoco-v2` 适配器系列，以及包拥有的 `eos.process.mujoco.simulator@v0.2` 进程类型。`0.2.1` 节点集添加该进程及 EOS 通用相机、底盘、机械臂 `device@v0.2` 实例。每个硬件节点在 `node.adapter.package` 中固定 `island/mujoco-sim@0.1.2`，并选择稳定的设备 ID。此首版节点集仅供观测：不声明 Dispatcher 命令绑定或相机门。IsOS 先验证发布包，再于预览和 Apply 验证组合图；EOS 就绪和 Stop 仍需另行测试所有者运行时。详见[包贡献契约](../interfaces/package_cn.md#p02-声明与图边界)。
 
 后端节点的 `settings.env` 可设置 `MUJOCO_GUI=1` 或 `MUJOCO_GUI=true`，在支持 X11 的主机上打开 `IsOS MuJoCo — live simulation` 窗口。窗口渲染来自同一个 `SimEngine` 的相机画面；默认不显示 GUI。若请求 GUI 但显示服务不可用，模拟器启动失败。`tools/view.sh` 仍用于独立的静态场景预览。
 
@@ -52,7 +63,7 @@ v2 Unix 套接字帧以八字节小端长度头开头，后接 JSON 元数据和
 
 2026-10-30，旧版六节点预设及端口元数据通过 `python3 tests/nodes.py` 的四个测试。`python3 tools/bundle.py --build-dir build --output logs/test/20261030-general-interfaces/bundle-r3` 成功生成当时的发布候选包，`ctest --test-dir build --output-on-failure` 的十个模拟器测试全部通过。完整本地输出保存在 `logs/test/20261030-general-interfaces/`。当时的八节点预设也用相同的 Python 命令检查；2026-10-31 的模拟器基线十个测试通过，日志在 `logs/test/20261031-generic-device-preset/`。
 
-随后，独立的 IsOS 目录链接旧版 `bundle-r3`，使用场景和套接字参数预览 `sim-hardware`，并通过 EOS `aether-profile` 验证生成的图。该预览添加六个节点，只在当时四个 MuJoCo 类型上保留包引用，并报告三个由 IsOS 管理的进程。复现细节见 `logs/test/20261030-general-interfaces/graph-preview.log`。后续 EOS 与 IsOS 的通用设备及 primitive 契约已支持新的七节点预设；详见 R05 跨所有者验收。
+随后，独立的 IsOS 目录链接旧版 `bundle-r3`，使用场景和套接字参数预览 `sim-hardware`，并通过 EOS `aether-profile` 验证生成的图。该预览添加六个节点，只在当时四个 MuJoCo 类型上保留包引用，并报告三个由 IsOS 管理的进程。复现细节见 `logs/test/20261030-general-interfaces/graph-preview.log`。这属于历史回放证据；当前两节点 `0.2.1` 相机节点集仍需新的跨所有者回放。
 
 ## 软件包 0.1.2 检查（2026-10-31）
 
@@ -70,9 +81,9 @@ isos pkg link island/mujoco-sim 0.1.2 /absolute/path/to/mujoco-v2-bundle --manif
 isos pkg node-sets
 ```
 
-用 `isos build eos`、`isos version select eos <selector>`、`isos build isosui` 和 `isos version select isosui <selector>` 构建并显式选择版本。同一 EOS 提交有多个构建时，用源码指纹选择唯一收据。`isos init` 创建配置后退出。在一个终端运行 `isos serve`，用 `isos pkg preview-set` 或 IsOS API 预览 `sim-hardware` 节点集，指定场景和仅所有者可访问的套接字，再通过按修订检查的 IsOS 接口 Validate 与 Apply。IsosUI 目录编辑器属于后续 U01 工作台门禁。该预设添加 EOS 持有的模拟器进程、三个通用硬件适配器、dispatcher 绑定和有类型连接；已有图会保留至操作员显式应用新修订。
+用 `isos build eos`、`isos version select eos <selector>`、`isos build isosui` 和 `isos version select isosui <selector>` 构建并显式选择版本。同一 EOS 提交有多个构建时，用源码指纹选择唯一收据。`isos init` 创建配置后退出。在一个终端运行 `isos serve`，用 `isos pkg preview-set` 或 IsOS API 预览 `sim-hardware` 节点集，指定场景和仅所有者可访问的套接字，再通过按修订检查的 IsOS 接口 Validate 与 Apply。IsosUI 目录编辑器属于后续 U01 工作台门禁。该节点集声明 EOS 持有的模拟器进程和三个通用硬件适配器；本候选包没有 Dispatcher 命令绑定。已有图会保留至操作员显式应用新修订。
 
-**P02 包目录与 IsOS 选择。** 构建工具现已输出 `0.1.0` 目录描述符和七节点 `@v0.1` 预设，参数为稳定的 `scene`、`camera_device`、`base_device` 和 `manipulator_device`。用 `python3 tools/bundle.py --build-dir build --mujoco-root "$MUJOCO_ROOT" --output <空目录>` 构建并检查包；`backend-v2.json` 含两个场景 ID、标签、profile 和 SHA-256，以及三台设备的描述和场景支持列表。P01 验证精确的 `island/mujoco-sim@0.1.2` 收据后，IsOS P02/P03 切片现已展示可用 ID、依当前已保存修订 Validate 与 Apply 所选场景和设备，并保留不可用的已保存 ID 供修复。修改场景生成新的已保存修订，必须 Restart 才能替换 EOS 持有的子进程。详见 [P02 包契约](../interfaces/package_cn.md#p02-描述符扩展)和[负面样本](../../../tests/fixtures/scene_catalog/negative-cases.json)。
+**P02 包目录与 IsOS 选择。** 构建工具现已输出 `0.1.0` 目录描述符和四节点 `0.2.1` 节点集，参数为稳定的 `scene`、`camera_device`、`base_device` 和 `manipulator_device`。用 `python3 tools/bundle.py --build-dir build --mujoco-root "$MUJOCO_ROOT" --output <空目录>` 构建并检查包；`backend-v2.json` 含两个场景 ID、标签、profile 和 SHA-256，以及三台设备的描述和场景支持列表。P01 验证精确的 `island/mujoco-sim@0.1.2` 收据后，IsOS P02/P03 切片现已展示可用 ID、依当前已保存修订 Validate 与 Apply 所选场景和设备，并保留不可用的已保存 ID 供修复。修改场景生成新的已保存修订，必须 Restart 才能替换 EOS 持有的子进程。详见 [P02 包契约](../interfaces/package_cn.md#p02-描述符扩展)和[负面样本](../../../tests/fixtures/scene_catalog/negative-cases.json)。
 
 另一终端运行 `isos run` 启动已应用部署。IsOS 启动前检查精确的软件包、资源、场景、MuJoCo 库、EOS 程序、套接字与端口；EOS 将模拟器作为直接子进程。限定范围的 R06 回放已证明 pick-place 和 navigation 的物理停止顺序；更完整的故障验收仍待完成。`isos deployment stop` 只停止部署，`isos stop` 停止管理器、API、UI、部署和独立服务。EGIA 只通过 EOS 的正常代理接口行动，不连接私有评测套接字。模型类服务管理器独立于此硬件图。
 
@@ -100,7 +111,7 @@ v2 图中的模拟器节点可以在 `settings.env` 设置 `MUJOCO_GUI=1`，以�
 
 **操作员可见变化。** IsOS 可以验证并安装 `island/mujoco-sim@0.1.1`，列出两个场景及可用的相机、底盘、机械臂设备，预览 `sim-hardware` 节点集，并对选定图执行 Validate/Apply。EOS 将已验证仿真器作为直接子进程启动，读取真实相机帧，经 Dispatcher 准入运动，并在终止和回收子进程前确认物理 Stop。选定的干净主目录运行还覆盖子进程故障、受治理重启、软件包与边拒绝，以及显式图迁移。[Q03 验证记录](../architecture_cn.md)及 [EOS Q04 重放记录](https://github.com/Island-Team/Island-eos/blob/master/docs_cn/island/q04-merged-qualification_cn.md)说明范围和原始证据。
 
-**兼容与迁移。** 此包采用 IsOS schema v4，面向图 `0.1.0` 和已注册的 `@v0.1` 类型。保留旧 `eos.process.mujoco@v1.0` 贡献供已验证的旧图读取；迁移须显式执行并检查修订。已发布的 `v1.0.1` 包使用退役图形态，属于另一版本。软件包要求操作员提供 MuJoCo 3.16.0 库；选定资产记录 Ubuntu 24.04、`glibc>=2.39` 和 x86_64。原生依赖规则见[软件包契约](../interfaces/package_cn.md)。
+**兼容与迁移。** 此包采用 IsOS schema v4，节点集面向 `0.2.1` 图和已注册的 `@v0.2` 类型。先前已验证发布包中的 `eos.process.mujoco@v1.0` 仍由旧读取器处理；本候选包不贡献该类型。迁移须显式执行并检查修订。已发布的 `v1.0.1` 包使用退役图形态，属于另一版本。当前 `0.1.2` 候选包要求操作员提供 MuJoCo 3.3.1 库。已发布 `v0.1.1` 资产使用 MuJoCo 3.16.0，并记录 Ubuntu 24.04、`glibc>=2.39` 和 x86_64。原生依赖规则见[软件包契约](../interfaces/package_cn.md)。
 
 **发布后的安装或升级。** 将 `MUJOCO_ROOT` 指向已安装的 MuJoCo 3.16.0 目录，按下文验证已发布清单和归档，再按[后端指南](isos-pkg_cn.md)安装或链接精确的 `0.1.1` 软件包，选择场景和设备，执行 Validate/Apply，启动 EOS。已保存的旧图在操作员请求迁移前保持原字节。
 
@@ -168,3 +179,7 @@ python3.12 tools/release.py --build-dir build --output dist
 ```
 
 发布前需审核源代码、归档字节、许可证、SHA-256、依赖和 EOS 行为。候选清单记录 `ldd` 报告的 SONAME；`isos packages doctor` 检查运行时依赖。旧版激活包中的 `module.toml`、`eos.toml` 和 `binding.toml` 属于原 EOS 布局。MuJoCo 3.16.0 仍由操作员提供；可在 IsOS 管理的 EOS 节点 `launch.env` 中设置 `MUJOCO_ROOT`。变更二进制文件必须发布新版本。
+
+## 当前 `0.1.2` 候选包验证（2026-11-11）
+
+在本源码检出中，`python3 tests/nodes.py` 和 `ctest --test-dir build -R '^(scene-catalog|bundle-catalog|strict-socket|strict-stop-lane|strict-stop-lane-navigation)$' --output-on-failure` 通过。先用 `python3 tools/bundle.py --build-dir build --mujoco-root "$MUJOCO_ROOT" --output <空目录>` 构建，再执行 `isos pkg verify <bundle>/release.json <archive>` 和 `ISOS_HOME=<隔离目录> isos pkg link island/mujoco-sim 0.1.2 <bundle> --manifest <bundle>/release.json`；在当前 IsOS 源码版本上两者均通过。`aether-profile catalog --node-types <已链接的 node-types.json>` 接受所贡献的进程，并将 `mujoco-v2` 报为尚未编译。当前 IsOS 预览调用 EOS 不提供的 `validate --file` 命令，因此这些检查尚未证明图 Apply 和托管就绪。完整 CTest 为 25/27；两个场景查看测试需要本地 MuJoCo 安装缺少的 `bin/compile` 与 `bin/simulate`。完整本地输出保存在已忽略的 `data/test/20261111-general-hal/`。

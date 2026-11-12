@@ -15,6 +15,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <iomanip>
 #include <limits>
@@ -137,6 +138,7 @@ const char* OperationKind(const std::string& op) {
   if (op == "camera_capture") return "camera";
   if (op == "base_observe" || op == "base_move") return "base";
   if (op == "manipulator_observe" || op == "manipulator_move") return "manipulator";
+  if (op == "gripper_observe" || op == "gripper_move") return "gripper";
   if (op == "stop") return "actuator";
   return nullptr;
 }
@@ -223,6 +225,8 @@ void Handle(int fd, SimEngine& engine) {
       SetArray(&reply, "joint_velocities_rad_s", snapshot.joint_velocities_rad_s);
       SetArray(&reply, "end_position_m", snapshot.ee_position);
       SetArray(&reply, "end_orientation_xyzw", snapshot.ee_orientation_xyzw);
+    } else if (op == "gripper_observe") {
+      Set(&reply, "opening_percent", snapshot.gripper_position_pct);
     } else if (op == "base_move") {
       Command command{Command::Type::BaseDrive};
       double duration = 0;
@@ -340,7 +344,8 @@ void V2Server::HandleStrict(int fd, bool stop_lane,
     if (node == device.id && scene_profile_ == device.profile &&
         (std::strcmp(kind, "") == 0 || kind == std::string(device.kind) ||
          (std::strcmp(kind, "actuator") == 0 && (std::strcmp(device.kind, "base") == 0 ||
-                                                 std::strcmp(device.kind, "manipulator") == 0)))) {
+                                                 std::strcmp(device.kind, "manipulator") == 0 ||
+                                                 std::strcmp(device.kind, "gripper") == 0)))) {
       matched = true;
       break;
     }
@@ -349,13 +354,13 @@ void V2Server::HandleStrict(int fd, bool stop_lane,
     fail("node_mismatch", "node is not the declared scene device for operation");
     return;
   }
-  if (op != "base_move" && op != "manipulator_move" && op != "stop" &&
+  if (op != "base_move" && op != "manipulator_move" && op != "gripper_move" && op != "stop" &&
       Field(request, "command_id")) {
     fail("invalid_request", "command_id is only valid for motion and stop");
     return;
   }
   if (op == "health") {
-    if (stop_lane && node != "base-0" && node != "arm-0") {
+    if (stop_lane && node != "base-0" && node != "arm-0" && node != "gripper-0") {
       fail("node_mismatch", "stop lane health requires an actuator node");
       return;
     }
@@ -392,6 +397,11 @@ void V2Server::HandleStrict(int fd, bool stop_lane,
     SetArray(&reply, "joint_velocities_rad_s", snapshot.joint_velocities_rad_s);
     SetArray(&reply, "end_position_m", snapshot.ee_position);
     SetArray(&reply, "end_orientation_xyzw", snapshot.ee_orientation_xyzw);
+    SendReply(fd, reply);
+    return;
+  }
+  if (op == "gripper_observe") {
+    Set(&reply, "opening_percent", snapshot.gripper_position_pct);
     SendReply(fd, reply);
     return;
   }
@@ -487,6 +497,16 @@ void V2Server::HandleStrict(int fd, bool stop_lane,
       return;
     }
     count = 6;
+  } else if (op == "gripper_move") {
+    const auto* close = Field(request, "close");
+    if (!close || close->kind_case() != Value::kBoolValue) {
+      fail("invalid_movement", "gripper close must be a boolean");
+      return;
+    }
+    command.type = Command::Type::GripperMove;
+    command.close = close->bool_value();
+    values[0] = command.close ? 1.0 : 0.0;
+    count = 1;
   }
   const auto command_id = String(request, "command_id");
   const bool stop = op == "stop";
@@ -554,6 +574,7 @@ void V2Server::HandleStrict(int fd, bool stop_lane,
     if (stop) {
       Set(&reply, "base_stop", reservation.result.base_stop);
       Set(&reply, "arm_stop", reservation.result.arm_stop);
+      Set(&reply, "gripper_stop", reservation.result.gripper_stop);
       Set(&reply, "generation_id", generation_id_);
       Set(&reply, "stop_epoch", reservation.result.stop_epoch);
     }
@@ -566,30 +587,31 @@ void V2Server::HandleStrict(int fd, bool stop_lane,
   bool accepted = false;
   std::string error_code = "device_unavailable";
   std::string error_message = "engine outcome uncertain";
-  std::string base_stop, arm_stop, result_epoch;
+  std::string base_stop, arm_stop, gripper_stop, result_epoch;
   double result_timestamp = snapshot.simulation_time_s * 1e9;
   std::uint64_t result_sequence = snapshot.sequence;
   try {
     if (op == "stop") {
       const auto deadline = stop_started + std::chrono::seconds(1);
-      base_stop = arm_stop = "unknown";
+      base_stop = arm_stop = gripper_stop = "unknown";
       result_epoch = std::to_string(reserved_stop_epoch);
       if (stop_future.wait_until(deadline) == std::future_status::ready) {
         const auto proof = stop_future.get();
         base_stop = proof.base_stopped ? "stopped" : "unknown";
         arm_stop = proof.arm_stopped ? "stopped" : "unknown";
+        gripper_stop = proof.gripper_stopped ? "stopped" : "unknown";
         result_timestamp = proof.snapshot.simulation_time_s * 1e9;
         result_sequence = proof.snapshot.sequence;
-        if (proof.base_stopped && proof.arm_stopped &&
+        if (proof.base_stopped && proof.arm_stopped && proof.gripper_stopped &&
             publication_mutex_.try_lock_until(deadline)) {
           accepted = std::chrono::steady_clock::now() <= deadline && !stop_unknown_latched_.load();
           publication_mutex_.unlock();
         }
       }
       error_code = "stop_outcome_unknown";
-      error_message = "base or arm stop outcome unknown";
-      if (!accepted && base_stop == "stopped" && arm_stop == "stopped")
-        base_stop = arm_stop = "unknown";
+      error_message = "base, arm or gripper stop outcome unknown";
+      if (!accepted && base_stop == "stopped" && arm_stop == "stopped" && gripper_stop == "stopped")
+        base_stop = arm_stop = gripper_stop = "unknown";
     } else {
       const auto outcome = engine_.Execute(command, requested_epoch);
       accepted = outcome.accepted;
@@ -607,9 +629,9 @@ void V2Server::HandleStrict(int fd, bool stop_lane,
   } catch (...) {
     accepted = false;
     error_code = stop ? "stop_outcome_unknown" : "device_unavailable";
-    error_message = stop ? "base or arm stop outcome unknown" : "engine outcome uncertain";
+    error_message = stop ? "base, arm or gripper stop outcome unknown" : "engine outcome uncertain";
     if (stop) {
-      base_stop = arm_stop = "unknown";
+      base_stop = arm_stop = gripper_stop = "unknown";
       result_epoch = std::to_string(reserved_stop_epoch);
     }
   }
@@ -623,7 +645,7 @@ void V2Server::HandleStrict(int fd, bool stop_lane,
         stop_inhibited_ = false;
     }
     ledger_.Finish(node, command_id, stop, accepted, error_code, error_message, result_timestamp,
-                   result_sequence, base_stop, arm_stop, result_epoch);
+                   result_sequence, base_stop, arm_stop, result_epoch, gripper_stop);
   }
   Set(&reply, "timestamp_ns", result_timestamp);
   Set(&reply, "sequence", static_cast<double>(result_sequence));
@@ -631,6 +653,7 @@ void V2Server::HandleStrict(int fd, bool stop_lane,
   if (stop) {
     Set(&reply, "base_stop", base_stop);
     Set(&reply, "arm_stop", arm_stop);
+    Set(&reply, "gripper_stop", gripper_stop);
     Set(&reply, "generation_id", generation_id_);
     Set(&reply, "stop_epoch", result_epoch);
   }
@@ -645,7 +668,17 @@ V2Server::V2Server(const std::filesystem::path& socket, SimEngine& engine,
   std::filesystem::create_directories(socket_.parent_path());
   if (managed_strict_socket_) {
     stop_socket_ = socket_.string() + ".stop";
-    generation_id_ = NewGenerationId();
+    if (const char* selected = std::getenv("ISOS_PACKAGE_GENERATION")) {
+      const std::string generation(selected);
+      if (generation.size() != 64 ||
+          !std::all_of(generation.begin(), generation.end(), [](unsigned char value) {
+            return (value >= '0' && value <= '9') || (value >= 'a' && value <= 'f');
+          }))
+        throw std::invalid_argument("invalid_package_generation");
+      generation_id_ = generation;
+    } else {
+      generation_id_ = NewGenerationId();
+    }
   }
   if (socket_.string().size() >= sizeof(sockaddr_un::sun_path) ||
       (managed_strict_socket_ && stop_socket_.string().size() >= sizeof(sockaddr_un::sun_path)))

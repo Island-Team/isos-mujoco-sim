@@ -33,11 +33,31 @@ def main() -> None:
         release = json.loads((output / "release.json").read_text())
         assert (release["contract"], release["id"], release["version"],
                 release["schema_version"]) == (
-            "isos.package@v1", "island/mujoco-sim", "0.1.2", "0.1.0")
+            "isos.package@v1", "island/mujoco-sim", "0.2.0", "0.2.0")
+        assert release["compatibility"] == {
+            "isos_min_inclusive": "0.2.3", "isos_max_exclusive": "0.3.0",
+            "required_owner_capabilities": [
+                {"owner": "isos", "capability": "package-process-v1"},
+                {"owner": "eos", "capability": "native-plugin-v1"}],
+        }
         contributions = release["node_contributions"]
+        plugin = output / "lib/libmujoco-eos-node.so"
+        assert plugin.is_file()
+        plugin_digest = hashlib.sha256(plugin.read_bytes()).hexdigest()
+        assert release["adapters"] == [{"family": "mujoco-v2",
+                                       "library": "lib/libmujoco-eos-node.so",
+                                       "sha256": plugin_digest}]
+        assert contributions["libraries"] == [{"path": "lib/libmujoco-eos-node.so",
+                                               "sha256": plugin_digest}]
+        for node in contributions["node_sets"][0]["nodes"]:
+            adapter = node["profile"].get("adapter")
+            if adapter:
+                assert adapter["package"]["version"] == release["version"]
         assert contributions["processes"] == [{
-            "node_type": "eos.process.mujoco@v0.1",
+            "node_type": "eos.process.mujoco.simulator@v0.2",
             "entrypoint": "bin/eos-mujoco-sim",
+            "args": ["--managed-strict-socket", "--v2-socket", "${socket}",
+                     "--scene", "${resource.scene.path}"],
             "lifecycle_adapter": "mujoco-v2",
             "resources": [{"setting": "scene", "kind": "scene",
                            "descriptor": "package-resources.json"}],
@@ -45,8 +65,8 @@ def main() -> None:
                              "required": True}],
         }]
         assert {node["id"] for node in contributions["node_types"]} == {
-            "eos.process.mujoco@v0.1"}
-        assert len(contributions["node_sets"][0]["nodes"]) == 7
+            "eos.process.mujoco.simulator@v0.2"}
+        assert [node["ref"] for node in contributions["node_sets"][0]["nodes"]] == ["simulator", "front"]
         asset = release["assets"][0]
         assert asset["libc"] == f"glibc>={platform.libc_ver()[1]}", asset
         ubuntu = next(line.split("=", 1)[1].strip('"') for line in
@@ -59,7 +79,7 @@ def main() -> None:
         assert hashlib.sha256(archive.read_bytes()).hexdigest() == asset["sha256"]
         with tarfile.open(archive, "r:gz") as tar:
             members = {member.name for member in tar.getmembers()}
-            assert {"backend-v2.json", "package-resources.json", "bin/eos-mujoco-sim", "assets/scene.xml",
+            assert {"backend-v2.json", "package-resources.json", "bin/eos-mujoco-sim", "lib/libmujoco-eos-node.so", "assets/scene.xml",
                     "assets/scenes/navigation/scene.xml"} <= members
             assert "release.json" not in members
             assert all(not member.name.startswith("/") and ".." not in Path(member.name).parts

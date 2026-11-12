@@ -30,6 +30,18 @@ class NativeReleaseTests(unittest.TestCase):
             self.assertIn("libmujoco.so.3.3.1", names)
             self.assertIn("libc.so.6", names)
 
+    def test_plugin_has_independent_dependency_closure(self):
+        plugin = Path(sys.argv[1]).resolve().parent / "libmujoco-eos-node.so"
+        names = BUNDLE.inspect_installed_plugin(plugin)
+        self.assertTrue(any(name.startswith("libprotobuf.so.") for name in names))
+        self.assertNotIn("libmujoco.so.3.3.1", names)
+
+    def test_rejects_plugin_absolute_runpath(self):
+        with mock.patch.object(BUNDLE.subprocess, "run", return_value=mock.Mock(
+                stdout="(RUNPATH) Library runpath: [/home/build/lib]\n")):
+            with self.assertRaisesRegex(ValueError, "absolute RUNPATH"):
+                BUNDLE.inspect_installed_plugin(Path("/not-used"))
+
     def test_rejects_absolute_runpath(self):
         actual = subprocess.run
 

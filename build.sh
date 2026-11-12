@@ -2,14 +2,14 @@
 set -euo pipefail
 
 usage() {
-  echo 'Usage: ./build.sh [--output <empty-absolute-directory>]' >&2
+  echo 'Usage: ./build.sh [--output <empty-absolute-directory> --version 0.2.x]' >&2
   exit 2
 }
 
-if [[ $# -ne 0 && ( $# -ne 2 || $1 != --output || $2 != /* ) ]]; then
+if [[ $# -ne 0 && ( $# -ne 4 || $1 != --output || $2 != /* || $3 != --version || ! $4 =~ ^0\.2\.[0-9]+$ ) ]]; then
   usage
 fi
-if [[ $# -eq 2 ]]; then
+if [[ $# -eq 4 ]]; then
   output=$2
   if [[ -e $output && ! -d $output ]]; then usage; fi
   if [[ -d $output && -n $(find "$output" -mindepth 1 -maxdepth 1 -print -quit) ]]; then
@@ -19,8 +19,12 @@ if [[ $# -eq 2 ]]; then
 fi
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 source "$root/tools/launcher.sh"
+explicit_mujoco_root=${MUJOCO_ROOT-}
 load_launch_config
-: "${MUJOCO_ROOT:?Set MUJOCO_ROOT in .env to a MuJoCo 3.3.1 installation}"
+if [[ -n $explicit_mujoco_root ]]; then
+  MUJOCO_ROOT=$explicit_mujoco_root
+fi
+: "${MUJOCO_ROOT:?Set MUJOCO_ROOT in the environment or .env to a MuJoCo 3.3.1 installation}"
 if [[ $# -eq 0 ]]; then
   cmake -S "$root" -B "$root/build" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release
   cmake --build "$root/build" --parallel "${BUILD_JOBS:-4}"
@@ -70,7 +74,7 @@ cmake -S "$root" -B "$scratch/build" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_
 cmake --build "$scratch/build" --parallel "${BUILD_JOBS:-4}"
 python3 "$root/tools/bundle.py" \
   --build-dir "$scratch/build" --mujoco-root "$MUJOCO_ROOT" \
-  --output "$scratch/bundle"
+  --output "$scratch/bundle" --version "$4"
 archive=$(find "$scratch" -maxdepth 1 -type f -name '*.tar.gz' -print -quit)
 if [[ -z $archive ]]; then
   echo 'Bundle builder produced no archive' >&2
@@ -78,4 +82,4 @@ if [[ -z $archive ]]; then
 fi
 mkdir -p -- "$output"
 cp -- "$scratch/bundle/release.json" "$output/release.json"
-cp -- "$archive" "$output/asset.tar.gz"
+cp -- "$archive" "$output/$(basename -- "$archive")"
