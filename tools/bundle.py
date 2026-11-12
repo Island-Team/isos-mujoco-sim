@@ -116,6 +116,8 @@ def main() -> None:
                         default=Path(os.environ["MUJOCO_ROOT"]) if os.environ.get("MUJOCO_ROOT") else None,
                         help="installed MuJoCo 3.3.1 root; defaults to MUJOCO_ROOT")
     args = parser.parse_args()
+    if args.version == "0.2.1":
+        parser.error("v0.2.1 is published; choose a new package version")
     if not re.fullmatch(r"0\.2\.[0-9]+", args.version):
         parser.error("version must be 0.2.x")
     binary = args.build_dir / "eos-mujoco-sim"

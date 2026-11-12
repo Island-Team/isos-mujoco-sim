@@ -9,6 +9,10 @@ usage() {
 if [[ $# -ne 0 && ( $# -ne 4 || $1 != --output || $2 != /* || $3 != --version || ! $4 =~ ^0\.2\.[0-9]+$ ) ]]; then
   usage
 fi
+if [[ $# -eq 4 && $4 == 0.2.1 ]]; then
+  echo 'v0.2.1 is published; choose a new package version' >&2
+  exit 2
+fi
 if [[ $# -eq 4 ]]; then
   output=$2
   if [[ -e $output && ! -d $output ]]; then usage; fi

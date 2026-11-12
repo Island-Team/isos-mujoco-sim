@@ -130,6 +130,50 @@ def contributions(version: str = "0.2.0") -> dict:
 
 def full_hardware_contributions(version: str) -> dict:
   """Package presets contain devices; IsOS activates their service implicitly."""
+  package = {"id": "island/mujoco-sim", "version": version}
+  library = "lib/libmujoco-eos-node.so"
+
+  def live_port(name: str, data_type: str, data_class: str) -> dict:
+    return {"name": name, "data_type": data_type, "required": False,
+            "description": f"MuJoCo {name} {data_class}", "transport": "in_process",
+            "delivery_mode": "event", "data_class": data_class,
+            "contract": {"owner": "eos", "id": data_type, "version": "0.2"}}
+
+  hardware_types = (
+    (CAMERA, "camera", "camera", ["jpeg", "rgb8"], None, [],
+     [live_port("frame", "image_frame@v0.2", "observation")]),
+    ("eos.hardware.base.device@v0.2", "base", "base", ["body_velocity"],
+     "base_velocity", [live_port("command", "base_twist_command@v0.2", "command")],
+     [live_port("state", "base_state@v0.2", "observation")]),
+    ("eos.hardware.manipulator.device@v0.2", "manipulator", "manipulator",
+     ["joint_positions"], "manipulator_joint_position",
+     [live_port("command", "joint_position_command@v0.2", "command")],
+     [live_port("state", "joint_state@v0.2", "observation")]),
+    ("eos.hardware.base.normalized_axes@v0.2", "base", "base", ["normalized_axes"],
+     "base_normalized_axes", [live_port("command", "normalized_axes_command@v0.2", "command")],
+     [live_port("state", "pose_state@v0.2", "observation")]),
+    ("eos.hardware.manipulator.normalized_cartesian@v0.2", "manipulator", "manipulator",
+     ["normalized_cartesian"], "manipulator_normalized_cartesian",
+     [live_port("command", "normalized_axes_command@v0.2", "command"),
+      live_port("mode", "control_mode_command@v0.2", "command")],
+     [live_port("state", "pose_state@v0.2", "observation")]),
+    ("eos.hardware.gripper.binary@v0.2", "gripper", "gripper", ["binary"],
+     "gripper_binary", [live_port("command", "gripper_binary_command@v0.2", "command")],
+     [live_port("state", "gripper_state@v0.2", "observation")]),
+    ("eos.hardware.torso.normalized_axes@v0.2", "torso", "torso", ["normalized_axes"],
+     "torso_normalized_axes", [live_port("command", "normalized_axes_command@v0.2", "command")], []),
+  )
+  definitions = []
+  for type_id, group, kind, capabilities, safety, inputs, outputs in hardware_types:
+    definition = {"id": type_id, "core": "eos", "layer": "hardware", "group": group,
+                  "kind": kind, "lifecycle": "adapter", "capabilities": capabilities,
+                  "description": f"MuJoCo {kind} device adapter", "settings": [],
+                  "inputs": inputs, "outputs": outputs,
+                  "implementation": {"kind": "native_plugin", "abi": "isos_node_v2",
+                                     "library": library}}
+    if safety is not None:
+      definition["safety_adapter_type"] = safety
+    definitions.append(definition)
   native = (
     ("front", "camera", CAMERA, "cam-0", ["jpeg"], 30.0, 12582912),
     ("drive", "base", "eos.hardware.base.device@v0.2", "base-0", ["body_velocity"], 50.0, 65536),
@@ -150,6 +194,7 @@ def full_hardware_contributions(version: str) -> dict:
               rate: float, size: int, service: str) -> dict:
     item = hardware_profile(ref, type_id, device, f"{service} {kind} device", device,
                             capabilities, device, rate, size, version)
+    item["package"] = package
     item["references"] = []
     item["adapter"]["settings"] = {"service_instance": service, "device_id": device}
     if service == "native" and kind == "manipulator":
@@ -185,7 +230,7 @@ def full_hardware_contributions(version: str) -> dict:
 
   return {
     "processes": [],
-    "node_types": [],
+    "node_types": definitions,
     "safety_adapters": [],
     "adapter_families": [{
       "id": "mujoco-v2", "device_kinds": ["camera", "base", "manipulator", "gripper", "torso"],
