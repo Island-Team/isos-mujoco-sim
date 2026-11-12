@@ -194,6 +194,7 @@ def full_hardware_contributions(version: str) -> dict:
       {"id": "native", "entrypoint": "bin/eos-mujoco-sim",
        "args": ["--managed-strict-socket", "--v2-socket", "${socket}",
                 "--scene", "${resource.scene.path}"],
+       "requirements": [{"path": "${config.host.mujoco_root}/lib/libmujoco.so.3.3.1", "kind": "file"}],
        "environment": [{"name": "LD_LIBRARY_PATH",
                         "value": "${config.host.mujoco_root}/lib"}],
        "resources": [{"setting": "scene", "kind": "scene",
