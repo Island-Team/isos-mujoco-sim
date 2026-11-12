@@ -141,7 +141,7 @@ def full_hardware_contributions(version: str) -> dict:
     ("right", "camera", CAMERA, "robocasa/camera/agentview-right", ["rgb8"], 30.0, 12582912),
     ("wrist", "camera", CAMERA, "robocasa/camera/eye-in-hand", ["rgb8"], 30.0, 12582912),
     ("mobile", "base", "eos.hardware.base.normalized_axes@v0.2", "robocasa/base/mobile-base", ["normalized_axes"], 50.0, 65536),
-    ("right_arm", "manipulator", "eos.hardware.manipulator.normalized_cartesian@v0.2", "robocasa/arm/right-arm", ["normalized_cartesian"], 50.0, 65536),
+    ("right-arm", "manipulator", "eos.hardware.manipulator.normalized_cartesian@v0.2", "robocasa/arm/right-arm", ["normalized_cartesian"], 50.0, 65536),
     ("hand", "gripper", "eos.hardware.gripper.binary@v0.2", "robocasa/gripper/right-gripper", ["binary"], 50.0, 65536),
     ("lift", "torso", "eos.hardware.torso.normalized_axes@v0.2", "robocasa/torso/torso", ["normalized_axes"], 50.0, 65536),
   )
