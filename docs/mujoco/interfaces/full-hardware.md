@@ -12,6 +12,6 @@ The RoboCasa service configuration also requires integer `camera_width` and `cam
 
 The RoboCasa worker's private `observe` reply carries camera dimensions in `width_px` and `height_px` metadata and exactly `width_px × height_px × 3` RGB8 bytes in the socket payload. Metadata remains bounded to 64 KiB and the payload to 8 MiB. State observations keep their JSON `values` response. The plugin verifies the exact dimensions and byte count before emitting the graph's typed frame.
 
-Build the candidate with `./build.sh --output ABSOLUTE_EMPTY_DIRECTORY --version 0.2.2` or a later unused version. The published v0.2.0 and v0.2.1 tags remain unchanged. A candidate is publishable only after the IsOS `pkg check` replay succeeds for both presets, including rejection, crash, logs, and Stop cases.
+Build the candidate with `./build.sh --output ABSOLUTE_EMPTY_DIRECTORY --version 0.2.3` or a later unused version. The published v0.2.0, v0.2.1, and v0.2.2 tags remain unchanged. A candidate is publishable only after the IsOS `pkg check` replay succeeds for both presets, including rejection, crash, logs, and Stop cases.
 
 [中文](../../../docs_cn/mujoco/interfaces/full-hardware_cn.md) · [Package details](package.md) · [Socket](socket.md)

@@ -12,6 +12,6 @@ RoboCasa 服务配置还要求 `[services.robocasa]` 中的整数 `camera_width`
 
 RoboCasa 工作进程的私有 `observe` 回复在元数据中携带 `width_px` 和 `height_px`，套接字负载恰好包含 `width_px × height_px × 3` 字节的 RGB8 数据。元数据仍限制为 64 KiB，负载限制为 8 MiB。状态观测继续使用 JSON `values` 回复。插件在发送图中的类型化帧前验证准确尺寸和字节数。
 
-使用 `./build.sh --output 绝对路径的空目录 --version 0.2.2` 或更高的未使用版本构建候选版。已发布的 v0.2.0 和 v0.2.1 标签保持不变。只有两套预设都通过 IsOS `pkg check` 回放，包括拒绝、崩溃、日志和停止场景，候选版才可发布。
+使用 `./build.sh --output 绝对路径的空目录 --version 0.2.3` 或更高的未使用版本构建候选版。已发布的 v0.2.0、v0.2.1 和 v0.2.2 标签保持不变。只有两套预设都通过 IsOS `pkg check` 回放，包括拒绝、崩溃、日志和停止场景，候选版才可发布。
 
 [English](../../../docs/mujoco/interfaces/full-hardware.md) · [软件包详情](package_cn.md) · [套接字](socket_cn.md)
