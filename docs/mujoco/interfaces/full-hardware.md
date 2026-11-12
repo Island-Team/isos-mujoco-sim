@@ -8,6 +8,8 @@ The RoboCasa preset exposes three RGB8 cameras, mobile base, right arm, right gr
 
 `config/package-config.json` declares bilingual labels and descriptions for the generic IsOS package form. `config/package.toml` provides `[package]`, `[host]`, `[services.native]`, and `[services.robocasa]`. A selected native service needs a local MuJoCo 3.3.1 root. A selected RoboCasa service needs local assets and an explicitly selected Python interpreter. These large host resources are not downloaded with the release. Their paths are local deployment configuration, not graph node settings. Every hardware adapter setting selects a `service_instance`; IsOS resolves that instance at Apply and Run.
 
+The RoboCasa service configuration also requires integer `camera_width` and `camera_height` in `[services.robocasa]`. Both default to 64 in the template and must be 64–512 pixels. The verified service handoff passes them as `ISOS_ROBOCASA_CAMERA_WIDTH` and `ISOS_ROBOCASA_CAMERA_HEIGHT`; the worker validates both before creating the Gym environment and uses the resulting dimensions for all three camera observations. A changed size takes effect on the next Run. The installed `0.2.2` package retains its fixed 64 × 64 behavior; use a new package version, import its updated configuration, and repin the graph to enable this field.
+
 Build the candidate with `./build.sh --output ABSOLUTE_EMPTY_DIRECTORY --version 0.2.2` or a later unused version. The published v0.2.0 and v0.2.1 tags remain unchanged. A candidate is publishable only after the IsOS `pkg check` replay succeeds for both presets, including rejection, crash, logs, and Stop cases.
 
 [中文](../../../docs_cn/mujoco/interfaces/full-hardware_cn.md) · [Package details](package.md) · [Socket](socket.md)

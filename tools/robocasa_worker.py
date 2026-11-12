@@ -41,7 +41,17 @@ def response(stream: socket.socket, payload: dict[str, Any]) -> None:
     stream.sendall(struct.pack("<II", len(body), 0) + body)
 
 
-def create_hardware(task: str, seed: int, assets: str):
+def camera_dimension(value: str) -> int:
+    try:
+        dimension = int(value)
+    except ValueError as error:
+        raise ValueError("camera dimension must be an integer from 64 to 512") from error
+    if not 64 <= dimension <= 512:
+        raise ValueError("camera dimension must be an integer from 64 to 512")
+    return dimension
+
+
+def create_hardware(task: str, seed: int, assets: str, width: int = 64, height: int = 64):
     if not assets or not Path(assets).is_dir():
         raise ValueError("configured RoboCasa assets are unavailable")
     os.environ["ROBOSUITE_ASSETS_ROOT"] = assets
@@ -52,7 +62,7 @@ def create_hardware(task: str, seed: int, assets: str):
     from robocasa_core.hardware import Hardware
 
     env = gym.make(f"robocasa/{task}", seed=seed, split="target",
-                   generative_textures=False, camera_widths=64, camera_heights=64)
+                   generative_textures=False, camera_widths=width, camera_heights=height)
     hardware = Hardware(env)
     hardware.reset(seed)
     return hardware
@@ -204,7 +214,9 @@ def main() -> None:
     task = os.environ.get("ISOS_ROBOCASA_TASK", "CloseFridge")
     seed = int(os.environ.get("ISOS_ROBOCASA_SEED", "42"))
     assets = os.environ.get("ISOS_ROBOCASA_ASSETS", "")
-    serve(args.socket, Service(create_hardware(task, seed, assets)))
+    width = camera_dimension(os.environ.get("ISOS_ROBOCASA_CAMERA_WIDTH", "64"))
+    height = camera_dimension(os.environ.get("ISOS_ROBOCASA_CAMERA_HEIGHT", "64"))
+    serve(args.socket, Service(create_hardware(task, seed, assets, width, height)))
 
 
 if __name__ == "__main__":

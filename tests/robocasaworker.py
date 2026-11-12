@@ -6,7 +6,7 @@ from pathlib import Path
 import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from robocasa_worker import Service  # noqa: E402
+from robocasa_worker import Service, camera_dimension  # noqa: E402
 
 
 class FakeHardware:
@@ -48,6 +48,13 @@ class FakeHardware:
 
 
 class WorkerTests(unittest.TestCase):
+    def test_camera_dimensions_are_bounded(self):
+        self.assertEqual(camera_dimension("64"), 64)
+        self.assertEqual(camera_dimension("512"), 512)
+        for value in ("0", "63", "513", "1.5", "abc"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                camera_dimension(value)
+
     def test_duplicate_command_does_not_step_twice(self):
         hardware = FakeHardware()
         service = Service(hardware)

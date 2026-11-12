@@ -8,6 +8,8 @@ RoboCasa 预设提供三路 RGB8 相机、移动底盘、右臂、右夹爪及�
 
 `config/package-config.json` 为通用 IsOS 软件包配置界面声明中英文标签和说明。`config/package.toml` 提供 `[package]`、`[host]`、`[services.native]` 和 `[services.robocasa]`。已选原生服务需要本地 MuJoCo 3.3.1 目录；已选 RoboCasa 服务需要本地资源及明确选定的 Python 解释器。这些大型主机资源不随软件包下载。路径属于本地部署配置，不属于图节点设置。每个硬件适配器通过 `service_instance` 选择服务；IsOS 在 Apply 与 Run 时解析它。
 
+RoboCasa 服务配置还要求 `[services.robocasa]` 中的整数 `camera_width` 和 `camera_height`。模板默认均为 64，允许范围均为 64–512 像素。经过验证的服务交接将其作为 `ISOS_ROBOCASA_CAMERA_WIDTH` 和 `ISOS_ROBOCASA_CAMERA_HEIGHT` 传入；工作进程在创建 Gym 环境前验证两者，并将所得尺寸用于全部三路相机观测。尺寸修改在下次运行时生效。已安装的 `0.2.2` 软件包仍固定为 64 × 64；需使用新版本软件包、导入更新后的配置并更新图中的精确版本锁定，才能启用此字段。
+
 使用 `./build.sh --output 绝对路径的空目录 --version 0.2.2` 或更高的未使用版本构建候选版。已发布的 v0.2.0 和 v0.2.1 标签保持不变。只有两套预设都通过 IsOS `pkg check` 回放，包括拒绝、崩溃、日志和停止场景，候选版才可发布。
 
 [English](../../../docs/mujoco/interfaces/full-hardware.md) · [软件包详情](package_cn.md) · [套接字](socket_cn.md)
