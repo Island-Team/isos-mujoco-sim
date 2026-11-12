@@ -5,6 +5,8 @@ import sys
 import json
 import socket
 import struct
+import threading
+import time
 from contextlib import closing
 from pathlib import Path
 import unittest
@@ -13,7 +15,7 @@ from types import ModuleType
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from robocasa_worker import Service, camera_dimension, camera_size_from_environment, create_hardware, response  # noqa: E402
+from robocasa_worker import Service, camera_dimension, camera_size_from_environment, create_hardware, response, serve  # noqa: E402
 
 
 class FakeHardware:
@@ -111,6 +113,42 @@ class WorkerTests(unittest.TestCase):
             self.assertLess(metadata_size, 65536)
             self.assertEqual(payload_size, len(binary))
             self.assertEqual(json.loads(receiver.recv(metadata_size))["width_px"], 256)
+
+    def test_stop_lane_preempts_slow_camera_reader(self):
+        class Image:
+            shape = (512, 512, 3)
+            def tobytes(self):
+                return b"\x7f" * (512 * 512 * 3)
+        hardware = FakeHardware()
+        hardware.observe = lambda: {"agentview-right": Image()}
+        service = Service(hardware)
+        stopped = threading.Event()
+        with TemporaryDirectory() as root:
+            path = Path(root) / "worker.sock"
+            server = threading.Thread(target=serve, args=(path, service, stopped), daemon=True)
+            server.start()
+            for _ in range(100):
+                if path.exists() and Path(str(path) + ".stop").exists():
+                    break
+                time.sleep(0.01)
+            with socket.socket(socket.AF_UNIX) as slow:
+                slow.connect(str(path))
+                request = json.dumps({"op": "observe", "node": "robocasa/camera/agentview-right"}).encode()
+                slow.sendall(struct.pack("<II", len(request), 0) + request)
+                time.sleep(0.05)
+                started = time.monotonic()
+                with socket.socket(socket.AF_UNIX) as stop:
+                    stop.settimeout(1)
+                    stop.connect(str(path) + ".stop")
+                    request = json.dumps({"op": "stop", "generation_id": service.generation_id}).encode()
+                    stop.sendall(struct.pack("<II", len(request), 0) + request)
+                    metadata_size, payload_size = struct.unpack("<II", stop.recv(8))
+                    self.assertEqual(payload_size, 0)
+                    self.assertEqual(json.loads(stop.recv(metadata_size))["outcome"], "stopped")
+                self.assertLess(time.monotonic() - started, 1)
+            stopped.set()
+            server.join(2)
+            self.assertFalse(server.is_alive())
 
     def test_duplicate_command_does_not_step_twice(self):
         hardware = FakeHardware()

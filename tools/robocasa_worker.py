@@ -177,7 +177,7 @@ class Service:
             raise ValueError("unsupported operation")
 
 
-def serve(socket_path: Path, service: Service) -> None:
+def serve(socket_path: Path, service: Service, stop_event: threading.Event | None = None) -> None:
     socket_path.parent.mkdir(parents=True, exist_ok=True)
     if socket_path.exists():
         raise ValueError("socket path already exists")
@@ -193,28 +193,42 @@ def serve(socket_path: Path, service: Service) -> None:
         stop_path.chmod(0o600)
         stop_listener.listen(8)
         try:
-            while True:
+            data_slots = threading.BoundedSemaphore(8)
+            def handle(connection: socket.socket, stop_lane: bool, release_slot: bool) -> None:
+                try:
+                    with connection:
+                        connection.settimeout(2)
+                        try:
+                            size, payload_size = struct.unpack("<II", read_exact(connection, 8))
+                            if not 0 < size <= MAX_REQUEST or payload_size:
+                                return
+                            request = json.loads(read_exact(connection, size))
+                            if not isinstance(request, dict):
+                                raise ValueError("request must be an object")
+                            if stop_lane and request.get("op") not in ("stop", "health"):
+                                raise ValueError("stop lane accepts only stop or health")
+                            result = service.dispatch(request)
+                            binary = result.pop("_binary", b"")
+                            response(connection, {"ok": True, "id": request.get("id"), **result}, binary)
+                        except (ValueError, ConnectionError, TimeoutError, KeyError) as error:
+                            try:
+                                response(connection, {"ok": False, "error": type(error).__name__})
+                            except OSError:
+                                pass
+                finally:
+                    if release_slot:
+                        data_slots.release()
+            while stop_event is None or not stop_event.is_set():
                 ready, _, _ = select.select([listener, stop_listener], [], [], 0.5)
                 if not ready:
                     continue
-                chosen = ready[0]
-                connection, _ = chosen.accept()
-                with connection:
-                    connection.settimeout(2)
-                    try:
-                        size, payload_size = struct.unpack("<II", read_exact(connection, 8))
-                        if not 0 < size <= MAX_REQUEST or payload_size:
-                            continue
-                        request = json.loads(read_exact(connection, size))
-                        if not isinstance(request, dict):
-                            raise ValueError("request must be an object")
-                        if chosen is stop_listener and request.get("op") not in ("stop", "health"):
-                            raise ValueError("stop lane accepts only stop or health")
-                        result = service.dispatch(request)
-                        binary = result.pop("_binary", b"")
-                        response(connection, {"ok": True, "id": request.get("id"), **result}, binary)
-                    except (ValueError, ConnectionError, TimeoutError, KeyError) as error:
-                        response(connection, {"ok": False, "error": type(error).__name__})
+                for chosen in ready:
+                    connection, _ = chosen.accept()
+                    stop_lane = chosen is stop_listener
+                    if not stop_lane and not data_slots.acquire(blocking=False):
+                        connection.close()
+                        continue
+                    threading.Thread(target=handle, args=(connection, stop_lane, not stop_lane), daemon=True).start()
         finally:
             socket_path.unlink(missing_ok=True)
             stop_path.unlink(missing_ok=True)
