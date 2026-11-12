@@ -15,6 +15,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <iomanip>
 #include <limits>
@@ -667,7 +668,17 @@ V2Server::V2Server(const std::filesystem::path& socket, SimEngine& engine,
   std::filesystem::create_directories(socket_.parent_path());
   if (managed_strict_socket_) {
     stop_socket_ = socket_.string() + ".stop";
-    generation_id_ = NewGenerationId();
+    if (const char* selected = std::getenv("ISOS_PACKAGE_GENERATION")) {
+      const std::string generation(selected);
+      if (generation.size() != 64 ||
+          !std::all_of(generation.begin(), generation.end(), [](unsigned char value) {
+            return (value >= '0' && value <= '9') || (value >= 'a' && value <= 'f');
+          }))
+        throw std::invalid_argument("invalid_package_generation");
+      generation_id_ = generation;
+    } else {
+      generation_id_ = NewGenerationId();
+    }
   }
   if (socket_.string().size() >= sizeof(sockaddr_un::sun_path) ||
       (managed_strict_socket_ && stop_socket_.string().size() >= sizeof(sockaddr_un::sun_path)))

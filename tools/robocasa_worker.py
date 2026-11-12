@@ -63,6 +63,7 @@ class Service:
         self.hardware = hardware
         self.lock = threading.Lock()
         self.stopped = False
+        self.stop_result: dict[str, Any] | None = None
         self.faulted = False
         self.commands: dict[str, dict[str, Any]] = {}
         self.sequence = 0
@@ -71,6 +72,8 @@ class Service:
     def dispatch(self, request: dict[str, Any]) -> dict[str, Any]:
         op = request.get("op")
         with self.lock:
+            if op in ("command", "stop") and request.get("generation_id", "") != self.generation_id:
+                raise ValueError("stale service generation")
             if op == "health":
                 return {"version": "2.0.0", "accepted": not self.stopped and not self.faulted,
                         "features": ["strict-socket-v1", "strict-stop-v1"],
@@ -132,22 +135,22 @@ class Service:
                 self.commands[command_id] = {"node": node, "values": values, "result": result}
                 return result
             if op == "stop":
+                if self.stop_result is not None:
+                    return self.stop_result
                 self.stopped = True
                 outcome = "unknown"
                 if not self.faulted:
                     try:
-                        self.hardware.command_arm([0, 0, 0], [0, 0, 0])
-                        self.hardware.command_base([0, 0, 0])
-                        self.hardware.command_torso([0])
-                        self.hardware.step()
-                        self.sequence += 1
-                        outcome = "stopped"
+                        if self.hardware.stop_motion():
+                            self.sequence += 1
+                            outcome = "stopped"
                     except Exception:
                         self.faulted = True
-                return {"outcome": outcome, "generation_id": self.generation_id,
+                self.stop_result = {"outcome": outcome, "generation_id": self.generation_id,
                         "sequence": self.sequence, "base_stop": outcome,
                         "arm_stop": outcome, "torso_stop": outcome,
                         "gripper_stop": outcome}
+                return self.stop_result
             raise ValueError("unsupported operation")
 
 
@@ -167,7 +170,7 @@ def serve(socket_path: Path, service: Service) -> None:
         stop_path.chmod(0o600)
         stop_listener.listen(8)
         try:
-            while not service.stopped:
+            while True:
                 ready, _, _ = select.select([listener, stop_listener], [], [], 0.5)
                 if not ready:
                     continue

@@ -39,6 +39,10 @@ class FakeHardware:
             raise RuntimeError("step failed")
         self.steps += 1
 
+    def stop_motion(self):
+        self.step()
+        return True
+
     def close(self):
         self.closed = True
 
@@ -54,6 +58,8 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(hardware.steps, 1)
         with self.assertRaises(ValueError):
             service.dispatch(command | {"values": [0.2, 0, 0]})
+        self.assertEqual(service.dispatch({"op": "stop"})["outcome"], "stopped")
+        self.assertEqual(hardware.steps, 2)
         self.assertEqual(service.dispatch({"op": "stop"})["outcome"], "stopped")
         self.assertEqual(hardware.steps, 2)
         with self.assertRaises(ValueError):

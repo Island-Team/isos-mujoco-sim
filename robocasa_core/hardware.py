@@ -180,6 +180,28 @@ class Hardware:
       raise
     return {key: value.copy() for key, value in self._observation.items()}
 
+  def stop_motion(self) -> bool:
+    """Fence queued motion and prove the latched gripper has settled.
+
+    RoboCasa has no separate gripper brake. A bounded sequence of neutral
+    motion steps must show stable finger positions before Stop can be proven.
+    """
+    self._ready()
+    self._pending.clear()
+    self._mode = 0
+    prior = self._observation["gripper_qpos"].copy()
+    stable = 0
+    for _ in range(12):
+      self.command_arm([0, 0, 0], [0, 0, 0])
+      self.command_base([0, 0, 0])
+      self.command_torso([0])
+      observed = self.step()["gripper_qpos"]
+      stable = stable + 1 if np.allclose(observed, prior, rtol=0, atol=1e-4) else 0
+      if stable >= 2:
+        return True
+      prior = observed
+    return False
+
   def _filter(self, observation: Mapping[str, Any]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for name, key in STATE_KEYS.items():

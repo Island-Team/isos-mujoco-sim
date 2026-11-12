@@ -87,8 +87,18 @@ class HardwareTests(unittest.TestCase):
     self.hardware.step()
     neutral = self.env.actions[-1]
     np.testing.assert_array_equal(neutral["action.base_motion"], [0, 0, 0, 0])
-    np.testing.assert_array_equal(neutral["action.gripper_close"], [0])
-    np.testing.assert_array_equal(neutral["action.control_mode"], [0])
+    np.testing.assert_array_equal(neutral["action.gripper_close"], [1])
+    np.testing.assert_array_equal(neutral["action.control_mode"], [1])
+
+  def test_stop_motion_requires_settled_gripper_and_neutral_motion(self):
+    self.hardware.command_gripper(True)
+    self.hardware.step()
+    self.assertTrue(self.hardware.stop_motion())
+    self.assertGreaterEqual(len(self.env.actions), 3)
+    for action in self.env.actions[-2:]:
+      np.testing.assert_array_equal(action["action.base_motion"], [0, 0, 0, 0])
+      np.testing.assert_array_equal(action["action.end_effector_position"], [0, 0, 0])
+      np.testing.assert_array_equal(action["action.control_mode"], [0])
 
   def test_rejects_invalid_commands_without_changing_pending(self):
     self.hardware.command_base([.1, 0, 0])

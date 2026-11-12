@@ -152,6 +152,9 @@ def full_hardware_contributions(version: str) -> dict:
                             capabilities, device, rate, size, version)
     item["references"] = []
     item["adapter"]["settings"] = {"service_instance": service, "device_id": device}
+    if service == "native" and kind == "manipulator":
+      item["joint_names"] = ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint",
+                             "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"]
     if kind == "torso":
       item.pop("observation", None)
     if kind != "camera":
