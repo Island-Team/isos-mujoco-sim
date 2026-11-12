@@ -14,4 +14,6 @@ RoboCasa 工作进程的私有 `observe` 回复在元数据中携带 `width_px` 
 
 使用 `./build.sh --output 绝对路径的空目录 --version 0.2.3` 或更高的未使用版本构建候选版。已发布的 v0.2.0、v0.2.1 和 v0.2.2 标签保持不变。只有两套预设都通过 IsOS `pkg check` 回放，包括拒绝、崩溃、日志和停止场景，候选版才可发布。
 
+2026-11-13，`0.2.3` 源码候选版使用 IsOS PR #504 的 EOS 命令确认修复，通过隔离的 `isos pkg check`。设置 `ISOS_AETHER_BIN_DIR` 指向已修复的 EOS 可执行文件，并提供本机 EI 与 MuJoCo 路径，然后运行 `isos pkg check --source <本源码目录> --version 0.2.3 --output <空证据目录> --graph <锁定 0.2.3 的 RoboCasa 完整预设图> --graph <锁定 0.2.3 的原生完整预设图> --package-config <本机 package.toml>`。256 × 192 和 512 × 512 两种配置均通过静态验证、原生 ABI、所有者准入、托管观测／控制／日志及两套预设的确认停止；RoboCasa 三路相机帧均报告请求的尺寸。准确命令、输入、`check.json`、所有者交换和完整构建日志保存在被 Git 忽略的 `data/test/2026-11-13-camera-size/`；候选归档 SHA-256 为 `58e3d9fa8d45345d5fe9a0da5f804d016bc6fbddbcb08fcceeece32d92c0bf6f`。发布和更新图中的精确版本锁定仍需另外执行。
+
 [English](../../../docs/mujoco/interfaces/full-hardware.md) · [软件包详情](package_cn.md) · [套接字](socket_cn.md)
