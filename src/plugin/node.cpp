@@ -225,8 +225,10 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
     set(&envelope, "port", node->kind == "camera" ? "frame" : "state");
     Struct* data = (*envelope.mutable_fields())["payload"].mutable_struct_value();
     Struct* sample = (*data->mutable_fields())["sample"].mutable_struct_value();
-    set(sample, "source_time_ns", timestamp->number_value());
-    set(sample, "sequence", sequence->number_value());
+    if (!std::isfinite(timestamp->number_value()) || timestamp->number_value() < 0 ||
+        !std::isfinite(sequence->number_value()) || sequence->number_value() < 0) return -1;
+    set(sample, "source_time_ns", std::round(timestamp->number_value()));
+    set(sample, "sequence", std::round(sequence->number_value()));
     set(sample, "clock", "monotonic");
     set(sample, "frame_id", node->kind == "base" ? "world" :
                             node->kind == "manipulator" ? "robot_base" : node->device);
@@ -311,8 +313,10 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
   if (!time || time->kind_case() != Value::kNumberValue ||
       !sequence || sequence->kind_case() != Value::kNumberValue) return -1;
   Struct* sample = (*data->mutable_fields())["sample"].mutable_struct_value();
-  set(sample, "source_time_ns", time->number_value());
-  set(sample, "sequence", sequence->number_value());
+  if (!std::isfinite(time->number_value()) || time->number_value() < 0 ||
+      !std::isfinite(sequence->number_value()) || sequence->number_value() < 0) return -1;
+  set(sample, "source_time_ns", std::round(time->number_value()));
+  set(sample, "sequence", std::round(sequence->number_value()));
   set(sample, "clock", "simulation");
   set(sample, "frame_id", node->device);
   if (node->kind == "camera") {
