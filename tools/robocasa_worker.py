@@ -51,6 +51,11 @@ def camera_dimension(value: str) -> int:
     return dimension
 
 
+def camera_size_from_environment() -> tuple[int, int]:
+    return (camera_dimension(os.environ["ISOS_ROBOCASA_CAMERA_WIDTH"]),
+            camera_dimension(os.environ["ISOS_ROBOCASA_CAMERA_HEIGHT"]))
+
+
 def create_hardware(task: str, seed: int, assets: str, width: int = 64, height: int = 64):
     if not assets or not Path(assets).is_dir():
         raise ValueError("configured RoboCasa assets are unavailable")
@@ -214,8 +219,7 @@ def main() -> None:
     task = os.environ.get("ISOS_ROBOCASA_TASK", "CloseFridge")
     seed = int(os.environ.get("ISOS_ROBOCASA_SEED", "42"))
     assets = os.environ.get("ISOS_ROBOCASA_ASSETS", "")
-    width = camera_dimension(os.environ.get("ISOS_ROBOCASA_CAMERA_WIDTH", "64"))
-    height = camera_dimension(os.environ.get("ISOS_ROBOCASA_CAMERA_HEIGHT", "64"))
+    width, height = camera_size_from_environment()
     serve(args.socket, Service(create_hardware(task, seed, assets, width, height)))
 
 

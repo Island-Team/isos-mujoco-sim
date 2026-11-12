@@ -4,9 +4,12 @@
 import sys
 from pathlib import Path
 import unittest
+from tempfile import TemporaryDirectory
+from types import ModuleType
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from robocasa_worker import Service, camera_dimension  # noqa: E402
+from robocasa_worker import Service, camera_dimension, camera_size_from_environment, create_hardware  # noqa: E402
 
 
 class FakeHardware:
@@ -54,6 +57,38 @@ class WorkerTests(unittest.TestCase):
         for value in ("0", "63", "513", "1.5", "abc"):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 camera_dimension(value)
+
+    def test_missing_camera_handoff_is_rejected(self):
+        with patch.dict("os.environ", {}, clear=True), self.assertRaises(KeyError):
+            camera_size_from_environment()
+        with patch.dict("os.environ", {"ISOS_ROBOCASA_CAMERA_WIDTH": "256"}, clear=True), self.assertRaises(KeyError):
+            camera_size_from_environment()
+
+    def test_camera_dimensions_reach_gym(self):
+        calls = []
+        gym = ModuleType("gymnasium")
+        gym.make = lambda *args, **kwargs: calls.append((args, kwargs)) or object()
+        robocasa = ModuleType("robocasa")
+        robocasa.__path__ = []
+        wrappers = ModuleType("robocasa.wrappers")
+        wrappers.__path__ = []
+        gym_wrapper = ModuleType("robocasa.wrappers.gym_wrapper")
+        hardware_module = ModuleType("robocasa_core.hardware")
+        class HardwareStub:
+            def __init__(self, env):
+                self.env = env
+            def reset(self, seed):
+                self.seed = seed
+        hardware_module.Hardware = HardwareStub
+        modules = {"gymnasium": gym, "robocasa": robocasa,
+                   "robocasa.wrappers": wrappers,
+                   "robocasa.wrappers.gym_wrapper": gym_wrapper,
+                   "robocasa_core.hardware": hardware_module}
+        with TemporaryDirectory() as assets, patch.dict(sys.modules, modules):
+            hardware = create_hardware("CloseFridge", 42, assets, 256, 192)
+        self.assertEqual(hardware.seed, 42)
+        self.assertEqual(calls[0][1]["camera_widths"], 256)
+        self.assertEqual(calls[0][1]["camera_heights"], 192)
 
     def test_duplicate_command_does_not_step_twice(self):
         hardware = FakeHardware()
