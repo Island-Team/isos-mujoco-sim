@@ -2,6 +2,12 @@
   "contract": "isos.package-config@v1",
   "schema_version": "0.1.0",
   "sections": [
+    {"id": "package", "label": {"en": "Package", "cn": "软件包"},
+     "description": {"en": "Exact package identity for this local configuration.", "cn": "此本地配置对应的精确软件包标识。"}, "fields": [
+      {"name": "id", "type": "string", "required": true,
+       "label": {"en": "Package ID", "cn": "软件包标识"},
+       "description": {"en": "Must match the installed package ID.", "cn": "必须与已安装软件包标识一致。"}}
+     ]},
     {"id": "host", "label": {"en": "Host paths", "cn": "本机路径"},
      "description": {"en": "External resources supplied by the operator.", "cn": "由操作员提供的外部资源。"}, "fields": [
       {"name": "mujoco_root", "type": "directory", "required": false,
