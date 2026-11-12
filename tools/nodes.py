@@ -255,6 +255,8 @@ def full_hardware_contributions(version: str) -> dict:
          {"name": "ISOS_ROBOCASA_ASSETS", "value": "${config.host.robocasa_assets}"},
          {"name": "ISOS_ROBOCASA_TASK", "value": "${config.service.task}"},
          {"name": "ISOS_ROBOCASA_SEED", "value": "${config.service.seed}"},
+         {"name": "ISOS_ROBOCASA_CAMERA_WIDTH", "value": "${config.service.camera_width}"},
+         {"name": "ISOS_ROBOCASA_CAMERA_HEIGHT", "value": "${config.service.camera_height}"},
          {"name": "ISOS_PACKAGE_GENERATION", "value": "${generation_id}"},
        ],
        "node_types": sorted({item[2] for item in robocasa})},

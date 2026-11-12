@@ -21,7 +21,6 @@ from typing import Any
 
 
 MAX_REQUEST = 65536
-MAX_REPLY = 12 * 1024 * 1024
 
 
 def read_exact(stream: socket.socket, count: int) -> bytes:
@@ -34,14 +33,29 @@ def read_exact(stream: socket.socket, count: int) -> bytes:
     return bytes(result)
 
 
-def response(stream: socket.socket, payload: dict[str, Any]) -> None:
+def response(stream: socket.socket, payload: dict[str, Any], binary: bytes = b"") -> None:
     body = json.dumps(payload, separators=(",", ":"), allow_nan=False).encode()
-    if len(body) > MAX_REPLY:
+    if len(body) > MAX_REQUEST or len(binary) > 8 * 1024 * 1024:
         raise ValueError("reply exceeds bound")
-    stream.sendall(struct.pack("<II", len(body), 0) + body)
+    stream.sendall(struct.pack("<II", len(body), len(binary)) + body + binary)
 
 
-def create_hardware(task: str, seed: int, assets: str):
+def camera_dimension(value: str) -> int:
+    try:
+        dimension = int(value)
+    except ValueError as error:
+        raise ValueError("camera dimension must be an integer from 64 to 512") from error
+    if not 64 <= dimension <= 512:
+        raise ValueError("camera dimension must be an integer from 64 to 512")
+    return dimension
+
+
+def camera_size_from_environment() -> tuple[int, int]:
+    return (camera_dimension(os.environ["ISOS_ROBOCASA_CAMERA_WIDTH"]),
+            camera_dimension(os.environ["ISOS_ROBOCASA_CAMERA_HEIGHT"]))
+
+
+def create_hardware(task: str, seed: int, assets: str, width: int = 64, height: int = 64):
     if not assets or not Path(assets).is_dir():
         raise ValueError("configured RoboCasa assets are unavailable")
     os.environ["ROBOSUITE_ASSETS_ROOT"] = assets
@@ -52,7 +66,7 @@ def create_hardware(task: str, seed: int, assets: str):
     from robocasa_core.hardware import Hardware
 
     env = gym.make(f"robocasa/{task}", seed=seed, split="target",
-                   generative_textures=False, camera_widths=64, camera_heights=64)
+                   generative_textures=False, camera_widths=width, camera_heights=height)
     hardware = Hardware(env)
     hardware.reset(seed)
     return hardware
@@ -94,6 +108,15 @@ class Service:
                 }.get(node)
                 if keys is None:
                     raise ValueError("unknown observation device")
+                if node.startswith("robocasa/camera/"):
+                    image = observation[keys[0]]
+                    height, width, channels = image.shape
+                    if channels != 3 or not 64 <= width <= 512 or not 64 <= height <= 512:
+                        raise ValueError("invalid camera shape")
+                    return {"generation_id": self.generation_id, "sequence": self.sequence,
+                            "timestamp_ns": time.monotonic_ns(), "node": node,
+                            "width_px": width, "height_px": height,
+                            "_binary": image.tobytes()}
                 values = {key: observation[key].tolist() for key in keys}
                 return {"generation_id": self.generation_id, "sequence": self.sequence,
                         "timestamp_ns": time.monotonic_ns(), "node": node, "values": values}
@@ -154,7 +177,7 @@ class Service:
             raise ValueError("unsupported operation")
 
 
-def serve(socket_path: Path, service: Service) -> None:
+def serve(socket_path: Path, service: Service, stop_event: threading.Event | None = None) -> None:
     socket_path.parent.mkdir(parents=True, exist_ok=True)
     if socket_path.exists():
         raise ValueError("socket path already exists")
@@ -170,27 +193,50 @@ def serve(socket_path: Path, service: Service) -> None:
         stop_path.chmod(0o600)
         stop_listener.listen(8)
         try:
-            while True:
+            data_slots = threading.BoundedSemaphore(8)
+            def send_data(connection: socket.socket, result: dict[str, Any], binary: bytes) -> None:
+                try:
+                    with connection:
+                        try:
+                            response(connection, result, binary)
+                        except OSError:
+                            pass
+                finally:
+                    data_slots.release()
+            while stop_event is None or not stop_event.is_set():
                 ready, _, _ = select.select([listener, stop_listener], [], [], 0.5)
                 if not ready:
                     continue
-                chosen = ready[0]
-                connection, _ = chosen.accept()
-                with connection:
+                for chosen in sorted(ready, key=lambda item: item is not stop_listener):
+                    connection, _ = chosen.accept()
+                    stop_lane = chosen is stop_listener
+                    if not stop_lane and not data_slots.acquire(blocking=False):
+                        connection.close()
+                        continue
                     connection.settimeout(2)
                     try:
                         size, payload_size = struct.unpack("<II", read_exact(connection, 8))
                         if not 0 < size <= MAX_REQUEST or payload_size:
-                            continue
+                            raise ValueError("invalid frame size")
                         request = json.loads(read_exact(connection, size))
                         if not isinstance(request, dict):
                             raise ValueError("request must be an object")
-                        if chosen is stop_listener and request.get("op") not in ("stop", "health"):
+                        if stop_lane and request.get("op") not in ("stop", "health"):
                             raise ValueError("stop lane accepts only stop or health")
                         result = service.dispatch(request)
-                        response(connection, {"ok": True, "id": request.get("id"), **result})
+                        binary = result.pop("_binary", b"")
+                        reply = {"ok": True, "id": request.get("id"), **result}
                     except (ValueError, ConnectionError, TimeoutError, KeyError) as error:
-                        response(connection, {"ok": False, "error": type(error).__name__})
+                        reply = {"ok": False, "error": type(error).__name__}
+                        binary = b""
+                    if stop_lane:
+                        try:
+                            response(connection, reply, binary)
+                        except OSError:
+                            pass
+                        connection.close()
+                    else:
+                        threading.Thread(target=send_data, args=(connection, reply, binary), daemon=True).start()
         finally:
             socket_path.unlink(missing_ok=True)
             stop_path.unlink(missing_ok=True)
@@ -204,7 +250,8 @@ def main() -> None:
     task = os.environ.get("ISOS_ROBOCASA_TASK", "CloseFridge")
     seed = int(os.environ.get("ISOS_ROBOCASA_SEED", "42"))
     assets = os.environ.get("ISOS_ROBOCASA_ASSETS", "")
-    serve(args.socket, Service(create_hardware(task, seed, assets)))
+    width, height = camera_size_from_environment()
+    serve(args.socket, Service(create_hardware(task, seed, assets, width, height)))
 
 
 if __name__ == "__main__":

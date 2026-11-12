@@ -23,6 +23,13 @@ def strings(value: object) -> list[str]:
 
 
 class NodeContributionTests(unittest.TestCase):
+  def test_robocasa_service_receives_configured_camera_size(self) -> None:
+    contract = contributions("0.2.3")
+    service = next(item for item in contract["runtime_services"] if item["id"] == "robocasa")
+    environment = {item["name"]: item["value"] for item in service["environment"]}
+    self.assertEqual(environment["ISOS_ROBOCASA_CAMERA_WIDTH"], "${config.service.camera_width}")
+    self.assertEqual(environment["ISOS_ROBOCASA_CAMERA_HEIGHT"], "${config.service.camera_height}")
+
   def test_node_set_has_resolvable_symbols_and_parameters(self) -> None:
     contract = contributions()
     node_set = contract["node_sets"][0]

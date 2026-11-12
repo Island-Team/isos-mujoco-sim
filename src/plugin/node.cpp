@@ -215,12 +215,13 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
   if (node->service_instance == "robocasa") {
     Struct reply;
     std::vector<unsigned char> binary;
-    if (!exchange(node, "observe", &reply, &binary) || !binary.empty()) return -1;
+    if (!exchange(node, "observe", &reply, &binary)) return -1;
     const Struct* values = object_field(reply, "values");
     const auto* sequence = field(reply, "sequence");
     const auto* timestamp = field(reply, "timestamp_ns");
-    if (!values || !sequence || !timestamp || sequence->kind_case() != Value::kNumberValue ||
+    if ((!values && node->kind != "camera") || !sequence || !timestamp || sequence->kind_case() != Value::kNumberValue ||
         timestamp->kind_case() != Value::kNumberValue) return -1;
+    if (node->kind != "camera" && !binary.empty()) return -1;
     Struct envelope;
     set(&envelope, "port", node->kind == "camera" ? "frame" : "state");
     Struct* data = (*envelope.mutable_fields())["payload"].mutable_struct_value();
@@ -265,31 +266,20 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
         set(channel, "unit", "m");
       }
     } else if (node->kind == "camera") {
-      const auto key = node->device.substr(node->device.rfind('/') + 1);
-      const auto* image = field(*values, key.c_str());
-      if (!image || image->kind_case() != Value::kListValue || image->list_value().values_size() == 0)
-        return -1;
-      const int height = image->list_value().values_size();
-      const auto& first = image->list_value().values(0);
-      if (first.kind_case() != Value::kListValue || first.list_value().values_size() == 0) return -1;
-      const int width = first.list_value().values_size();
-      if (width > 4096 || height > 4096 || static_cast<std::size_t>(width) * height * 3 > 8388608)
-        return -1;
-      std::string pixels;
-      pixels.reserve(width * height * 3);
-      for (const auto& row : image->list_value().values()) {
-        if (row.kind_case() != Value::kListValue || row.list_value().values_size() != width) return -1;
-        for (const auto& pixel : row.list_value().values()) {
-          if (pixel.kind_case() != Value::kListValue || pixel.list_value().values_size() != 3) return -1;
-          for (const auto& component : pixel.list_value().values()) {
-            if (component.kind_case() != Value::kNumberValue || component.number_value() < 0 ||
-                component.number_value() > 255 || std::floor(component.number_value()) != component.number_value()) return -1;
-            pixels.push_back(static_cast<char>(component.number_value()));
-          }
-        }
-      }
+      const auto* width_value = field(reply, "width_px");
+      const auto* height_value = field(reply, "height_px");
+      if (!width_value || !height_value || width_value->kind_case() != Value::kNumberValue ||
+          height_value->kind_case() != Value::kNumberValue) return -1;
+      const double width_number = width_value->number_value();
+      const double height_number = height_value->number_value();
+      if (std::floor(width_number) != width_number || std::floor(height_number) != height_number ||
+          width_number < 64 || width_number > 512 || height_number < 64 || height_number > 512) return -1;
+      const int width = static_cast<int>(width_number);
+      const int height = static_cast<int>(height_number);
+      if (binary.size() != static_cast<std::size_t>(width) * height * 3) return -1;
       std::string encoded;
-      google::protobuf::Base64Escape(pixels, &encoded);
+      google::protobuf::Base64Escape(
+          std::string(reinterpret_cast<const char*>(binary.data()), binary.size()), &encoded);
       set(data, "width_px", width); set(data, "height_px", height);
       set(data, "encoding", "rgb8"); set(data, "data", encoded);
     } else return -1;
