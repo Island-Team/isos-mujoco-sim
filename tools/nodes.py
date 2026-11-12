@@ -188,7 +188,7 @@ def full_hardware_contributions(version: str) -> dict:
       "id": "mujoco-v2", "device_kinds": ["camera", "base", "manipulator", "gripper", "torso"],
       "transport": "unix_socket",
       "description": "IsOS-supervised native MuJoCo or isolated RoboCasa hardware service",
-      "supported_primitives": ["observe", "command", "stop"],
+      "supported_primitives": [],
     }],
     "runtime_services": [
       {"id": "native", "entrypoint": "bin/eos-mujoco-sim",
