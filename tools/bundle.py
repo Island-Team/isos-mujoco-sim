@@ -137,6 +137,7 @@ def main() -> None:
     bundle.mkdir(parents=True, exist_ok=True)
     (bundle / "bin").mkdir(exist_ok=True)
     (bundle / "lib").mkdir(exist_ok=True)
+    (bundle / "config").mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="mujoco-installed-") as temporary:
         subprocess.run(["cmake", "--install", str(args.build_dir.resolve()),
                         "--prefix", temporary], check=True)
@@ -159,7 +160,21 @@ def main() -> None:
         shutil.copy2(installed_plugin, bundle / "lib/libmujoco-eos-node.so")
     shutil.copytree(ROOT / "assets", bundle / "assets", dirs_exist_ok=True)
     shutil.copy2(ROOT / "LICENSE", bundle / "LICENSE")
-    descriptor = descriptor_for_bundle(bundle)
+    if args.version != "0.2.0":
+        shutil.copytree(ROOT / "robocasa_core", bundle / "robocasa_core")
+        shutil.copy2(ROOT / "tools/robocasa_worker.py", bundle / "bin/robocasa_worker.py")
+        wrapper = bundle / "bin/robocasa-worker"
+        wrapper.write_text(
+            "#!/bin/sh\nset -eu\n"
+            ': "${ISOS_PACKAGE_PYTHON:?configured Python interpreter is required}"\n'
+            'root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)\n'
+            'PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}" '
+            'exec "$ISOS_PACKAGE_PYTHON" "$root/bin/robocasa_worker.py" "$@"\n'
+        )
+        wrapper.chmod(0o755)
+        shutil.copy2(ROOT / "config/package-config.json", bundle / "config/package-config.json")
+        shutil.copy2(ROOT / "config/package.toml", bundle / "config/package.toml")
+    descriptor = descriptor_for_bundle(bundle, include_gripper=args.version != "0.2.0")
     (bundle / "backend-v2.json").write_text(json.dumps(descriptor, indent=2) + "\n")
     resources = {
         "contract": "isos.package-resources@v1",
@@ -191,11 +206,11 @@ def main() -> None:
     ).stdout.strip()
     release = {
         "contract": "isos.package@v1",
-        "schema_version": "0.2.0",
+        "schema_version": "0.2.0" if args.version == "0.2.0" else "0.2.1",
         "id": PACKAGE_ID,
         "kind": "backend",
         "version": args.version,
-        "description": "MuJoCo v2 simulator backend and EOS hardware nodes",
+        "description": "MuJoCo robot hardware: native and isolated RoboCasa services",
         "source_commit": source_commit,
         "source_url": SOURCE,
         "release_url": f"{SOURCE}/releases/tag/v{args.version}",
@@ -205,8 +220,8 @@ def main() -> None:
             "isos_min_inclusive": "0.2.3",
             "isos_max_exclusive": "0.3.0",
             "required_owner_capabilities": [
-                {"owner": "isos", "capability": "package-process-v1"},
-                {"owner": "eos", "capability": "native-plugin-v1"},
+                {"owner": "isos", "capability": "package-process-v1" if args.version == "0.2.0" else "package-service-v1"},
+                {"owner": "eos", "capability": "native-plugin-v1" if args.version == "0.2.0" else "native-plugin-v2"},
             ],
         },
         "node_contributions": node_contributions,
@@ -224,6 +239,15 @@ def main() -> None:
             "tested_ubuntu": [ubuntu_version],
         }],
     }
+    if args.version != "0.2.0":
+        descriptor_path = bundle / "config/package-config.json"
+        template_path = bundle / "config/package.toml"
+        release["package_config"] = {
+            "descriptor": "config/package-config.json",
+            "descriptor_sha256": hashlib.sha256(descriptor_path.read_bytes()).hexdigest(),
+            "template": "config/package.toml",
+            "template_sha256": hashlib.sha256(template_path.read_bytes()).hexdigest(),
+        }
     (bundle / "release.json").write_text(json.dumps(release, indent=2) + "\n")
     print(f"Bundle {bundle}\nArchive {archive}\nSHA-256 {digest}")
 

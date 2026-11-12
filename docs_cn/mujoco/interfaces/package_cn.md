@@ -1,5 +1,7 @@
 # MuJoCo 包描述符与节点声明
 
+[v0.2.1 完整硬件契约](full-hardware_cn.md)取代下文的新版本进程节点预设。下文保留已发布 v0.2.0 契约及其历史准入证据。
+
 ## 通用包进程声明
 
 当前 `isos.package@v1` schema `0.2.0` 的 `release.json` 为 `eos.process.mujoco.simulator@v0.2` 增加 `node_contributions.processes[]`。IsOS 根据归档字节和已贡献的进程类型验证声明，EOS 实现指定的生命周期适配器。先前已验证发布包中的历史 `@v1.0` 类型仍按原有路径读取；本清单不贡献该类型。图只保存准确包版本和稳定场景 ID，不保存解析后的路径。

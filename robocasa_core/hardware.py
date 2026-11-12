@@ -91,6 +91,8 @@ class Hardware:
     self._closed = False
     self._faulted = False
     self._done = False
+    self._gripper = 0
+    self._mode = 0
     self._check_catalog()
 
   def _check_catalog(self) -> None:
@@ -125,6 +127,8 @@ class Hardware:
     self._observation = None
     self._faulted = True
     self._done = False
+    self._gripper = 0
+    self._mode = 0
     observation, _ = self._env.reset(seed=seed)
     self._observation = self._filter(observation)
     self._faulted = False
@@ -155,14 +159,16 @@ class Hardware:
   def step(self) -> Mapping[str, Any]:
     self._ready()
     pending, self._pending = self._pending, {}
+    self._gripper = pending.get("gripper", self._gripper)
+    self._mode = pending.get("mode", self._mode)
     arm = pending.get("arm", (np.zeros(3, dtype=np.float32), np.zeros(3, dtype=np.float32)))
     action = {
       "action.end_effector_position": arm[0],
       "action.end_effector_rotation": arm[1],
-      "action.gripper_close": np.array([pending.get("gripper", 0)], dtype=np.float32),
+      "action.gripper_close": np.array([self._gripper], dtype=np.float32),
       "action.base_motion": np.concatenate((pending.get("base", np.zeros(3, dtype=np.float32)),
                                              pending.get("torso", np.zeros(1, dtype=np.float32)))),
-      "action.control_mode": np.array([pending.get("mode", 0)], dtype=np.float32),
+      "action.control_mode": np.array([self._mode], dtype=np.float32),
     }
     try:
       observation, _, terminated, truncated, _ = self._env.step(action)

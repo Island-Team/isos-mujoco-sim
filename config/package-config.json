@@ -1,0 +1,30 @@
+{
+  "contract": "isos.package-config@v1",
+  "schema_version": "0.1.0",
+  "sections": [
+    {"id": "host", "fields": [
+      {"name": "mujoco_root", "type": "directory", "required": false,
+       "label": {"en": "MuJoCo 3.3.1 root", "cn": "MuJoCo 3.3.1 目录"},
+       "description": {"en": "Local installation containing lib/libmujoco.so.3.3.1; required for native nodes.", "cn": "包含 lib/libmujoco.so.3.3.1 的本地安装目录；原生节点需要。"}},
+      {"name": "robocasa_assets", "type": "directory", "required": false,
+       "label": {"en": "RoboCasa assets", "cn": "RoboCasa 资源目录"},
+       "description": {"en": "Local models/assets tree; required only for RoboCasa nodes.", "cn": "本地 models/assets 目录；仅 RoboCasa 节点需要。"}},
+      {"name": "python_interpreter", "type": "file", "required": false,
+       "label": {"en": "RoboCasa Python interpreter", "cn": "RoboCasa Python 解释器"},
+       "description": {"en": "Explicit interpreter in the prepared RoboCasa environment; it runs outside EOS.", "cn": "已准备的 RoboCasa 环境中的解释器；它在 EOS 进程外运行。"}}
+    ]},
+    {"id": "services.native", "fields": [
+      {"name": "scene", "type": "string", "required": true,
+       "label": {"en": "Scene", "cn": "场景"},
+       "description": {"en": "Verified scene ID: pick-place or navigation.", "cn": "已验证场景 ID：pick-place 或 navigation。"}}
+    ]},
+    {"id": "services.robocasa", "fields": [
+      {"name": "task", "type": "string", "required": false,
+       "label": {"en": "Task", "cn": "任务"},
+       "description": {"en": "Pinned RoboCasa Gym task name.", "cn": "固定的 RoboCasa Gym 任务名。"}},
+      {"name": "seed", "type": "integer", "required": false,
+       "label": {"en": "Reset seed", "cn": "重置种子"},
+       "description": {"en": "Deterministic episode seed.", "cn": "确定性回合种子。"}}
+    ]}
+  ]
+}

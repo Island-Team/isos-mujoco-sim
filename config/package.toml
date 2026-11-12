@@ -1,0 +1,14 @@
+[package]
+id = "island/mujoco-sim"
+
+[host]
+mujoco_root = ""
+robocasa_assets = ""
+python_interpreter = ""
+
+[services.native]
+scene = "pick-place"
+
+[services.robocasa]
+task = "CloseFridge"
+seed = 42

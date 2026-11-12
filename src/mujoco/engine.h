@@ -54,7 +54,7 @@ struct CameraFrame {
   std::uint64_t sequence = 0;
 };
 struct StopProof {
-  bool base_stopped = false, arm_stopped = false;
+  bool base_stopped = false, arm_stopped = false, gripper_stopped = false;
   std::uint64_t stop_epoch = 0;
   Snapshot snapshot;
 };

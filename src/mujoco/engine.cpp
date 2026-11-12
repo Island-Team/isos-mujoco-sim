@@ -651,6 +651,8 @@ StopProof SimEngine::ManagedStop(std::uint64_t reserved_epoch) {
     data_->ctrl[actuator_ids_[i]] = target_joint_[i];
   }
   proof.arm_stopped = true;
+  gripper_target_ = data_->ctrl[gripper_actuator_id_];
+  proof.gripper_stopped = true;
   StepLocked(1);
   proof.snapshot = SnapshotLocked();
   return proof;

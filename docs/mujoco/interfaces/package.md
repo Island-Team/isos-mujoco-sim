@@ -1,5 +1,7 @@
 # MuJoCo package descriptor and contributions
 
+The [v0.2.1 full hardware contract](full-hardware.md) supersedes the process-only preset described below for new releases. The sections below remain the published v0.2.0 contract and its historical admission evidence.
+
 ## Generic package process declaration
 
 The current `isos.package@v1` schema `0.2.0` `release.json` adds `node_contributions.processes[]` for `eos.process.mujoco.simulator@v0.2`. IsOS verifies the declaration against archived bytes and the contributed process type. EOS implements the named lifecycle adapter. Previously verified releases containing the historical `@v1.0` type remain readable through their existing reader path; this manifest does not contribute that type. Graphs store the exact package pin and stable scene ID, never resolved paths.
