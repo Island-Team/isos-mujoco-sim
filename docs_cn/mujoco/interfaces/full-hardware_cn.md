@@ -4,7 +4,7 @@
 
 原生预设提供 `cam-0`、`base-0`、`arm-0` 和 `gripper-0`。严格套接字支持 JPEG 图像、SI 单位底盘状态与速度命令、六关节状态与位置命令、夹爪开度与开合命令、带代际隔离的命令，以及分别报告底盘、机械臂和夹爪结果的全机器人停止证明。场景为 `pick-place` 或 `navigation`；路径由软件包已验证的场景资源提供。
 
-RoboCasa 预设提供三路 RGB8 相机、移动底盘、右臂、右夹爪及躯干。Python Gym 环境运行于 IsOS 管理的子进程，EOS 不加载 Python。工作进程串行执行步进，在同一代际内去重命令 ID；步进失败后拒绝继续控制。停止时尝试一次中性运动步进，无法证明时报告 `unknown`。躯干不伪造位置观测。基准奖励与成功真值不会作为硬件数据暴露。
+RoboCasa 预设提供三路 RGB8 相机、移动底盘、右臂、右夹爪及躯干。Python Gym 环境运行于 IsOS 管理的子进程，EOS 不加载 Python。底盘位姿采用世界坐标系，末端执行器位姿相对于 `robot_base`；两者的四元数顺序均为 `xyzw`。Panda 夹爪两个滑动关节通道使用米。工作进程串行执行步进，在同一代际内去重命令 ID；步进失败后拒绝继续控制。停止时尝试一次中性运动步进，无法证明时报告 `unknown`。躯干不伪造位置观测。基准奖励与成功真值不会作为硬件数据暴露。
 
 `config/package-config.json` 为通用 IsOS 软件包配置界面声明中英文标签和说明。`config/package.toml` 提供 `[package]`、`[host]`、`[services.native]` 和 `[services.robocasa]`。已选原生服务需要本地 MuJoCo 3.3.1 目录；已选 RoboCasa 服务需要本地资源及明确选定的 Python 解释器。这些大型主机资源不随软件包下载。路径属于本地部署配置，不属于图节点设置。每个硬件适配器通过 `service_instance` 选择服务；IsOS 在 Apply 与 Run 时解析它。
 

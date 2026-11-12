@@ -228,7 +228,8 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
     set(sample, "source_time_ns", timestamp->number_value());
     set(sample, "sequence", sequence->number_value());
     set(sample, "clock", "monotonic");
-    set(sample, "frame_id", node->device);
+    set(sample, "frame_id", node->kind == "base" ? "world" :
+                            node->kind == "manipulator" ? "robot_base" : node->device);
     if (node->kind == "base" || node->kind == "manipulator") {
       const char* position_key = node->kind == "base" ? "base_position" : "end_effector_position_relative";
       const char* rotation_key = node->kind == "base" ? "base_rotation" : "end_effector_rotation_relative";
