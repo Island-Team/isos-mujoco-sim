@@ -131,7 +131,7 @@ bool exchange(isos_node_handle* node, const char* op, Struct* response,
   if (!ok) { ::close(fd); return false; }
   const auto meta_size = decode(header, 0);
   const auto payload_size = decode(header, 4);
-  if (meta_size == 0 || meta_size > 65536 || payload_size > 8388608) { ::close(fd); return false; }
+  if (meta_size == 0 || meta_size > 65536 || payload_size > 12582912) { ::close(fd); return false; }
   std::string metadata(meta_size, '\0');
   payload->resize(payload_size);
   ok = read_exact(fd, metadata.data(), metadata.size()) &&
@@ -273,7 +273,7 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
       const double width_number = width_value->number_value();
       const double height_number = height_value->number_value();
       if (std::floor(width_number) != width_number || std::floor(height_number) != height_number ||
-          width_number < 64 || width_number > 512 || height_number < 64 || height_number > 512) return -1;
+          width_number < 64 || width_number > 2048 || height_number < 64 || height_number > 2048) return -1;
       const int width = static_cast<int>(width_number);
       const int height = static_cast<int>(height_number);
       if (binary.size() != static_cast<std::size_t>(width) * height * 3) return -1;
@@ -284,7 +284,7 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
       set(data, "encoding", "rgb8"); set(data, "data", encoded);
     } else return -1;
     std::string json;
-    if (!google::protobuf::util::MessageToJsonString(envelope, &json).ok() || json.size() > 12 * 1024 * 1024)
+    if (!google::protobuf::util::MessageToJsonString(envelope, &json).ok() || json.size() > 20 * 1024 * 1024)
       return -1;
     return node->host->emit(node->host->context,
         reinterpret_cast<const std::uint8_t*>(json.data()), json.size());
@@ -369,7 +369,7 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
     }
   }
   std::string json;
-  if (!google::protobuf::util::MessageToJsonString(envelope, &json).ok() || json.size() > 12 * 1024 * 1024)
+  if (!google::protobuf::util::MessageToJsonString(envelope, &json).ok() || json.size() > 20 * 1024 * 1024)
     return -1;
   return node->host->emit(node->host->context, reinterpret_cast<const std::uint8_t*>(json.data()), json.size());
 }

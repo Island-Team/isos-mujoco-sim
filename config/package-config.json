@@ -34,12 +34,12 @@
       {"name": "seed", "type": "integer", "required": false,
        "label": {"en": "Reset seed", "cn": "重置种子"},
        "description": {"en": "Deterministic episode seed.", "cn": "确定性回合种子。"}},
-      {"name": "camera_width", "type": "integer", "required": true, "min": 64, "max": 512,
+      {"name": "camera_width", "type": "integer", "required": true, "min": 64, "max": 2048,
        "label": {"en": "Camera width (px)", "cn": "相机宽度（像素）"},
-       "description": {"en": "RoboCasa observation width, 64–512 pixels; takes effect on the next Run.", "cn": "RoboCasa 观测宽度，64–512 像素；下次运行时生效。"}},
-      {"name": "camera_height", "type": "integer", "required": true, "min": 64, "max": 512,
+       "description": {"en": "RoboCasa observation width, 64–2048 pixels; takes effect on the next Run.", "cn": "RoboCasa 观测宽度，64–2048 像素；下次运行时生效。"}},
+      {"name": "camera_height", "type": "integer", "required": true, "min": 64, "max": 2048,
        "label": {"en": "Camera height (px)", "cn": "相机高度（像素）"},
-       "description": {"en": "RoboCasa observation height, 64–512 pixels; takes effect on the next Run.", "cn": "RoboCasa 观测高度，64–512 像素；下次运行时生效。"}}
+       "description": {"en": "RoboCasa observation height, 64–2048 pixels; takes effect on the next Run.", "cn": "RoboCasa 观测高度，64–2048 像素；下次运行时生效。"}}
     ]}
   ]
 }

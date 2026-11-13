@@ -39,7 +39,7 @@ v0.2.1 原生硬件扩展新增 `gripper_observe`（`opening_percent` 范围 `[0
 
 ## 操作
 
-隔离的 RoboCasa 工作进程使用另一条私有套接字，帧头同为八字节长度。其相机 `observe` 回复包含 `width_px`、`height_px` 元数据，以及恰好 `width_px × height_px × 3` 字节的 RGB8 负载（各维度 64–512 像素）；其他 RoboCasa 观测仍使用 JSON 元数据。下表描述原生 MuJoCo 严格套接字，其 `camera_capture` 负载为 JPEG。
+隔离的 RoboCasa 工作进程使用另一条私有套接字，帧头同为八字节长度。其相机 `observe` 回复包含 `width_px`、`height_px` 元数据，以及恰好 `width_px × height_px × 3` 字节的 RGB8 负载（各维度 64–2048 像素）；其他 RoboCasa 观测仍使用 JSON 元数据。下表描述原生 MuJoCo 严格套接字，其 `camera_capture` 负载为 JPEG。
 
 | `op` | 额外请求字段（类型／单位） | 成功字段（类型／单位） | 验证与效果 |
 | --- | --- | --- | --- |
