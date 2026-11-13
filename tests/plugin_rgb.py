@@ -82,10 +82,11 @@ def main():
     host = Host(1, ctypes.sizeof(Host), None, emit, log)
     frame = b"\x7f" * (256 * 192 * 3)
     run_case(api, host, emitted, 256, 192, frame, True)
+    run_case(api, host, emitted, 2048, 2048, b"\x7f" * (2048 * 2048 * 3), True)
     run_case(api, host, emitted, 256, 192, frame[:-1], False)
     run_case(api, host, emitted, 255, 192, frame, False)
-    run_case(api, host, emitted, 513, 192, frame, False)
-    run_case(api, host, emitted, 256, 192, b"", False, 8 * 1024 * 1024 + 1)
+    run_case(api, host, emitted, 2049, 192, frame, False)
+    run_case(api, host, emitted, 256, 192, b"", False, 12 * 1024 * 1024 + 1)
     print("RoboCasa RGB8 exact, truncated, mismatched, out-of-bounds and oversized payload: PASS")
 
 

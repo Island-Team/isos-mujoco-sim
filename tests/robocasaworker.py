@@ -59,8 +59,8 @@ class FakeHardware:
 class WorkerTests(unittest.TestCase):
     def test_camera_dimensions_are_bounded(self):
         self.assertEqual(camera_dimension("64"), 64)
-        self.assertEqual(camera_dimension("512"), 512)
-        for value in ("0", "63", "513", "1.5", "abc"):
+        self.assertEqual(camera_dimension("2048"), 2048)
+        for value in ("0", "63", "2049", "1.5", "abc"):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 camera_dimension(value)
 
@@ -91,10 +91,10 @@ class WorkerTests(unittest.TestCase):
                    "robocasa.wrappers.gym_wrapper": gym_wrapper,
                    "robocasa_core.hardware": hardware_module}
         with TemporaryDirectory() as assets, patch.dict(sys.modules, modules):
-            hardware = create_hardware("CloseFridge", 42, assets, 256, 192)
+            hardware = create_hardware("CloseFridge", 42, assets, 1280, 720)
         self.assertEqual(hardware.seed, 42)
-        self.assertEqual(calls[0][1]["camera_widths"], 256)
-        self.assertEqual(calls[0][1]["camera_heights"], 192)
+        self.assertEqual(calls[0][1]["camera_widths"], 1280)
+        self.assertEqual(calls[0][1]["camera_heights"], 720)
 
     def test_camera_observation_uses_bounded_binary_payload(self):
         class Image:
@@ -113,6 +113,17 @@ class WorkerTests(unittest.TestCase):
             self.assertLess(metadata_size, 65536)
             self.assertEqual(payload_size, len(binary))
             self.assertEqual(json.loads(receiver.recv(metadata_size))["width_px"], 256)
+
+    def test_maximum_camera_observation(self):
+        class Image:
+            shape = (2048, 2048, 3)
+            def tobytes(self):
+                return b"\x7f" * (2048 * 2048 * 3)
+        hardware = FakeHardware()
+        hardware.observe = lambda: {"agentview-right": Image()}
+        result = Service(hardware).dispatch({"op": "observe", "node": "robocasa/camera/agentview-right"})
+        self.assertEqual((result["width_px"], result["height_px"]), (2048, 2048))
+        self.assertEqual(len(result["_binary"]), 12 * 1024 * 1024)
 
     def test_stop_lane_preempts_slow_camera_reader(self):
         class Image:

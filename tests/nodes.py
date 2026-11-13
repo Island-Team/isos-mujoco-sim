@@ -5,6 +5,7 @@ from pathlib import Path
 import json
 import re
 import sys
+import tomllib
 import unittest
 
 
@@ -23,12 +24,31 @@ def strings(value: object) -> list[str]:
 
 
 class NodeContributionTests(unittest.TestCase):
+  def test_user_camera_configuration_defaults_and_bounds(self) -> None:
+    root = Path(__file__).resolve().parents[1]
+    descriptor = json.loads((root / "config/package-config.json").read_text())
+    section = next(item for item in descriptor["sections"] if item["id"] == "services.robocasa")
+    fields = {item["name"]: item for item in section["fields"]}
+    template = tomllib.loads((root / "config/package.toml").read_text())["services"]["robocasa"]
+    for name, default in (("camera_width", 1280), ("camera_height", 720)):
+      self.assertEqual((fields[name]["type"], fields[name]["min"], fields[name]["max"]),
+                       ("integer", 64, 2048))
+      self.assertEqual(template[name], default)
+
   def test_robocasa_service_receives_configured_camera_size(self) -> None:
-    contract = contributions("0.2.3")
+    contract = contributions("0.2.4")
     service = next(item for item in contract["runtime_services"] if item["id"] == "robocasa")
     environment = {item["name"]: item["value"] for item in service["environment"]}
     self.assertEqual(environment["ISOS_ROBOCASA_CAMERA_WIDTH"], "${config.service.camera_width}")
     self.assertEqual(environment["ISOS_ROBOCASA_CAMERA_HEIGHT"], "${config.service.camera_height}")
+
+  def test_full_hardware_cameras_allow_2048_rgb_payload(self) -> None:
+    contract = contributions("0.2.4")
+    cameras = [node["profile"] for node_set in contract["node_sets"]
+               for node in node_set["nodes"] if node["profile"]["id"] in ("left", "right", "wrist")]
+    self.assertEqual(len(cameras), 3)
+    for profile in cameras:
+      self.assertEqual(profile["observation"]["max_payload_bytes"], 20 * 1024 * 1024)
 
   def test_node_set_has_resolvable_symbols_and_parameters(self) -> None:
     contract = contributions()

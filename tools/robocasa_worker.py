@@ -35,7 +35,7 @@ def read_exact(stream: socket.socket, count: int) -> bytes:
 
 def response(stream: socket.socket, payload: dict[str, Any], binary: bytes = b"") -> None:
     body = json.dumps(payload, separators=(",", ":"), allow_nan=False).encode()
-    if len(body) > MAX_REQUEST or len(binary) > 8 * 1024 * 1024:
+    if len(body) > MAX_REQUEST or len(binary) > 12 * 1024 * 1024:
         raise ValueError("reply exceeds bound")
     stream.sendall(struct.pack("<II", len(body), len(binary)) + body + binary)
 
@@ -44,9 +44,9 @@ def camera_dimension(value: str) -> int:
     try:
         dimension = int(value)
     except ValueError as error:
-        raise ValueError("camera dimension must be an integer from 64 to 512") from error
-    if not 64 <= dimension <= 512:
-        raise ValueError("camera dimension must be an integer from 64 to 512")
+        raise ValueError("camera dimension must be an integer from 64 to 2048") from error
+    if not 64 <= dimension <= 2048:
+        raise ValueError("camera dimension must be an integer from 64 to 2048")
     return dimension
 
 
@@ -55,7 +55,7 @@ def camera_size_from_environment() -> tuple[int, int]:
             camera_dimension(os.environ["ISOS_ROBOCASA_CAMERA_HEIGHT"]))
 
 
-def create_hardware(task: str, seed: int, assets: str, width: int = 64, height: int = 64):
+def create_hardware(task: str, seed: int, assets: str, width: int, height: int):
     if not assets or not Path(assets).is_dir():
         raise ValueError("configured RoboCasa assets are unavailable")
     os.environ["ROBOSUITE_ASSETS_ROOT"] = assets
@@ -111,7 +111,7 @@ class Service:
                 if node.startswith("robocasa/camera/"):
                     image = observation[keys[0]]
                     height, width, channels = image.shape
-                    if channels != 3 or not 64 <= width <= 512 or not 64 <= height <= 512:
+                    if channels != 3 or not 64 <= width <= 2048 or not 64 <= height <= 2048:
                         raise ValueError("invalid camera shape")
                     return {"generation_id": self.generation_id, "sequence": self.sequence,
                             "timestamp_ns": time.monotonic_ns(), "node": node,

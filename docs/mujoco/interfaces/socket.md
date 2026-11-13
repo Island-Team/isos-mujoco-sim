@@ -39,7 +39,7 @@ For strict motion and `stop`, atomically reserve `(node,command_id)` before an e
 
 ## Operations
 
-The isolated RoboCasa worker uses a separate private socket with the same eight-byte length header. Its camera `observe` reply carries `width_px` and `height_px` metadata plus exactly `width_px × height_px × 3` RGB8 payload bytes (64–512 pixels per dimension); other RoboCasa observations remain JSON metadata. The table below describes the native MuJoCo strict socket, whose `camera_capture` payload is JPEG.
+The isolated RoboCasa worker uses a separate private socket with the same eight-byte length header. Its camera `observe` reply carries `width_px` and `height_px` metadata plus exactly `width_px × height_px × 3` RGB8 payload bytes (64–2048 pixels per dimension); other RoboCasa observations remain JSON metadata. The table below describes the native MuJoCo strict socket, whose `camera_capture` payload is JPEG.
 
 | `op` | Additional request fields (type / unit) | Success fields (type / unit) | Validation and effect |
 | --- | --- | --- | --- |

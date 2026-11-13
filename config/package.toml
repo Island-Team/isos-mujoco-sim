@@ -12,5 +12,5 @@ scene = "pick-place"
 [services.robocasa]
 task = "CloseFridge"
 seed = 42
-camera_width = 64
-camera_height = 64
+camera_width = 1280
+camera_height = 720
