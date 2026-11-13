@@ -5,6 +5,7 @@ from pathlib import Path
 import json
 import re
 import sys
+import tomllib
 import unittest
 
 
@@ -23,6 +24,17 @@ def strings(value: object) -> list[str]:
 
 
 class NodeContributionTests(unittest.TestCase):
+  def test_user_camera_configuration_defaults_and_bounds(self) -> None:
+    root = Path(__file__).resolve().parents[1]
+    descriptor = json.loads((root / "config/package-config.json").read_text())
+    section = next(item for item in descriptor["sections"] if item["id"] == "services.robocasa")
+    fields = {item["name"]: item for item in section["fields"]}
+    template = tomllib.loads((root / "config/package.toml").read_text())["services"]["robocasa"]
+    for name, default in (("camera_width", 1280), ("camera_height", 720)):
+      self.assertEqual((fields[name]["type"], fields[name]["min"], fields[name]["max"]),
+                       ("integer", 64, 2048))
+      self.assertEqual(template[name], default)
+
   def test_robocasa_service_receives_configured_camera_size(self) -> None:
     contract = contributions("0.2.4")
     service = next(item for item in contract["runtime_services"] if item["id"] == "robocasa")
