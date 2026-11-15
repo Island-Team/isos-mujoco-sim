@@ -1,13 +1,28 @@
-# EOS hardware nodes: camera
+# EOS camera node
 
-[Design](../../../../design/eos/hardware/camera.md) · [Package contract](../../../package.md) · [Runtime control](../../../control.md)
+[Interface index](../../../README.md) · [Design](../../../../design/eos/hardware/camera.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/hardware/camera_cn.md)
 
-EOS owns these node types; the MuJoCo package supplies their verified `isos_node_v2` adapter. IsOS admits an exact package pin and service instance before Run; EOS owns command admission, delivery, and Stop.
+`eos.hardware.camera.device@v0.2` is a read-only camera node. The native preset offers one JPEG view of the MuJoCo scene; the RoboCasa preset offers three RGB8 views of the PandaOmron robot. Select a preset to choose the actual camera devices. The type advertises both `jpeg` and `rgb8`; each instance advertises only the encoding it supplies.
 
-| Type ID | Capability | Input ports | Output ports | Safety adapter |
-| --- | --- | --- | --- | --- |
-| `eos.hardware.camera.device@v0.2` | `jpeg`, `rgb8` | — | `frame: image_frame@v0.2` | — |
+| Preset / node ref | Device ID | Frame |
+| --- | --- | --- |
+| `native/front` | `cam-0` | JPEG image from the selected `pick-place` or `navigation` scene |
+| `robocasa/left` | `robocasa/camera/agentview-left` | RGB8 agent view |
+| `robocasa/right` | `robocasa/camera/agentview-right` | RGB8 agent view |
+| `robocasa/wrist` | `robocasa/camera/eye-in-hand` | RGB8 eye-in-hand view |
 
-All ports are in-process events with `required:false`. EOS admits command data against the declared type and Dispatcher policy; observations contain no benchmark reward or success data. Adapter settings `service_instance` and `device_id` are required strings without defaults and select a verified service and device. Unknown services, devices, package pins, or failed commands leave the node unavailable. EOS does not replay an action with an unknown outcome.
+## Port and frame
 
-The native service uses JPEG; RoboCasa uses RGB8. The [runtime control contract](../../../control.md) owns payloads, bounds, units, stop proof, errors, and deadlines. When the service exits, EOS makes the ports unavailable; a new Run uses a new generation.
+There is no command input. EOS requests an observation and the adapter emits `frame: image_frame@v0.2` as an in-process event. The frame payload has `width_px`, `height_px`, `encoding`, base64 `data`, and a `sample` with `source_time_ns`, `sequence`, `clock`, and `frame_id`. Native `encoding:"jpeg"` uses the simulation clock; RoboCasa `encoding:"rgb8"` uses the host monotonic clock. RoboCasa data decodes to exactly `width_px × height_px × 3` bytes in row-major RGB order. Its configured width and height are each 64–2048 px. Native dimensions come from the selected camera render. A frame includes no task text, reward, or success truth.
+
+A representative emitted frame (shortened image bytes) is:
+
+```json
+{"port":"frame","payload":{"sample":{"source_time_ns":100000000,"sequence":4,"clock":"simulation","frame_id":"cam-0"},"width_px":640,"height_px":480,"encoding":"jpeg","data":"/9j/4AAQ"}}
+```
+
+The `data` value above is illustrative. The native preset advertises at most 30 frames/s and a 12,582,912-byte observation payload. Each RoboCasa camera advertises at most 30 frames/s and 20 MiB; the worker's raw RGB8 socket payload is separately bounded at 12 MiB. These are admission and payload ceilings, not promised frame rates.
+
+## Readiness and failure
+
+The verified instance binds `service_instance` and `device_id`; neither defaults to another camera. EOS checks service health before publishing `frame`. Native strict health includes a real camera render probe. Invalid dimensions, wrong encoding, a byte-count mismatch, unavailable EGL/JPEG, a missing RoboCasa image, or a service exit makes observation fail; the adapter does not emit a fabricated frame. A camera Stop quiesces callbacks and has no actuator stop request. See [runtime control](../../../control.md) for framing and service errors.

@@ -1,13 +1,28 @@
-# EOS 硬件节点：camera
+# EOS 相机节点
 
-[设计](../../../../design/eos/hardware/camera_cn.md) · [包契约](../../../package_cn.md) · [运行控制](../../../control_cn.md)
+[接口目录](../../../README_cn.md) · [设计](../../../../design/eos/hardware/camera_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/hardware/camera.md)
 
-这些节点由 EOS 拥有，MuJoCo 包提供经过验证的 `isos_node_v2` 适配器。IsOS 验证精确包版本和服务实例后才能启动；EOS 负责准入、运行和停止。
+`eos.hardware.camera.device@v0.2` 是只读相机节点。原生预设提供一个 MuJoCo 场景 JPEG 画面；RoboCasa 预设提供三个 PandaOmron RGB8 画面。预设决定具体设备。类型声明 `jpeg` 和 `rgb8`，每个实例只声明实际提供的编码。
 
-| 类型 ID | 能力 | 输入端口 | 输出端口 | 安全适配器 |
-| --- | --- | --- | --- | --- |
-| `eos.hardware.camera.device@v0.2` | `jpeg`, `rgb8` | — | `frame: image_frame@v0.2` | — |
+| 预设 / 节点引用 | 设备 ID | 画面 |
+| --- | --- | --- |
+| `native/front` | `cam-0` | 所选 `pick-place` 或 `navigation` 场景的 JPEG |
+| `robocasa/left` | `robocasa/camera/agentview-left` | RGB8 代理视角 |
+| `robocasa/right` | `robocasa/camera/agentview-right` | RGB8 代理视角 |
+| `robocasa/wrist` | `robocasa/camera/eye-in-hand` | RGB8 眼在手上视角 |
 
-所有端口为进程内事件，端口 `required:false`。命令数据由 EOS 按图声明的类型和 Dispatcher 策略准入；观察值不包含 benchmark 奖励或成功信息。配置字段 `service_instance` 与 `device_id` 是必需的字符串，无默认值，分别选择已验证服务实例及其设备。未知设备、服务、包版本或命令失败时节点不可用；EOS 不重放结果未知的动作。
+## 端口和画面
 
-原生服务使用 JPEG；RoboCasa 服务使用 RGB8。具体负载、取值范围、单位、停止证明、错误码和期限由[运行控制契约](../../../control_cn.md)定义。服务进程终止后，EOS 使端口不可用；重新运行需要新的代际。
+没有命令输入。EOS 请求观察，适配器通过进程内事件端口 `frame: image_frame@v0.2` 发出结果。负载含 `width_px`、`height_px`、`encoding`、base64 `data`，以及包含 `source_time_ns`、`sequence`、`clock`、`frame_id` 的 `sample`。原生 `encoding:"jpeg"` 使用模拟时钟；RoboCasa `encoding:"rgb8"` 使用主机单调时钟。RoboCasa 数据解码后恰好为 `width_px × height_px × 3` 字节，按行排列 RGB。配置宽高各为 64–2048 px。原生尺寸来自所选相机渲染。画面不含任务文本、奖励或成功真值。
+
+典型输出画面，图像字节已缩短：
+
+```json
+{"port":"frame","payload":{"sample":{"source_time_ns":100000000,"sequence":4,"clock":"simulation","frame_id":"cam-0"},"width_px":640,"height_px":480,"encoding":"jpeg","data":"/9j/4AAQ"}}
+```
+
+示例 `data` 仅用于说明字段。原生预设声明最高 30 帧/秒和 12,582,912 字节观察负载。每个 RoboCasa 相机声明最高 30 帧/秒和 20 MiB；worker 的原始 RGB8 套接字负载另有 12 MiB 上限。这些是准入和负载上限，不保证实际帧率。
+
+## 就绪和失败
+
+已验证实例绑定 `service_instance` 和 `device_id`，不会回退到其他相机。EOS 检查服务健康后才公开 `frame`。原生严格健康检查包含实际渲染探测。尺寸无效、编码错误、字节数不符、EGL/JPEG 不可用、RoboCasa 图像缺失或服务退出时观察失败；适配器不伪造画面。相机 Stop 使回调静止，无执行器停止请求。帧格式和服务错误见[运行控制](../../../control_cn.md)。

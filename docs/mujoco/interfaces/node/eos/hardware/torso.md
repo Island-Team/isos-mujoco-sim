@@ -1,13 +1,19 @@
-# EOS hardware nodes: torso
+# EOS torso node
 
-[Design](../../../../design/eos/hardware/torso.md) · [Package contract](../../../package.md) · [Runtime control](../../../control.md)
+[Interface index](../../../README.md) · [Design](../../../../design/eos/hardware/torso.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/hardware/torso_cn.md)
 
-EOS owns these node types; the MuJoCo package supplies their verified `isos_node_v2` adapter. IsOS admits an exact package pin and service instance before Run; EOS owns command admission, delivery, and Stop.
+`eos.hardware.torso.normalized_axes@v0.2` exists in the **RoboCasa robot** preset as `robocasa/lift`, bound to `robocasa/torso/torso`. The native robot preset has no torso node. This node commands the PandaOmron torso lift through a normalized controller input; it does not publish a measured torso position.
 
-| Type ID | Capability | Input ports | Output ports | Safety adapter |
-| --- | --- | --- | --- | --- |
-| `eos.hardware.torso.normalized_axes@v0.2` | `normalized_axes` | `command: normalized_axes_command@v0.2` | — | `torso_normalized_axes` |
+## Port and command
 
-All ports are in-process events with `required:false`. EOS admits command data against the declared type and Dispatcher policy; observations contain no benchmark reward or success data. Adapter settings `service_instance` and `device_id` are required strings without defaults and select a verified service and device. Unknown services, devices, package pins, or failed commands leave the node unavailable. EOS does not replay an action with an unknown outcome.
+The optional in-process event input is `command: normalized_axes_command@v0.2`. Its `payload.axes` object has exactly one finite number, `lift`, in `[-1,1]`. This is a dimensionless controller input, not metres or m/s. An accepted command advances one Gym step. The preset advertises `max_velocity_lease_ms:1000` for admission. There is no `state` or other observation output, and the worker does not fabricate one.
 
-The native service uses JPEG; RoboCasa uses RGB8. The [runtime control contract](../../../control.md) owns payloads, bounds, units, stop proof, errors, and deadlines. When the service exits, EOS makes the ports unavailable; a new Run uses a new generation.
+```json
+{"run_id":"run-7","revision":"rev-2","command_id":"lift-18","port":"command","payload":{"axes":{"lift":0.25}}}
+```
+
+EOS supplies the run/revision fence and command ID; the adapter emits a `command_result` acknowledgment. An agent can request torso movement only through EOS's admitted capability. It cannot read torso position from this node. Other RoboCasa nodes can still provide their own observations.
+
+## Admission, Stop, and failure
+
+`service_instance:"robocasa"` and `device_id:"robocasa/torso/torso"` bind the exact service and device. IsOS verifies the package and service configuration; EOS checks health and Dispatcher admission. Invalid axes, a stale run, unavailable service, or failed Gym step rejects control. The worker deduplicates command IDs within one generation and faults after a failed step. Stop fences later commands and requires `torso_stop:"stopped"` as part of the whole-robot proof; missing proof is unknown. See [runtime control](../../../control.md) for the private service contract.
