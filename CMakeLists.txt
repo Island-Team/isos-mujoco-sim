@@ -62,6 +62,7 @@ add_test(NAME eos-node-plugin COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DI
 add_test(NAME eos-node-plugin-rgb COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/plugin_rgb.py" $<TARGET_FILE:mujoco-eos-node>)
 add_test(NAME robocasa-worker-contract COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/robocasaworker.py")
 add_test(NAME eos-node-plugin-v2 COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/plugin_v2.py" $<TARGET_FILE:eos-mujoco-sim> $<TARGET_FILE:mujoco-eos-node> "${CMAKE_SOURCE_DIR}/assets/scene.xml")
+add_test(NAME native-camera-size COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/native_camera.py" $<TARGET_FILE:eos-mujoco-sim> "${CMAKE_SOURCE_DIR}/assets/scene.xml")
 add_test(NAME eos-node-plugin-control COMMAND "${Python3_EXECUTABLE}" "${CMAKE_SOURCE_DIR}/tests/plugin_control.py" $<TARGET_FILE:mujoco-eos-node>)
 add_executable(smoke-rpc tests/smoke.cpp ${GENERATED_SOURCES})
 add_dependencies(smoke-rpc proto_generated)

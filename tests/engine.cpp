@@ -15,7 +15,7 @@ int Fail(const char* message) {
 }  // namespace
 int main(int argc, char** argv) {
   if (argc != 3) return Fail("usage: engine-test PICK_PLACE_SCENE NAVIGATION_SCENE");
-  eos_mujoco::SimEngine engine(argv[1]);
+  eos_mujoco::SimEngine engine(argv[1], 1280, 720);
   std::string error;
   if (!engine.Load(&error)) return Fail(error.c_str());
   if (!engine.Reset(42, &error)) return Fail(error.c_str());
@@ -60,6 +60,9 @@ int main(int argc, char** argv) {
   if (result.accepted || result.error_code != "workspace")
     return Fail("out of workspace target accepted");
   auto frame1 = engine.RenderCamera(), frame2 = engine.RenderCamera();
+  if (frame1.width != 1280 || frame1.height != 720 || frame2.width != 1280 ||
+      frame2.height != 720)
+    return Fail("configured native camera dimensions were not preserved");
   if (frame1.jpeg.size() < 4 || frame2.jpeg.size() < 4 || frame1.jpeg[0] != 0xff ||
       frame2.jpeg[1] != 0xd8)
     return Fail("repeated JPEG capture failed");

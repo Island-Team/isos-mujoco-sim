@@ -1,10 +1,14 @@
 #include "service.h"
 
 #include <grpcpp/grpcpp.h>
+#include <google/protobuf/struct.pb.h>
+#include <google/protobuf/util/json_util.h>
 #include <sys/stat.h>
 
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <memory>
 #include <mutex>
@@ -21,6 +25,32 @@ namespace eos_mujoco {
 namespace sim = ::eos::simulator::v1;
 namespace bench = ::eos::mujoco::benchmark::v1;
 namespace {
+
+std::pair<int, int> NativeCameraSize() {
+  const char* raw = std::getenv("ISOS_NATIVE_CAMERA_SIZES");
+  if (!raw) return {0, 0};  // Direct simulator users retain scene render dimensions.
+  if (std::strlen(raw) > 4096) throw std::invalid_argument("native camera settings exceed bound");
+  google::protobuf::Struct selected;
+  if (!google::protobuf::util::JsonStringToMessage(raw, &selected).ok())
+    throw std::invalid_argument("invalid native camera settings JSON");
+  const auto camera = selected.fields().find("cam-0");
+  if (camera == selected.fields().end()) return {0, 0};
+  if (camera->second.kind_case() != google::protobuf::Value::kStructValue)
+    throw std::invalid_argument("native camera settings must be an object");
+  const auto& fields = camera->second.struct_value().fields();
+  if (fields.size() != 2 || !fields.contains("camera_width") ||
+      !fields.contains("camera_height"))
+    throw std::invalid_argument("native camera requires width and height");
+  auto dimension = [&](const char* name) {
+    const auto& value = fields.at(name);
+    if (value.kind_case() != google::protobuf::Value::kNumberValue ||
+        !std::isfinite(value.number_value()) || std::trunc(value.number_value()) != value.number_value() ||
+        value.number_value() < 64 || value.number_value() > 2048)
+      throw std::invalid_argument(std::string("invalid native camera ") + name);
+    return static_cast<int>(value.number_value());
+  };
+  return {dimension("camera_width"), dimension("camera_height")};
+}
 
 template <size_t N>
 void Copy(const std::array<double, N>& source, google::protobuf::RepeatedField<double>* output) {
@@ -301,7 +331,8 @@ void Serve(const std::filesystem::path& simulator_socket,
            const std::filesystem::path& benchmark_socket, const std::filesystem::path& v2_socket,
            const std::filesystem::path& scene, const std::atomic_bool& stop, bool manual_step,
            bool gui, bool managed_strict_socket) {
-  SimEngine engine(scene.string());
+  const auto [camera_width, camera_height] = NativeCameraSize();
+  SimEngine engine(scene.string(), camera_width, camera_height);
   std::string error;
   if (!engine.Load(&error)) throw std::runtime_error("scene load failed: " + error);
   if (!engine.Reset(0, &error)) throw std::runtime_error("scene reset failed: " + error);
