@@ -37,7 +37,7 @@ class NodeContributionTests(unittest.TestCase):
     camera = next(item for item in contract["node_types"] if item["id"] == "eos.hardware.camera.device@v0.2")
     for field in camera["settings"]:
       self.assertEqual((field["data_type"], field["min"], field["max"], field["unit"]),
-                       ("integer", 64, 2048, "px"))
+                       ("positive_integer", 64, 2048, "px"))
     presets = [node["profile"] for group in contract["node_sets"] if group["id"] == "robocasa"
                for node in group["nodes"] if node["group"] == "camera"]
     self.assertEqual(len(presets), 3)

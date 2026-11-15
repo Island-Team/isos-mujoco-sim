@@ -179,7 +179,7 @@ def full_hardware_contributions(version: str) -> dict:
       definition["safety_adapter_type"] = safety
     if type_id == CAMERA and per_camera_size(version):
       definition["settings"] = [
-        {"name": name, "data_type": "integer", "required": False,
+        {"name": name, "data_type": "positive_integer", "required": False,
          "min": 64, "max": 2048, "unit": "px",
          "description": f"RoboCasa camera {axis} in pixels; takes effect on the next Run"}
         for name, axis in (("camera_width", "width"), ("camera_height", "height"))]
