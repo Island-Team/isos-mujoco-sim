@@ -38,7 +38,8 @@ struct RenderState {
   mjrContext render{};
   mjData* data = nullptr;
 };
-SimEngine::SimEngine(std::string path) : scene_path_(std::move(path)) {}
+SimEngine::SimEngine(std::string path, int camera_width, int camera_height)
+    : scene_path_(std::move(path)), camera_width_(camera_width), camera_height_(camera_height) {}
 
 std::string SimEngine::SceneProfile() const {
   std::lock_guard lock(mutex_);
@@ -148,6 +149,10 @@ bool SimEngine::Load(std::string* error) {
   if (data_) mj_deleteData(data_);
   if (model_) mj_deleteModel(model_);
   model_ = model;
+  if (camera_width_ > 0 && camera_height_ > 0) {
+    model_->vis.global.offwidth = camera_width_;
+    model_->vis.global.offheight = camera_height_;
+  }
   data_ = mj_makeData(model_);
   if (!data_) {
     if (error) *error = "mj_makeData failed";
@@ -670,6 +675,9 @@ CameraFrame SimEngine::RenderCamera(std::optional<std::uint64_t> expected_stop_e
     frame.timestamp_ns = static_cast<std::int64_t>(data_->time * 1e9);
     capture_epoch = stop_epoch_.load();
   }
+  const int width = model_->vis.global.offwidth;
+  const int height = model_->vis.global.offheight;
+  if (width <= 0 || height <= 0) return frame;
   if (!render_state_) {
     auto* r = new RenderState();
     using GetPlatformDisplay = PFNEGLGETPLATFORMDISPLAYEXTPROC;
@@ -693,7 +701,7 @@ CameraFrame SimEngine::RenderCamera(std::optional<std::uint64_t> expected_stop_e
                             EGL_DEPTH_SIZE,
                             24,
                             EGL_NONE};
-    const EGLint pbattrs[] = {EGL_WIDTH, 640, EGL_HEIGHT, 480, EGL_NONE};
+    const EGLint pbattrs[] = {EGL_WIDTH, width, EGL_HEIGHT, height, EGL_NONE};
     bool valid = r->display != EGL_NO_DISPLAY && eglInitialize(r->display, nullptr, nullptr) &&
                  eglBindAPI(EGL_OPENGL_API) &&
                  eglChooseConfig(r->display, attrs, &config, 1, &count) && count > 0;
@@ -759,13 +767,15 @@ CameraFrame SimEngine::RenderCamera(std::optional<std::uint64_t> expected_stop_e
   mjvPerturb perturb;
   mjv_defaultPerturb(&perturb);
   mjv_updateScene(model_, r->data, &options, &perturb, &camera, mjCAT_ALL, &r->scene);
-  mjrRect viewport{0, 0, 640, 480};
+  mjrRect viewport{0, 0, width, height};
   mjr_setBuffer(mjFB_OFFSCREEN, &r->render);
   mjr_render(viewport, &r->scene, &r->render);
-  std::vector<unsigned char> pixels(640 * 480 * 3), flipped(pixels.size());
+  std::vector<unsigned char> pixels(static_cast<size_t>(width) * height * 3), flipped(pixels.size());
   mjr_readPixels(pixels.data(), nullptr, viewport, &r->render);
-  for (int y = 0; y < 480; ++y)
-    std::memcpy(flipped.data() + y * 640 * 3, pixels.data() + (479 - y) * 640 * 3, 640 * 3);
+  for (int y = 0; y < height; ++y)
+    std::memcpy(flipped.data() + static_cast<size_t>(y) * width * 3,
+                pixels.data() + static_cast<size_t>(height - 1 - y) * width * 3,
+                static_cast<size_t>(width) * 3);
   jpeg_compress_struct jpeg{};
   jpeg_error_mgr err{};
   jpeg.err = jpeg_std_error(&err);
@@ -773,21 +783,21 @@ CameraFrame SimEngine::RenderCamera(std::optional<std::uint64_t> expected_stop_e
   unsigned char* out = nullptr;
   unsigned long bytes = 0;
   jpeg_mem_dest(&jpeg, &out, &bytes);
-  jpeg.image_width = 640;
-  jpeg.image_height = 480;
+  jpeg.image_width = width;
+  jpeg.image_height = height;
   jpeg.input_components = 3;
   jpeg.in_color_space = JCS_RGB;
   jpeg_set_defaults(&jpeg);
   jpeg_set_quality(&jpeg, 85, TRUE);
   jpeg_start_compress(&jpeg, TRUE);
   while (jpeg.next_scanline < jpeg.image_height) {
-    JSAMPROW row = flipped.data() + jpeg.next_scanline * 640 * 3;
+    JSAMPROW row = flipped.data() + static_cast<size_t>(jpeg.next_scanline) * width * 3;
     jpeg_write_scanlines(&jpeg, &row, 1);
   }
   jpeg_finish_compress(&jpeg);
   frame.jpeg.assign(out, out + bytes);
-  frame.width = 640;
-  frame.height = 480;
+  frame.width = width;
+  frame.height = height;
   std::free(out);
   jpeg_destroy_compress(&jpeg);
   eglMakeCurrent(r->display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);

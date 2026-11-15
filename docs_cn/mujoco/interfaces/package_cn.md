@@ -19,14 +19,16 @@
 | `runtime_services[].resources` | 对象数组 / — | 原生场景选择器，绑定 `package-resources.json` | 原生服务必需；RoboCasa 缺省。 |
 | `runtime_services[].environment` | 对象数组 / — | 子进程所需的已验证主机与服务值 | 缺少必需配置值时阻止 Run。 |
 | `runtime_services[].requirements` | 路径与种类数组 / — | 所选服务的本地前提 | 原生服务要求 MuJoCo 库文件；RoboCasa 要求配置的 Python 解释器文件及资源目录。IsOS 只检查所选服务。 |
-| `runtime_services[].required_node_settings` | 类型到字段映射 / — | RoboCasa 已选相机节点必须提供宽高 | IsOS 在 Apply 时检查字段存在且整数值处于声明范围。 |
+| `runtime_services[].required_node_settings` | 类型到字段映射 / — | 原生和 RoboCasa 已选相机节点必须提供宽高 | IsOS 在 Apply 时检查字段存在且整数值处于声明范围。 |
 | `node_sets[].nodes[].profile.adapter.settings` | 对象 / — | `service_instance` 和 `device_id` 绑定预设设备 | 两个必需字符串，无默认值；IsOS 校验服务、类型和设备关系。 |
 
-每个 RoboCasa 相机硬件节点都有整数 `settings.camera_width` 和 `settings.camera_height`，允许范围为 64–2048 像素。预设为每台相机提供 1280 × 720；操作员可以逐节点选择不同尺寸。RoboCasa 服务声明相机节点必须提供这两个字段。IsOS 通过通用 `${selected_nodes.settings_json}` 服务模板，将已选设备设置作为 `ISOS_ROBOCASA_CAMERA_SIZES` 传递。工作进程在创建 Gym 前校验已选相机 ID 和尺寸。当前 Gym 包装器让全部相机使用同一渲染尺寸，因此工作进程按已选最大宽高渲染，再将每路 RGB8 观测缩放到该节点的尺寸。图修改在 Apply 后的下次 Run 生效。软件包配置保留共享的本机路径、场景、任务和种子。先前精确版本的软件包仍按其原有相机配置行为运行。
+每个相机硬件节点都有整数 `settings.camera_width` 和 `settings.camera_height`，允许范围为 64–2048 像素。两套预设均提供 1280 × 720。两个服务都要求已选相机节点提供这两个字段。IsOS 通过 `${selected_nodes.settings_json}` 传递已选设置：原生 `cam-0` 使用 `ISOS_NATIVE_CAMERA_SIZES`，RoboCasa 使用 `ISOS_ROBOCASA_CAMERA_SIZES`。原生模拟器按已选尺寸渲染并编码 JPEG；没有这些设置的直接模拟器运行仍使用场景尺寸。工作进程在创建 Gym 前校验已选相机 ID 和尺寸。当前 Gym 包装器让全部相机使用同一渲染尺寸，因此工作进程按已选最大宽高渲染，再将每路 RGB8 观测缩放到该节点的尺寸。图修改在 Apply 后的下次 Run 生效。软件包配置保留共享的本机路径、场景、任务和种子。先前精确版本的软件包仍按其原有相机配置行为运行。
 
 `config/package-config.json` 为通用 IsOS 软件包配置界面声明中英文标签和说明。`config/package.toml` 提供 `[package]`、`[host]`、`[services.native]` 和 `[services.robocasa]`。已选原生服务需要本地 MuJoCo 3.3.1 目录；已选 RoboCasa 服务需要本地资源及明确选定的 Python 解释器。这些大型主机资源不随软件包下载。路径属于本地部署配置，不属于图节点设置。每个硬件适配器通过 `service_instance` 选择服务；IsOS 在 Apply 与 Run 时解析它。
 
 使用 `./build.sh --output 绝对路径的空目录 --version 0.2.5` 或更高的未使用版本构建候选版。截至 v0.2.4 的已发布标签保持不变。只有两套预设都通过 IsOS `pkg check` 回放，包括拒绝、崩溃、日志和停止场景，候选版才可发布。
+
+原生相机尺寸修改通过 `cmake --build build -j4`、`ctest --test-dir build --output-on-failure -j4`（35/35）、`python3 tests/nodes.py`（13/13）和 `git diff --check`。完整输出保存在被 Git 忽略的 `data/test/20261115-native-camera-source-dimensions/`。已选原生预设现在声明 1280 × 720，严格服务测试确认 JPEG 元数据及字节；拒绝用例覆盖缺失、小数和零尺寸。
 
 
 2026-11-13，`0.2.3` 源码候选版使用 IsOS PR #504 的 EOS 命令确认修复，通过隔离的 `isos pkg check`。设置 `ISOS_AETHER_BIN_DIR` 指向已修复的 EOS 可执行文件，并提供本机 EI 与 MuJoCo 路径，当时运行 `isos pkg check --source <本源码目录> --version 0.2.3 --output <空证据目录> --graph <锁定 0.2.3 的 RoboCasa 完整预设图> --graph <锁定 0.2.3 的原生完整预设图> --package-config <本机 package.toml>`。256 × 192 和 512 × 512 两种配置均通过静态验证、原生 ABI、所有者准入、托管观测／控制／日志及两套预设的确认停止；RoboCasa 三路相机帧均报告请求的尺寸。准确命令、输入、`check.json`、所有者交换和完整构建日志保存在被 Git 忽略的 `data/test/2026-11-13-camera-size/`；候选归档 SHA-256 为 `58e3d9fa8d45345d5fe9a0da5f804d016bc6fbddbcb08fcceeece32d92c0bf6f`。发布和更新图中的精确版本锁定仍需另外执行。

@@ -17,7 +17,7 @@
 
 没有命令输入。EOS 请求观察，适配器通过进程内事件端口 `frame: image_frame@v0.2` 发出结果。负载含 `width_px`、`height_px`、`encoding`、base64 `data`，以及包含 `source_time_ns`、`sequence`、`clock`、`frame_id` 的 `sample`。原生 `encoding:"jpeg"` 使用模拟时钟；RoboCasa `encoding:"rgb8"` 使用主机单调时钟。RoboCasa 数据解码后恰好为 `width_px × height_px × 3` 字节，按行排列 RGB。配置宽高各为 64–2048 px。原生尺寸来自所选相机渲染。画面不含任务文本、奖励或成功真值。
 
-在 0.2.5 及之后的软件包中，每个 RoboCasa 相机节点通过 `settings.camera_width` 和 `settings.camera_height` 设置 64 到 2048 的整数像素数。预设值为 1280 × 720。这些是节点设置，因此三个相机可使用不同的输出尺寸；IsOS 在 Run 时将所选值传给工作进程。原生相机使用场景渲染尺寸。
+在 0.2.5 及之后的软件包中，每个相机节点通过 `settings.camera_width` 和 `settings.camera_height` 设置 64 到 2048 的整数像素数。两套预设均为 1280 × 720。IsOS 在 Run 时将原生 `cam-0` 的已选设置传给模拟器；EGL 视口和 JPEG 编码器使用该准确尺寸。三个 RoboCasa 相机可分别选择输出尺寸，其设置传给独立的 Gym 工作进程。没有 IsOS 设置的直接模拟器运行使用场景的离屏尺寸。
 
 注册的 `frame` 输出声明图像数据类别和 30 Hz 预期源频率。每个预设相机将 `node.adapter.settings.frequency_hz` 设为 30 Hz，使 EOS 把采集帧送入来源池。服务或渲染较慢时，实际帧率可以低于该值。
 
@@ -33,8 +33,8 @@
       "clock": "simulation",
       "frame_id": "cam-0"
     },
-    "width_px": 640,
-    "height_px": 480,
+    "width_px": 1280,
+    "height_px": 720,
     "encoding": "jpeg",
     "data": "/9j/4AAQ"
   }

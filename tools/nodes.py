@@ -209,7 +209,7 @@ def full_hardware_contributions(version: str) -> dict:
     item["package"] = package
     item["references"] = []
     item["adapter"]["settings"] = {"service_instance": service, "device_id": device}
-    if service == "robocasa" and kind == "camera" and per_camera_size(version):
+    if kind == "camera" and per_camera_size(version):
       item["settings"] = {"camera_width": 1280, "camera_height": 720}
     if kind == "camera":
       item["adapter"]["settings"]["frequency_hz"] = rate
@@ -258,9 +258,13 @@ def full_hardware_contributions(version: str) -> dict:
       {"id": "native", "entrypoint": "bin/eos-mujoco-sim",
        "args": ["--managed-strict-socket", "--v2-socket", "${socket}",
                 "--scene", "${resource.scene.path}"],
+       **({"required_node_settings": {CAMERA: ["camera_width", "camera_height"]}}
+          if per_camera_size(version) else {}),
        "requirements": [{"path": "${config.host.mujoco_root}/lib/libmujoco.so.3.3.1", "kind": "file"}],
        "environment": [{"name": "LD_LIBRARY_PATH",
-                        "value": "${config.host.mujoco_root}/lib"}],
+                        "value": "${config.host.mujoco_root}/lib"},
+                       *([{"name": "ISOS_NATIVE_CAMERA_SIZES", "value": "${selected_nodes.settings_json}"}]
+                         if per_camera_size(version) else [])],
        "resources": [{"setting": "scene", "kind": "scene",
                       "descriptor": "package-resources.json"}],
        "config_service_type": "native", "node_types": sorted({item[2] for item in native})},
