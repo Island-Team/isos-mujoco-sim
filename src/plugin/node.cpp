@@ -469,13 +469,23 @@ int32_t command_v2(isos_node_v2_handle* handle, const std::uint8_t* bytes,
                             node->kind == "manipulator" ? "manipulator_move" :
                             node->kind == "gripper" ? "gripper_move" : nullptr;
     if (!operation) return -1;
-    Struct request = *payload;
+    Struct request;
+    auto copy_required = [&](const char* name) {
+      const auto* value = field(*payload, name);
+      if (!value) return false;
+      (*request.mutable_fields())[name] = *value;
+      return true;
+    };
+    const auto port = string_field(admitted, "port");
+    const bool mode_command =
+        node->service_instance == "robocasa" && node->kind == "manipulator" && port == "mode";
+    if (!port.empty() && port != "command" && !mode_command) return -1;
     if (node->service_instance == "robocasa") {
-      request.mutable_fields()->erase("values");
-      if (node->kind == "manipulator" && string_field(admitted, "port") == "mode") {
+      if (mode_command) {
         const auto* mode = field(*payload, "mode");
         if (!mode || mode->kind_case() != Value::kNumberValue ||
-            (mode->number_value() != 0 && mode->number_value() != 1)) return -1;
+            (mode->number_value() != 0 && mode->number_value() != 1))
+          return -1;
         (*request.mutable_fields())["values"] = *mode;
         set(&request, "control_mode", "mode");
       } else if (node->kind == "gripper") {
@@ -485,28 +495,39 @@ int32_t command_v2(isos_node_v2_handle* handle, const std::uint8_t* bytes,
       } else {
         const Struct* axes = object_field(*payload, "axes");
         if (!axes) return -1;
-        const std::vector<std::string> names = node->kind == "base"
-            ? std::vector<std::string>{"x", "y", "yaw"}
-            : node->kind == "torso" ? std::vector<std::string>{"lift"}
-            : std::vector<std::string>{"dx", "dy", "dz", "droll", "dpitch", "dyaw"};
-        if (axes->fields_size() != static_cast<int>(names.size())) return -1;
+        const std::vector<std::string> names =
+            node->kind == "base" ? std::vector<std::string>{"x", "y", "yaw"}
+            : node->kind == "torso"
+                ? std::vector<std::string>{"lift"}
+                : std::vector<std::string>{"dx", "dy", "dz", "droll", "dpitch", "dyaw"};
         std::vector<Value> values;
         for (const auto& name : names) {
           const auto* value = field(*axes, name.c_str());
           if (!value || value->kind_case() != Value::kNumberValue ||
-              !std::isfinite(value->number_value()) || std::abs(value->number_value()) > 1) return -1;
+              !std::isfinite(value->number_value()) || std::abs(value->number_value()) > 1)
+            return -1;
           values.push_back(*value);
         }
         if (node->kind == "manipulator") {
           Struct* arm = (*request.mutable_fields())["values"].mutable_struct_value();
           for (int i = 0; i < 6; ++i)
-            (*arm->mutable_fields())[i < 3 ? "position" : "rotation"].mutable_list_value()
-                ->add_values()->CopyFrom(values[i]);
+            (*arm->mutable_fields())[i < 3 ? "position" : "rotation"]
+                .mutable_list_value()
+                ->add_values()
+                ->CopyFrom(values[i]);
         } else {
           auto* list = (*request.mutable_fields())["values"].mutable_list_value();
           for (const auto& value : values) list->add_values()->CopyFrom(value);
         }
       }
+    } else {
+      const std::vector<const char*> names =
+          node->kind == "base" ? std::vector<const char*>{"linear_x_m_s", "linear_y_m_s",
+                                                          "angular_z_rad_s", "valid_for_ms"}
+          : node->kind == "manipulator" ? std::vector<const char*>{"joint_positions_rad"}
+                                        : std::vector<const char*>{"close"};
+      for (const auto* name : names)
+        if (!copy_required(name)) return -1;
     }
     set(&request, "command_id", string_field(admitted, "command_id"));
     set(&request, "generation_id", node->generation_id);

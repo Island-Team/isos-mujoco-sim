@@ -156,6 +156,45 @@ class Hardware:
     self._ready()
     self._pending["mode"] = _binary(mode, "control mode")
 
+  def control(self, device_id: str, payload: Mapping[str, Any]) -> None:
+    """Apply only the selected device's supported control fields."""
+    if not isinstance(payload, Mapping):
+      raise HardwareError("control payload must be an object")
+    if device_id == "robocasa/arm/right-arm":
+      if "position" in payload or "rotation" in payload:
+        if "position" not in payload or "rotation" not in payload:
+          raise HardwareError("arm control requires position and rotation")
+        self.command_arm(payload["position"], payload["rotation"])
+      elif "mode" in payload:
+        self.set_control_mode(payload["mode"])
+      else:
+        raise HardwareError("arm control has no supported field")
+    elif device_id == "robocasa/gripper/right-gripper":
+      if "close" not in payload:
+        raise HardwareError("gripper control requires close")
+      self.command_gripper(payload["close"])
+    elif device_id == "robocasa/base/mobile-base":
+      if "motion" not in payload:
+        raise HardwareError("base control requires motion")
+      self.command_base(payload["motion"])
+    elif device_id == "robocasa/torso/torso":
+      if "motion" not in payload:
+        raise HardwareError("torso control requires motion")
+      self.command_torso(payload["motion"])
+    else:
+      raise HardwareError("device has no control interface")
+
+  def status(self, device_id: str) -> Mapping[str, Any]:
+    """Return only measured fields of one selected device."""
+    self._ready()
+    node = next((item for item in CATALOG if item.id == device_id), None)
+    if node is None:
+      raise HardwareError("unknown status device")
+    if not node.observations:
+      raise HardwareError("status is unavailable for this device")
+    keys = (node.name,) if node.group == "camera" else node.observations
+    return {key: self._observation[key].copy() for key in keys}
+
   def step(self) -> Mapping[str, Any]:
     self._ready()
     pending, self._pending = self._pending, {}

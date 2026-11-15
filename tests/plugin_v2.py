@@ -87,9 +87,13 @@ def main():
             assert emitted[-1]["port"] == "state"
             command, size = argument({"run_id": "run-test", "revision": "revision-test",
                                       "command_id": "command-1", "stop_epoch": "0",
-                                      "payload": {"close": True}})
+                                      "payload": {"close": True, "unrelated": {"mode": "ignore"}}})
             assert api.command(handle, command, size) == 0
             assert emitted[-1]["port"] == "command_result"
+            unsupported, size = argument({"run_id": "run-test", "revision": "revision-test",
+                                          "command_id": "command-2", "stop_epoch": "0",
+                                          "payload": {"unrelated": True}})
+            assert api.command(handle, unsupported, size) == -1
             stop, size = argument({"run_id": "run-test", "revision": "revision-test",
                                    "stop_epoch": 1})
             assert api.stop(handle, stop, size) == 0

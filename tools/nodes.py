@@ -5,6 +5,10 @@ BACKEND = "eos.process.mujoco.simulator@v0.2"
 CAMERA = "eos.hardware.camera.device@v0.2"
 
 
+def per_camera_size(version: str) -> bool:
+  return tuple(int(part) for part in version.split(".")) >= (0, 2, 5)
+
+
 def node_type(id: str, layer: str, kind: str, lifecycle: str,
               capabilities: list[str], inputs: list[dict], outputs: list[dict],
               settings: list[dict] | None = None,
@@ -175,6 +179,12 @@ def full_hardware_contributions(version: str) -> dict:
       definition["outputs"][0]["frequency_hz"] = 30.0
     if safety is not None:
       definition["safety_adapter_type"] = safety
+    if type_id == CAMERA and per_camera_size(version):
+      definition["settings"] = [
+        {"name": name, "data_type": "positive_integer", "required": False,
+         "min": 64, "max": 2048, "unit": "px",
+         "description": f"RoboCasa camera {axis} in pixels; takes effect on the next Run"}
+        for name, axis in (("camera_width", "width"), ("camera_height", "height"))]
     definitions.append(definition)
   native = (
     ("front", "camera", CAMERA, "cam-0", ["jpeg"], 30.0, 12582912),
@@ -199,6 +209,8 @@ def full_hardware_contributions(version: str) -> dict:
     item["package"] = package
     item["references"] = []
     item["adapter"]["settings"] = {"service_instance": service, "device_id": device}
+    if service == "robocasa" and kind == "camera" and per_camera_size(version):
+      item["settings"] = {"camera_width": 1280, "camera_height": 720}
     if kind == "camera":
       item["adapter"]["settings"]["frequency_hz"] = rate
     if service == "native" and kind == "manipulator":
@@ -254,13 +266,20 @@ def full_hardware_contributions(version: str) -> dict:
        "config_service_type": "native", "node_types": sorted({item[2] for item in native})},
       {"id": "robocasa", "entrypoint": "bin/robocasa-worker",
        "args": ["--socket", "${socket}"], "config_service_type": "robocasa",
+       "requirements": [{"path": "${config.host.python_interpreter}", "kind": "file"},
+                        {"path": "${config.host.robocasa_assets}", "kind": "directory"}],
+       **({"required_node_settings": {CAMERA: ["camera_width", "camera_height"]}}
+          if per_camera_size(version) else {}),
+
        "environment": [
          {"name": "ISOS_PACKAGE_PYTHON", "value": "${config.host.python_interpreter}"},
          {"name": "ISOS_ROBOCASA_ASSETS", "value": "${config.host.robocasa_assets}"},
          {"name": "ISOS_ROBOCASA_TASK", "value": "${config.service.task}"},
          {"name": "ISOS_ROBOCASA_SEED", "value": "${config.service.seed}"},
-         {"name": "ISOS_ROBOCASA_CAMERA_WIDTH", "value": "${config.service.camera_width}"},
-         {"name": "ISOS_ROBOCASA_CAMERA_HEIGHT", "value": "${config.service.camera_height}"},
+         *([{"name": "ISOS_ROBOCASA_CAMERA_SIZES", "value": "${selected_nodes.settings_json}"}]
+           if per_camera_size(version) else [
+             {"name": "ISOS_ROBOCASA_CAMERA_WIDTH", "value": "${config.service.camera_width}"},
+             {"name": "ISOS_ROBOCASA_CAMERA_HEIGHT", "value": "${config.service.camera_height}"}]),
          {"name": "ISOS_PACKAGE_GENERATION", "value": "${generation_id}"},
        ],
        "node_types": sorted({item[2] for item in robocasa})},

@@ -118,6 +118,23 @@ class HardwareTests(unittest.TestCase):
     observation["agentview-left"][:] = 255
     self.assertEqual(int(self.hardware.observe()["agentview-left"].max()), 0)
 
+  def test_general_control_ignores_extra_fields_and_requires_usable_control(self):
+    self.hardware.control("robocasa/base/mobile-base", {"motion": [.2, 0, 0], "unused": 9})
+    with self.assertRaises(HardwareError):
+      self.hardware.control("robocasa/base/mobile-base", {"unused": 9})
+    with self.assertRaises(HardwareError):
+      self.hardware.control("robocasa/camera/agentview-left", {"motion": [0, 0, 0]})
+    self.hardware.step()
+    np.testing.assert_allclose(self.env.actions[-1]["action.base_motion"], [.2, 0, 0, 0], atol=1e-7)
+
+  def test_general_status_exposes_only_selected_device(self):
+    self.assertEqual(set(self.hardware.status("robocasa/base/mobile-base")),
+                     {"base_position", "base_rotation"})
+    self.assertEqual(set(self.hardware.status("robocasa/camera/agentview-left")),
+                     {"agentview-left"})
+    with self.assertRaises(HardwareError):
+      self.hardware.status("robocasa/torso/torso")
+
   def test_close_prevents_control(self):
     self.hardware.close()
     self.assertTrue(self.env.closed)

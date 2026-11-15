@@ -172,6 +172,10 @@ def main() -> None:
         wrapper.write_text(
             "#!/bin/sh\nset -eu\n"
             ': "${ISOS_PACKAGE_PYTHON:?configured Python interpreter is required}"\n'
+            'if [ ! -f "$ISOS_PACKAGE_PYTHON" ] || [ ! -x "$ISOS_PACKAGE_PYTHON" ]; then\n'
+            '  echo "configured RoboCasa Python interpreter is not executable" >&2\n'
+            '  exit 1\n'
+            'fi\n'
             'root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)\n'
             'PYTHONPATH="$root${PYTHONPATH:+:$PYTHONPATH}" '
             'PYTHONDONTWRITEBYTECODE=1 '

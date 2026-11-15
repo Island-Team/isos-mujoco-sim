@@ -18,13 +18,15 @@ Python `robocasa_core.Hardware` 管理调用方传入的固定版本 RoboCasa Pa
 
 形状错误、非有限或越界运动值、非二值夹爪或模式、缺失观测以及重置前或关闭后调用都会抛出 `HardwareError`。RoboCasa 报告回合终止或截断时，最后一步仍返回机器人观测，后续控制必须先重置。上游环境异常会继续抛出，并使核心在重置前保持故障状态。此进程内接口没有截止时间、异步命令或物理停止保证；紧急停止策略应由所属控制层提供。
 
+`control(device_id, payload)` 是通用的进程内控制入口，接收完整的 `robocasa/...` 设备 ID 和该设备自己的字段：机械臂的 `position` 与 `rotation`（或 `mode`）、夹爪的 `close`、底盘或躯干的 `motion`。它只读取支持的字段并忽略无关键。没有可用控制字段、机械臂字段不完整、设备未知或只读时抛出 `HardwareError`；支持字段的非法值仍按原有规则拒绝。`status(device_id)` 仅返回所选设备已测得字段的副本。固定版本包装器没有躯干测量，因此躯干状态报告不可用。相机状态返回所选 RGB8 图像；相机不支持控制。原有专用命令方法和 `observe()` 仍可使用。
+
 ```python
 hardware = Hardware(env)
 hardware.reset(42)
-hardware.command_arm([0, 0, 0], [0, 0, 0])
-hardware.command_gripper(0)
-robot = hardware.step()
-frame = robot["eye-in-hand"]
+hardware.control("robocasa/arm/right-arm", {"position": [0, 0, 0], "rotation": [0, 0, 0]})
+hardware.control("robocasa/gripper/right-gripper", {"close": 0})
+hardware.step()
+frame = hardware.status("robocasa/camera/eye-in-hand")["eye-in-hand"]
 hardware.close()
 ```
 

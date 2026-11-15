@@ -15,7 +15,7 @@ from types import ModuleType
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from robocasa_worker import Service, camera_dimension, camera_size_from_environment, create_hardware, response, serve  # noqa: E402
+from robocasa_worker import Service, camera_dimension, camera_sizes_from_environment, create_hardware, response, serve  # noqa: E402
 
 
 class FakeHardware:
@@ -27,6 +27,25 @@ class FakeHardware:
 
     def observe(self):
         return {}
+
+    def status(self, node):
+        del node
+        return self.observe()
+
+    def control(self, node, payload):
+        if node == "robocasa/base/mobile-base":
+            self.command_base(payload["motion"])
+        elif node == "robocasa/torso/torso":
+            self.command_torso(payload["motion"])
+        elif node == "robocasa/arm/right-arm":
+            if "mode" in payload:
+                self.set_control_mode(payload["mode"])
+            else:
+                self.command_arm(payload["position"], payload["rotation"])
+        elif node == "robocasa/gripper/right-gripper":
+            self.command_gripper(payload["close"])
+        else:
+            raise ValueError("unknown control device")
 
     def command_base(self, values):
         self.commands.append(("base", values))
@@ -66,9 +85,46 @@ class WorkerTests(unittest.TestCase):
 
     def test_missing_camera_handoff_is_rejected(self):
         with patch.dict("os.environ", {}, clear=True), self.assertRaises(KeyError):
-            camera_size_from_environment()
-        with patch.dict("os.environ", {"ISOS_ROBOCASA_CAMERA_WIDTH": "256"}, clear=True), self.assertRaises(KeyError):
-            camera_size_from_environment()
+            camera_sizes_from_environment()
+        for value in ('[]', '{"robocasa/camera/agentview-left":{"camera_width":63,"camera_height":192}}',
+                      '{"robocasa/camera/agentview-left":{"camera_width":true,"camera_height":192}}',
+                      '{"robocasa/camera/agentview-left":{"camera_width":256}}'):
+            with self.subTest(value=value), patch.dict("os.environ", {"ISOS_ROBOCASA_CAMERA_SIZES": value}, clear=True), self.assertRaises(ValueError):
+                camera_sizes_from_environment()
+
+    def test_per_camera_handoff_and_resize(self):
+        sizes = {"robocasa/camera/agentview-left": {"camera_width": 256, "camera_height": 192},
+                 "robocasa/camera/agentview-right": {"camera_width": 128, "camera_height": 96},
+                 "robocasa/camera/eye-in-hand": {"camera_width": 64, "camera_height": 64}}
+        with patch.dict("os.environ", {"ISOS_ROBOCASA_CAMERA_SIZES": json.dumps(sizes)}, clear=True):
+            selected = camera_sizes_from_environment()
+        self.assertEqual(selected["robocasa/camera/agentview-right"], (128, 96))
+        class Image:
+            shape = (192, 256, 3)
+            def tobytes(self):
+                return b"\x7f" * (self.shape[0] * self.shape[1] * 3)
+        cv2 = ModuleType("cv2")
+        cv2.INTER_AREA = 3
+        calls = []
+        def resize(image, size, interpolation):
+            calls.append((size, interpolation))
+            output = Image()
+            output.shape = (size[1], size[0], 3)
+            return output
+        cv2.resize = resize
+        hardware = FakeHardware()
+        hardware.observe = lambda: {"agentview-left": Image(), "agentview-right": Image(), "eye-in-hand": Image()}
+        with patch.dict(sys.modules, {"cv2": cv2}):
+            service = Service(hardware, selected)
+            for device, expected in selected.items():
+                result = service.dispatch({"op": "observe", "node": device})
+                self.assertEqual((result["width_px"], result["height_px"], len(result["_binary"])),
+                                 (*expected, expected[0] * expected[1] * 3))
+        self.assertEqual(calls, [((128, 96), 3), ((64, 64), 3)])
+        with self.assertRaises(ValueError):
+            Service(hardware, selected).dispatch({"op": "observe", "node": "robocasa/camera/unknown"})
+        with self.assertRaises(ValueError):
+            Service(hardware, {}).dispatch({"op": "observe", "node": "robocasa/camera/agentview-left"})
 
     def test_camera_dimensions_reach_gym(self):
         calls = []
@@ -167,7 +223,7 @@ class WorkerTests(unittest.TestCase):
         command = {"op": "command", "node": "robocasa/base/mobile-base",
                    "command_id": "c-1", "values": [0.1, 0, 0]}
         first = service.dispatch(command)
-        self.assertEqual(first, service.dispatch(command))
+        self.assertEqual(first, service.dispatch(command | {"control_mode": "unused"}))
         self.assertEqual(hardware.steps, 1)
         with self.assertRaises(ValueError):
             service.dispatch(command | {"values": [0.2, 0, 0]})
@@ -177,6 +233,20 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(hardware.steps, 2)
         with self.assertRaises(ValueError):
             service.dispatch(command | {"command_id": "c-2"})
+
+    def test_extra_fields_do_not_change_command_identity(self):
+        hardware = FakeHardware()
+        service = Service(hardware)
+        command = {"op": "command", "node": "robocasa/arm/right-arm",
+                   "command_id": "arm-1", "values": {"position": [0, 0, 0],
+                                                      "rotation": [0, 0, 0], "unused": 5}}
+        first = service.dispatch(command)
+        self.assertEqual(first, service.dispatch(command | {
+            "values": {"position": [0, 0, 0], "rotation": [0, 0, 0], "other": True}}))
+        self.assertEqual(hardware.steps, 1)
+        with self.assertRaises(ValueError):
+            service.dispatch(command | {"control_mode": "mode", "values": 0})
+        self.assertEqual(hardware.steps, 1)
 
     def test_step_failure_fences_commands_and_unknown_stop(self):
         hardware = FakeHardware()
