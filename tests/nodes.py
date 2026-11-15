@@ -66,12 +66,22 @@ class NodeContributionTests(unittest.TestCase):
     self.assertNotIn("python_interpreter", str(services["native"]))
 
   def test_full_hardware_cameras_allow_2048_rgb_payload(self) -> None:
-    contract = contributions("0.2.4")
+    contract = contributions("0.2.5")
     cameras = [node["profile"] for node_set in contract["node_sets"]
                for node in node_set["nodes"] if node["profile"]["id"] in ("left", "right", "wrist")]
     self.assertEqual(len(cameras), 3)
     for profile in cameras:
       self.assertEqual(profile["observation"]["max_payload_bytes"], 20 * 1024 * 1024)
+
+  def test_current_camera_ports_and_capture_schedule_match_eos(self) -> None:
+    contract = contributions("0.2.5")
+    camera = next(node for node in contract["node_types"] if node["id"] == "eos.hardware.camera.device@v0.2")
+    self.assertEqual(camera["outputs"][0]["data_class"], "image")
+    self.assertEqual(camera["outputs"][0]["frequency_hz"], 30.0)
+    for node_set in contract["node_sets"]:
+      for node in node_set["nodes"]:
+        if node["profile"]["node_type"] == camera["id"]:
+          self.assertEqual(node["profile"]["adapter"]["settings"]["frequency_hz"], 30.0)
 
   def test_node_set_has_resolvable_symbols_and_parameters(self) -> None:
     contract = contributions()
