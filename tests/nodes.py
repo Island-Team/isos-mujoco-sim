@@ -30,17 +30,32 @@ class NodeContributionTests(unittest.TestCase):
     section = next(item for item in descriptor["sections"] if item["id"] == "services.robocasa")
     fields = {item["name"]: item for item in section["fields"]}
     template = tomllib.loads((root / "config/package.toml").read_text())["services"]["robocasa"]
-    for name, default in (("camera_width", 1280), ("camera_height", 720)):
-      self.assertEqual((fields[name]["type"], fields[name]["min"], fields[name]["max"]),
-                       ("integer", 64, 2048))
-      self.assertEqual(template[name], default)
+    for name in ("camera_width", "camera_height"):
+      self.assertNotIn(name, fields)
+      self.assertNotIn(name, template)
+    contract = contributions("0.2.5")
+    camera = next(item for item in contract["node_types"] if item["id"] == "eos.hardware.camera.device@v0.2")
+    for field in camera["settings"]:
+      self.assertEqual((field["data_type"], field["min"], field["max"], field["unit"]),
+                       ("integer", 64, 2048, "px"))
+    presets = [node["profile"] for group in contract["node_sets"] if group["id"] == "robocasa"
+               for node in group["nodes"] if node["group"] == "camera"]
+    self.assertEqual(len(presets), 3)
+    for profile in presets:
+      self.assertEqual(profile["settings"], {"camera_width": 1280, "camera_height": 720})
 
   def test_robocasa_service_receives_configured_camera_size(self) -> None:
-    contract = contributions("0.2.4")
+    contract = contributions("0.2.5")
     service = next(item for item in contract["runtime_services"] if item["id"] == "robocasa")
     environment = {item["name"]: item["value"] for item in service["environment"]}
-    self.assertEqual(environment["ISOS_ROBOCASA_CAMERA_WIDTH"], "${config.service.camera_width}")
-    self.assertEqual(environment["ISOS_ROBOCASA_CAMERA_HEIGHT"], "${config.service.camera_height}")
+    self.assertEqual(environment["ISOS_ROBOCASA_CAMERA_SIZES"], "${selected_nodes.settings_json}")
+    self.assertEqual(service["required_node_settings"],
+                     {"eos.hardware.camera.device@v0.2": ["camera_width", "camera_height"]})
+    old = contributions("0.2.4")
+    old_service = next(item for item in old["runtime_services"] if item["id"] == "robocasa")
+    old_environment = {item["name"]: item["value"] for item in old_service["environment"]}
+    self.assertEqual(old_environment["ISOS_ROBOCASA_CAMERA_WIDTH"], "${config.service.camera_width}")
+    self.assertEqual(old_environment["ISOS_ROBOCASA_CAMERA_HEIGHT"], "${config.service.camera_height}")
 
   def test_full_hardware_cameras_allow_2048_rgb_payload(self) -> None:
     contract = contributions("0.2.4")

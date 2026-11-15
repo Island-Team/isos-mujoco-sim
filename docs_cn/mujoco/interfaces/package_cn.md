@@ -18,13 +18,14 @@
 | `runtime_services[].node_types` | 字符串数组 / — | 服务可提供的类型 | 必需且非空，须由精确发布包贡献。 |
 | `runtime_services[].resources` | 对象数组 / — | 原生场景选择器，绑定 `package-resources.json` | 原生服务必需；RoboCasa 缺省。 |
 | `runtime_services[].environment` | 对象数组 / — | 子进程所需的已验证主机与服务值 | 缺少必需配置值时阻止 Run。 |
+| `runtime_services[].required_node_settings` | 类型到字段映射 / — | RoboCasa 已选相机节点必须提供宽高 | IsOS 在 Apply 时检查字段存在且整数值处于声明范围。 |
 | `node_sets[].nodes[].profile.adapter.settings` | 对象 / — | `service_instance` 和 `device_id` 绑定预设设备 | 两个必需字符串，无默认值；IsOS 校验服务、类型和设备关系。 |
 
-RoboCasa 服务配置还要求 `[services.robocasa]` 中的整数 `camera_width` 和 `camera_height`。模板默认宽 1280、高 720，允许范围均为 64–2048 像素。经过验证的服务交接将其作为 `ISOS_ROBOCASA_CAMERA_WIDTH` 和 `ISOS_ROBOCASA_CAMERA_HEIGHT` 传入；工作进程在创建 Gym 环境前验证两者，并将所得尺寸用于全部三路相机观测。尺寸修改在下次运行时生效。已发布的 `0.2.3` 仍限制为 64–512 像素，模板默认 64 × 64。更大的范围需要新的软件包版本和相应的 IsOS 运行时边界；安装并配置准确版本后，更新节点图的软件包锁定并 Apply。
+每个 RoboCasa 相机硬件节点都有整数 `settings.camera_width` 和 `settings.camera_height`，允许范围为 64–2048 像素。预设为每台相机提供 1280 × 720；操作员可以逐节点选择不同尺寸。RoboCasa 服务声明相机节点必须提供这两个字段。IsOS 通过通用 `${selected_nodes.settings_json}` 服务模板，将已选设备设置作为 `ISOS_ROBOCASA_CAMERA_SIZES` 传递。工作进程在创建 Gym 前校验已选相机 ID 和尺寸。当前 Gym 包装器让全部相机使用同一渲染尺寸，因此工作进程按已选最大宽高渲染，再将每路 RGB8 观测缩放到该节点的尺寸。图修改在 Apply 后的下次 Run 生效。软件包配置保留共享的本机路径、场景、任务和种子。先前精确版本的软件包仍按其原有相机配置行为运行。
 
 `config/package-config.json` 为通用 IsOS 软件包配置界面声明中英文标签和说明。`config/package.toml` 提供 `[package]`、`[host]`、`[services.native]` 和 `[services.robocasa]`。已选原生服务需要本地 MuJoCo 3.3.1 目录；已选 RoboCasa 服务需要本地资源及明确选定的 Python 解释器。这些大型主机资源不随软件包下载。路径属于本地部署配置，不属于图节点设置。每个硬件适配器通过 `service_instance` 选择服务；IsOS 在 Apply 与 Run 时解析它。
 
-使用 `./build.sh --output 绝对路径的空目录 --version 0.2.4` 或更高的未使用版本构建候选版。截至 v0.2.3 的已发布标签保持不变。只有两套预设都通过 IsOS `pkg check` 回放，包括拒绝、崩溃、日志和停止场景，候选版才可发布。
+使用 `./build.sh --output 绝对路径的空目录 --version 0.2.5` 构建候选版。截至 v0.2.4 的已发布标签保持不变。只有两套预设都通过 IsOS `pkg check` 回放，包括拒绝、崩溃、日志和停止场景，候选版才可发布。
 
 2026-11-13，`0.2.3` 源码候选版使用 IsOS PR #504 的 EOS 命令确认修复，通过隔离的 `isos pkg check`。设置 `ISOS_AETHER_BIN_DIR` 指向已修复的 EOS 可执行文件，并提供本机 EI 与 MuJoCo 路径，当时运行 `isos pkg check --source <本源码目录> --version 0.2.3 --output <空证据目录> --graph <锁定 0.2.3 的 RoboCasa 完整预设图> --graph <锁定 0.2.3 的原生完整预设图> --package-config <本机 package.toml>`。256 × 192 和 512 × 512 两种配置均通过静态验证、原生 ABI、所有者准入、托管观测／控制／日志及两套预设的确认停止；RoboCasa 三路相机帧均报告请求的尺寸。准确命令、输入、`check.json`、所有者交换和完整构建日志保存在被 Git 忽略的 `data/test/2026-11-13-camera-size/`；候选归档 SHA-256 为 `58e3d9fa8d45345d5fe9a0da5f804d016bc6fbddbcb08fcceeece32d92c0bf6f`。发布和更新图中的精确版本锁定仍需另外执行。
 
