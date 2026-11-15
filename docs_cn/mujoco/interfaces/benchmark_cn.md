@@ -33,11 +33,28 @@
 以下为单条 protobuf JSON 消息，实际传输是 gRPC protobuf：
 
 ```json
-{"seed":"42"}
+{
+  "seed": "42"
+}
 ```
 
 ```json
-{"ok":true,"sequence":"0","elapsedSimS":0.0,"baseXM":-1.2,"baseYM":0.0,"baseYawRad":0.0,"armJointsRad":[-1.5708,-1.5708,1.5708,-1.5708,-1.5708,0.0]}
+{
+  "ok": true,
+  "sequence": "0",
+  "elapsedSimS": 0.0,
+  "baseXM": -1.2,
+  "baseYM": 0.0,
+  "baseYawRad": 0.0,
+  "armJointsRad": [
+    -1.5708,
+    -1.5708,
+    1.5708,
+    -1.5708,
+    -1.5708,
+    0.0
+  ]
+}
 ```
 
 有限步进请求为 `{"steps":200}`；`State` 和 `Score` 使用 `{}`。评分示例为 `{"navigation":true,"grasp":false,"placement":false,"collisions":0,"elapsedSimS":8.4}`。复位失败时返回 `{"ok":false,"error":"scene not loaded"}`。超过 100000 步返回 gRPC `INVALID_ARGUMENT`；实时运行时手动步进返回 `FAILED_PRECONDITION`。传输与服务故障使用 gRPC 状态。评分只有在成功复位和有界回合后才有意义；这些值始终留在可信评测路径。

@@ -18,7 +18,19 @@ The RoboCasa input is `normalized_axes_command@v0.2`; `payload.axes` has exactly
 For example, after EOS has admitted a RoboCasa command, its adapter receives this envelope:
 
 ```json
-{"run_id":"run-7","revision":"rev-2","command_id":"move-18","port":"command","payload":{"axes":{"x":0.2,"y":0.0,"yaw":-0.1}}}
+{
+  "run_id": "run-7",
+  "revision": "rev-2",
+  "command_id": "move-18",
+  "port": "command",
+  "payload": {
+    "axes": {
+      "x": 0.2,
+      "y": 0.0,
+      "yaw": -0.1
+    }
+  }
+}
 ```
 
 EOS supplies the run/revision fence and command identity; agents do not call the plugin or service socket directly. The adapter emits a `command_result` event with the service acknowledgment and emits observations on `state` when EOS requests them. The [runtime control contract](../../../control.md) owns the exact service wire and error codes.

@@ -18,7 +18,22 @@ The RoboCasa type has `command: normalized_axes_command@v0.2`, `mode: control_mo
 An admitted RoboCasa arm command looks like:
 
 ```json
-{"run_id":"run-7","revision":"rev-2","command_id":"arm-18","port":"command","payload":{"axes":{"dx":0.1,"dy":0.0,"dz":0.0,"droll":0.0,"dpitch":0.0,"dyaw":0.0}}}
+{
+  "run_id": "run-7",
+  "revision": "rev-2",
+  "command_id": "arm-18",
+  "port": "command",
+  "payload": {
+    "axes": {
+      "dx": 0.1,
+      "dy": 0.0,
+      "dz": 0.0,
+      "droll": 0.0,
+      "dpitch": 0.0,
+      "dyaw": 0.0
+    }
+  }
+}
 ```
 
 EOS constructs the run fence and command identity. The adapter emits an acknowledgment on `command_result` and requested state on `state`; agents cannot address the private worker socket.

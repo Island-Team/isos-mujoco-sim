@@ -9,7 +9,17 @@
 可选进程内事件输入为 `command: normalized_axes_command@v0.2`。`payload.axes` 恰好含一个有限数 `lift`，范围 `[-1,1]`。它是无量纲控制器输入，不是米或 m/s。接受命令后执行一个 Gym 步。预设为准入声明 `max_velocity_lease_ms:1000`。没有 `state` 或其他观察输出，worker 不伪造观察。
 
 ```json
-{"run_id":"run-7","revision":"rev-2","command_id":"lift-18","port":"command","payload":{"axes":{"lift":0.25}}}
+{
+  "run_id": "run-7",
+  "revision": "rev-2",
+  "command_id": "lift-18",
+  "port": "command",
+  "payload": {
+    "axes": {
+      "lift": 0.25
+    }
+  }
+}
 ```
 
 EOS 提供运行/修订屏障和命令 ID；适配器发出 `command_result` 确认。代理只能通过 EOS 已准入的能力请求躯干运动，不能从此节点读取位置。其他 RoboCasa 节点仍可提供各自观察。

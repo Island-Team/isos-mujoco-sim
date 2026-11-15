@@ -18,7 +18,19 @@ RoboCasa 输入类型为 `normalized_axes_command@v0.2`；`payload.axes` 恰好�
 EOS 准入后的 RoboCasa 命令示例：
 
 ```json
-{"run_id":"run-7","revision":"rev-2","command_id":"move-18","port":"command","payload":{"axes":{"x":0.2,"y":0.0,"yaw":-0.1}}}
+{
+  "run_id": "run-7",
+  "revision": "rev-2",
+  "command_id": "move-18",
+  "port": "command",
+  "payload": {
+    "axes": {
+      "x": 0.2,
+      "y": 0.0,
+      "yaw": -0.1
+    }
+  }
+}
 ```
 
 EOS 提供运行/修订屏障和命令标识；代理不直接调用插件或服务套接字。适配器在 `command_result` 发出确认，并在 EOS 请求时通过 `state` 发出观察。[运行控制契约](../../../control_cn.md)定义准确服务线协议与错误码。

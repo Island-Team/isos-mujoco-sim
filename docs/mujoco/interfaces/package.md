@@ -128,7 +128,29 @@ For a descriptor-only check, the `path` is empty even when the table shows the c
 Example target descriptor excerpt (the full fixture has both scenes and all three devices):
 
 ```json
-{"schema_version":"2.0.0","catalog_version":"0.1.0","package":{"id":"island/mujoco-sim","version":"0.1.2"},"scenes":[{"id":"pick-place","label":"Pick and place","description":"Reach, grasp and place an object","profile":"eos_benchmark_pick_place_v1","path":"assets/scene.xml","sha256":"6c677b07597ddf3d18cf7b30dddd407a09d1c53086d61c919592d16723d32aea"}],"devices":{"camera":"cam-0","base":"base-0","manipulator":"arm-0"}}
+{
+  "schema_version": "2.0.0",
+  "catalog_version": "0.1.0",
+  "package": {
+    "id": "island/mujoco-sim",
+    "version": "0.1.2"
+  },
+  "scenes": [
+    {
+      "id": "pick-place",
+      "label": "Pick and place",
+      "description": "Reach, grasp and place an object",
+      "profile": "eos_benchmark_pick_place_v1",
+      "path": "assets/scene.xml",
+      "sha256": "6c677b07597ddf3d18cf7b30dddd407a09d1c53086d61c919592d16723d32aea"
+    }
+  ],
+  "devices": {
+    "camera": "cam-0",
+    "base": "base-0",
+    "manipulator": "arm-0"
+  }
+}
 ```
 
 For a selected `navigation` scene whose XML declares `eos_benchmark_pick_place_v1`, IsOS reports scene/profile mismatch at the process `settings.scene` path and leaves saved and active revisions unchanged. If `arm-0` is missing from `navigation`'s declared device support, the manipulator option is unavailable with a bounded reason and Apply fails at its adapter setting. If `MUJOCO_ROOT` lacks the required library, the package remains installed but the selected scene cannot become ready. The MuJoCo builder classifies direct descriptor failures with these P02 codes; the IsOS companion slice maps graph-time failures to the exact paths above.

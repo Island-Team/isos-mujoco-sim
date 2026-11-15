@@ -33,11 +33,28 @@ This package implements `eos.mujoco.benchmark.v1.BenchmarkService` in [`proto/be
 These are individual protobuf JSON messages; the transport is gRPC protobuf:
 
 ```json
-{"seed":"42"}
+{
+  "seed": "42"
+}
 ```
 
 ```json
-{"ok":true,"sequence":"0","elapsedSimS":0.0,"baseXM":-1.2,"baseYM":0.0,"baseYawRad":0.0,"armJointsRad":[-1.5708,-1.5708,1.5708,-1.5708,-1.5708,0.0]}
+{
+  "ok": true,
+  "sequence": "0",
+  "elapsedSimS": 0.0,
+  "baseXM": -1.2,
+  "baseYM": 0.0,
+  "baseYawRad": 0.0,
+  "armJointsRad": [
+    -1.5708,
+    -1.5708,
+    1.5708,
+    -1.5708,
+    -1.5708,
+    0.0
+  ]
+}
 ```
 
 A bounded step request is `{"steps":200}`. `State` and `Score` use `{}`. A score result can be `{"navigation":true,"grasp":false,"placement":false,"collisions":0,"elapsedSimS":8.4}`. A reset failure returns `{"ok":false,"error":"scene not loaded"}`. More than 100,000 steps returns gRPC `INVALID_ARGUMENT`; stepping while real-time execution is active returns `FAILED_PRECONDITION`. Transport and server failures use gRPC status errors. A score is meaningful only after successful reset and a bounded episode. Keep these values on the trusted evaluator path.

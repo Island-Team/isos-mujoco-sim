@@ -54,27 +54,69 @@ v0.2.1 原生硬件扩展新增 `gripper_observe`（`opening_percent` 范围 `[0
 严格模式健康证明元数据示例（每段前都要有二进制帧头）：
 
 ```json
-{"version":"2.0.0","id":"req-health-1","node":"base-0","op":"health"}
+{
+  "version": "2.0.0",
+  "id": "req-health-1",
+  "node": "base-0",
+  "op": "health"
+}
 ```
 
 ```json
-{"version":"2.0.0","id":"req-health-1","ok":true,"accepted":true,"features":["strict-socket-v1"],"timestamp_ns":100000000,"sequence":50}
+{
+  "version": "2.0.0",
+  "id": "req-health-1",
+  "ok": true,
+  "accepted": true,
+  "features": [
+    "strict-socket-v1"
+  ],
+  "timestamp_ns": 100000000,
+  "sequence": 50
+}
 ```
 
 底盘请求及成功元数据示例：
 
 ```json
-{"version":"2.0.0","id":"req-17","node":"base-0","op":"base_move","command_id":"cmd-17","linear_x_m_s":0.2,"linear_y_m_s":0.0,"angular_z_rad_s":0.0,"valid_for_ms":200.0}
+{
+  "version": "2.0.0",
+  "id": "req-17",
+  "node": "base-0",
+  "op": "base_move",
+  "command_id": "cmd-17",
+  "linear_x_m_s": 0.2,
+  "linear_y_m_s": 0.0,
+  "angular_z_rad_s": 0.0,
+  "valid_for_ms": 200.0
+}
 ```
 
 ```json
-{"version":"2.0.0","id":"req-17","ok":true,"accepted":true,"timestamp_ns":100000000,"sequence":50}
+{
+  "version": "2.0.0",
+  "id": "req-17",
+  "ok": true,
+  "accepted": true,
+  "timestamp_ns": 100000000,
+  "sequence": 50
+}
 ```
 
 目标归属失败示例（受管理严格模式会检查 `node`）：
 
 ```json
-{"version":"2.0.0","id":"req-17","ok":false,"error":{"code":"node_mismatch","message":"node is not the declared base device"},"timestamp_ns":100000000,"sequence":50}
+{
+  "version": "2.0.0",
+  "id": "req-17",
+  "ok": false,
+  "error": {
+    "code": "node_mismatch",
+    "message": "node is not the declared base device"
+  },
+  "timestamp_ns": 100000000,
+  "sequence": 50
+}
 ```
 
 ## 生命周期与故障
@@ -99,11 +141,30 @@ EOS 从 IsOS 获得已验证的程序、场景和套接字，直接启动子进�
 受管理运动及伴随停止请求示例（每段仍有原来的帧头）：
 
 ```json
-{"version":"2.0.0","id":"move-req-1","node":"base-0","op":"base_move","command_id":"cmd-1","generation_id":"00112233445566778899aabbccddeeff","stop_epoch":"0","linear_x_m_s":0.2,"linear_y_m_s":0.0,"angular_z_rad_s":0.0,"valid_for_ms":200.0}
+{
+  "version": "2.0.0",
+  "id": "move-req-1",
+  "node": "base-0",
+  "op": "base_move",
+  "command_id": "cmd-1",
+  "generation_id": "00112233445566778899aabbccddeeff",
+  "stop_epoch": "0",
+  "linear_x_m_s": 0.2,
+  "linear_y_m_s": 0.0,
+  "angular_z_rad_s": 0.0,
+  "valid_for_ms": 200.0
+}
 ```
 
 ```json
-{"version":"2.0.0","id":"stop-req-1","node":"base-0","op":"stop","command_id":"stop-cmd-1","generation_id":"00112233445566778899aabbccddeeff"}
+{
+  "version": "2.0.0",
+  "id": "stop-req-1",
+  "node": "base-0",
+  "op": "stop",
+  "command_id": "stop-cmd-1",
+  "generation_id": "00112233445566778899aabbccddeeff"
+}
 ```
 
 只有 `base_stop` 与 `arm_stop` 都是 `"stopped"`，才返回 `ok:true,accepted:true`。任一是 `"unknown"` 时，返回 `ok:false,accepted:false,error.code:"stop_outcome_unknown"`，同时保留分别得到的证明和屏障标识。超时、引擎故障、断连或崩溃都可能使任一结果未知；没有响应时，EOS 必须视两者均未知，无论子进程实际状态如何。预留前拒绝沿用 R05 校验／容量错误码，没有停止证明。已下发但被取消的运动返回 `ok:false,accepted:false,error.code:"command_interrupted"`；日志保留该失败结果，相同重发返回原结果。`command_interrupted` 本身不是停止证明。`stop_outcome_unknown`、`command_interrupted`、`stop_fenced` 与 `stale_generation` 是严格模式的新增稳定错误码，直接启动错误不变。停止响应的既有 `timestamp_ns` 与 `sequence` 必须在保持目标提交**之后**采样；相同重发除传输 `id` 外，所有结果字段均不变。
@@ -120,13 +181,39 @@ EOS 从 IsOS 获得已验证的程序、场景和套接字，直接启动子进�
 成功停止响应元数据示例（仍有原来的帧头）：
 
 ```json
-{"version":"2.0.0","id":"stop-req-1","ok":true,"accepted":true,"base_stop":"stopped","arm_stop":"stopped","generation_id":"00112233445566778899aabbccddeeff","stop_epoch":"1","timestamp_ns":100000000,"sequence":50}
+{
+  "version": "2.0.0",
+  "id": "stop-req-1",
+  "ok": true,
+  "accepted": true,
+  "base_stop": "stopped",
+  "arm_stop": "stopped",
+  "generation_id": "00112233445566778899aabbccddeeff",
+  "stop_epoch": "1",
+  "timestamp_ns": 100000000,
+  "sequence": 50
+}
 ```
 
 部分证明示例；EOS 仍须在有界升级后终止并回收子进程，整体结果为未知：
 
 ```json
-{"version":"2.0.0","id":"stop-req-2","ok":false,"accepted":false,"base_stop":"stopped","arm_stop":"unknown","generation_id":"00112233445566778899aabbccddeeff","stop_epoch":"2","error":{"code":"stop_outcome_unknown","message":"arm stop outcome unknown"},"timestamp_ns":102000000,"sequence":51}
+{
+  "version": "2.0.0",
+  "id": "stop-req-2",
+  "ok": false,
+  "accepted": false,
+  "base_stop": "stopped",
+  "arm_stop": "unknown",
+  "generation_id": "00112233445566778899aabbccddeeff",
+  "stop_epoch": "2",
+  "error": {
+    "code": "stop_outcome_unknown",
+    "message": "arm stop outcome unknown"
+  },
+  "timestamp_ns": 102000000,
+  "sequence": 51
+}
 ```
 
 R06 设计与负面样本见[固定用例](../../../tests/fixtures/strict_stop_lane/README.md)。经审查的 MuJoCo 所有者头 `212f757` 在 [PR #21](https://github.com/Island-Team/isos-mujoco-sim/pull/21) 于 `c171208` 合并前通过 24/24 项 CTest、十次排队入口期限回归，以及 R06 48 项和 R05 31 项样本检查。限定范围的 IsOS → EOS → MuJoCo 回放确认 pick-place 和 navigation 的双部件停止与清理，并将停止套接字丢失及子进程崩溃判为未知。[证据与可复现命令](../architecture_cn.md#r06-停止通道设计目标)记录精确范围。强制超时/KILL、GUI 不可用、过期或错误管道及崩溃恢复仍属于更完整的 R06 验收；此次包合并不发布 `0.1.1` 标签。

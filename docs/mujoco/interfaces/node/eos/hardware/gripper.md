@@ -16,7 +16,16 @@ The input is `command: gripper_binary_command@v0.2`; `payload.close` is a requir
 An admitted command sent by EOS to the adapter is:
 
 ```json
-{"run_id":"run-7","revision":"rev-2","command_id":"grip-18","stop_epoch":"0","port":"command","payload":{"close":true}}
+{
+  "run_id": "run-7",
+  "revision": "rev-2",
+  "command_id": "grip-18",
+  "stop_epoch": "0",
+  "port": "command",
+  "payload": {
+    "close": true
+  }
+}
 ```
 
 For a native node, `stop_epoch` is the current token proved by health or a prior Stop. EOS supplies the run fence and command ID; agents do not call the private service. The adapter emits a service acknowledgment on `command_result` and requested observations on `state`.

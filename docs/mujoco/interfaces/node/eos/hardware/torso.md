@@ -9,7 +9,17 @@
 The optional in-process event input is `command: normalized_axes_command@v0.2`. Its `payload.axes` object has exactly one finite number, `lift`, in `[-1,1]`. This is a dimensionless controller input, not metres or m/s. An accepted command advances one Gym step. The preset advertises `max_velocity_lease_ms:1000` for admission. There is no `state` or other observation output, and the worker does not fabricate one.
 
 ```json
-{"run_id":"run-7","revision":"rev-2","command_id":"lift-18","port":"command","payload":{"axes":{"lift":0.25}}}
+{
+  "run_id": "run-7",
+  "revision": "rev-2",
+  "command_id": "lift-18",
+  "port": "command",
+  "payload": {
+    "axes": {
+      "lift": 0.25
+    }
+  }
+}
 ```
 
 EOS supplies the run/revision fence and command ID; the adapter emits a `command_result` acknowledgment. An agent can request torso movement only through EOS's admitted capability. It cannot read torso position from this node. Other RoboCasa nodes can still provide their own observations.

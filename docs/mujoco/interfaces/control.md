@@ -54,27 +54,69 @@ The isolated RoboCasa worker uses a separate private socket with the same eight-
 Strict health proof metadata (each preceded by its binary frame header):
 
 ```json
-{"version":"2.0.0","id":"req-health-1","node":"base-0","op":"health"}
+{
+  "version": "2.0.0",
+  "id": "req-health-1",
+  "node": "base-0",
+  "op": "health"
+}
 ```
 
 ```json
-{"version":"2.0.0","id":"req-health-1","ok":true,"accepted":true,"features":["strict-socket-v1"],"timestamp_ns":100000000,"sequence":50}
+{
+  "version": "2.0.0",
+  "id": "req-health-1",
+  "ok": true,
+  "accepted": true,
+  "features": [
+    "strict-socket-v1"
+  ],
+  "timestamp_ns": 100000000,
+  "sequence": 50
+}
 ```
 
 Example base request and success metadata:
 
 ```json
-{"version":"2.0.0","id":"req-17","node":"base-0","op":"base_move","command_id":"cmd-17","linear_x_m_s":0.2,"linear_y_m_s":0.0,"angular_z_rad_s":0.0,"valid_for_ms":200.0}
+{
+  "version": "2.0.0",
+  "id": "req-17",
+  "node": "base-0",
+  "op": "base_move",
+  "command_id": "cmd-17",
+  "linear_x_m_s": 0.2,
+  "linear_y_m_s": 0.0,
+  "angular_z_rad_s": 0.0,
+  "valid_for_ms": 200.0
+}
 ```
 
 ```json
-{"version":"2.0.0","id":"req-17","ok":true,"accepted":true,"timestamp_ns":100000000,"sequence":50}
+{
+  "version": "2.0.0",
+  "id": "req-17",
+  "ok": true,
+  "accepted": true,
+  "timestamp_ns": 100000000,
+  "sequence": 50
+}
 ```
 
 Example strict ownership failure:
 
 ```json
-{"version":"2.0.0","id":"req-17","ok":false,"error":{"code":"node_mismatch","message":"node is not the declared base device"},"timestamp_ns":100000000,"sequence":50}
+{
+  "version": "2.0.0",
+  "id": "req-17",
+  "ok": false,
+  "error": {
+    "code": "node_mismatch",
+    "message": "node is not the declared base device"
+  },
+  "timestamp_ns": 100000000,
+  "sequence": 50
+}
 ```
 
 ## Lifecycle and failures
@@ -99,11 +141,30 @@ The existing strict `stop` operation remains a whole-robot request even when `no
 Example managed movement and companion stop requests (each uses the unchanged frame header):
 
 ```json
-{"version":"2.0.0","id":"move-req-1","node":"base-0","op":"base_move","command_id":"cmd-1","generation_id":"00112233445566778899aabbccddeeff","stop_epoch":"0","linear_x_m_s":0.2,"linear_y_m_s":0.0,"angular_z_rad_s":0.0,"valid_for_ms":200.0}
+{
+  "version": "2.0.0",
+  "id": "move-req-1",
+  "node": "base-0",
+  "op": "base_move",
+  "command_id": "cmd-1",
+  "generation_id": "00112233445566778899aabbccddeeff",
+  "stop_epoch": "0",
+  "linear_x_m_s": 0.2,
+  "linear_y_m_s": 0.0,
+  "angular_z_rad_s": 0.0,
+  "valid_for_ms": 200.0
+}
 ```
 
 ```json
-{"version":"2.0.0","id":"stop-req-1","node":"base-0","op":"stop","command_id":"stop-cmd-1","generation_id":"00112233445566778899aabbccddeeff"}
+{
+  "version": "2.0.0",
+  "id": "stop-req-1",
+  "node": "base-0",
+  "op": "stop",
+  "command_id": "stop-cmd-1",
+  "generation_id": "00112233445566778899aabbccddeeff"
+}
 ```
 
 Both `base_stop` and `arm_stop` must be `"stopped"` for `ok:true,accepted:true`. If either is `"unknown"`, return `ok:false,accepted:false,error.code:"stop_outcome_unknown"` while preserving each independently proved status and the fence epoch. A timeout, engine failure, disconnection, or crash can leave either status unknown; absence of a response means both are unknown to EOS regardless of the child's actual state. A successfully parsed but pre-reservation request retains the existing validation/capacity code and has no stop proof. A cancelled, previously released motion returns `ok:false,accepted:false,error.code:"command_interrupted"`; its ledger entry remains retained and an identical retransmission returns that same result. `command_interrupted` does not prove stop. This adds `stop_outcome_unknown`, `command_interrupted`, `stop_fenced` and `stale_generation` to the R05 strict error list; direct mode's errors are unchanged. A stop result includes the existing `timestamp_ns` and `sequence` sampled **after** the hold commit; duplicates retain those values and the new fields exactly, changing only transport `id`.
@@ -119,13 +180,39 @@ Camera capture must take a bounded immutable scene/data snapshot under the comma
 Successful strict stop response metadata (preceded by the unchanged frame header):
 
 ```json
-{"version":"2.0.0","id":"stop-req-1","ok":true,"accepted":true,"base_stop":"stopped","arm_stop":"stopped","generation_id":"00112233445566778899aabbccddeeff","stop_epoch":"1","timestamp_ns":100000000,"sequence":50}
+{
+  "version": "2.0.0",
+  "id": "stop-req-1",
+  "ok": true,
+  "accepted": true,
+  "base_stop": "stopped",
+  "arm_stop": "stopped",
+  "generation_id": "00112233445566778899aabbccddeeff",
+  "stop_epoch": "1",
+  "timestamp_ns": 100000000,
+  "sequence": 50
+}
 ```
 
 Partial proof example; EOS treats the overall outcome as unknown and still terminates/reaps after its bounded escalation:
 
 ```json
-{"version":"2.0.0","id":"stop-req-2","ok":false,"accepted":false,"base_stop":"stopped","arm_stop":"unknown","generation_id":"00112233445566778899aabbccddeeff","stop_epoch":"2","error":{"code":"stop_outcome_unknown","message":"arm stop outcome unknown"},"timestamp_ns":102000000,"sequence":51}
+{
+  "version": "2.0.0",
+  "id": "stop-req-2",
+  "ok": false,
+  "accepted": false,
+  "base_stop": "stopped",
+  "arm_stop": "unknown",
+  "generation_id": "00112233445566778899aabbccddeeff",
+  "stop_epoch": "2",
+  "error": {
+    "code": "stop_outcome_unknown",
+    "message": "arm stop outcome unknown"
+  },
+  "timestamp_ns": 102000000,
+  "sequence": 51
+}
 ```
 
 R06 design and negative fixture coverage is [frozen here](../../../tests/fixtures/strict_stop_lane/README.md). The reviewed MuJoCo owner head `212f757` passed 24/24 CTest cases and ten repetitions of the queued accept-deadline regression, plus the 48-case R06 and 31-case R05 fixture checks, before [PR #21](https://github.com/Island-Team/isos-mujoco-sim/pull/21) merged at `c171208`. The scoped IsOS → EOS → MuJoCo replay confirmed dual-part stops and cleanup for pick-place and navigation, and classified lost stop socket and child crash as unknown. [Evidence and reproducible commands](../architecture.md#r06-stop-lane-design-target) record the exact scope. Forced timeout/KILL, GUI unavailability, stale or wrong pipe, and crash recovery remain broader R06 qualification work; this package merge does not publish a `0.1.1` release tag.

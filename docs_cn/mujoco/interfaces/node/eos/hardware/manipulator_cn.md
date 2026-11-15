@@ -18,7 +18,22 @@ RoboCasa 类型有 `command: normalized_axes_command@v0.2`、`mode: control_mode
 EOS 准入后的 RoboCasa 手臂命令示例：
 
 ```json
-{"run_id":"run-7","revision":"rev-2","command_id":"arm-18","port":"command","payload":{"axes":{"dx":0.1,"dy":0.0,"dz":0.0,"droll":0.0,"dpitch":0.0,"dyaw":0.0}}}
+{
+  "run_id": "run-7",
+  "revision": "rev-2",
+  "command_id": "arm-18",
+  "port": "command",
+  "payload": {
+    "axes": {
+      "dx": 0.1,
+      "dy": 0.0,
+      "dz": 0.0,
+      "droll": 0.0,
+      "dpitch": 0.0,
+      "dyaw": 0.0
+    }
+  }
+}
 ```
 
 EOS 构造运行屏障及命令标识。适配器在 `command_result` 发出确认，在 `state` 发出请求的状态；代理无法直接访问私有 worker 套接字。

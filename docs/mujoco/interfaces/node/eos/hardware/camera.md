@@ -18,7 +18,21 @@ There is no command input. EOS requests an observation and the adapter emits `fr
 A representative emitted frame (shortened image bytes) is:
 
 ```json
-{"port":"frame","payload":{"sample":{"source_time_ns":100000000,"sequence":4,"clock":"simulation","frame_id":"cam-0"},"width_px":640,"height_px":480,"encoding":"jpeg","data":"/9j/4AAQ"}}
+{
+  "port": "frame",
+  "payload": {
+    "sample": {
+      "source_time_ns": 100000000,
+      "sequence": 4,
+      "clock": "simulation",
+      "frame_id": "cam-0"
+    },
+    "width_px": 640,
+    "height_px": 480,
+    "encoding": "jpeg",
+    "data": "/9j/4AAQ"
+  }
+}
 ```
 
 The `data` value above is illustrative. The native preset advertises at most 30 frames/s and a 12,582,912-byte observation payload. Each RoboCasa camera advertises at most 30 frames/s and 20 MiB; the worker's raw RGB8 socket payload is separately bounded at 12 MiB. These are admission and payload ceilings, not promised frame rates.

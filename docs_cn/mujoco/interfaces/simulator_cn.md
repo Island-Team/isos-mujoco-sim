@@ -33,11 +33,22 @@
 ## 示例与生命周期
 
 ```json
-{"deviceId":"base-0","baseNavigateRelative":{"xM":0.45,"yM":-1.3,"yawRad":0.0,"footprintWidthM":0.5,"footprintLengthM":0.6}}
+{
+  "deviceId": "base-0",
+  "baseNavigateRelative": {
+    "xM": 0.45,
+    "yM": -1.3,
+    "yawRad": 0.0,
+    "footprintWidthM": 0.5,
+    "footprintLengthM": 0.6
+  }
+}
 ```
 
 ```json
-{"accepted":true}
+{
+  "accepted": true
+}
 ```
 
 命令与设备不匹配时返回 `{"accepted":false,"errorCode":"unsupported_device_command"}`。底盘遥测请求为 `{"deviceId":"base-0","kind":"BASE"}`。相机响应中的 JPEG 字节在 protobuf JSON 中为 base64。复位和评分不属于本服务。Stop 或 halt 中断当前工作；连接失败、超时及引擎故障通过失败结果或 gRPC 状态返回。EOS 不应从历史路线推断物理停止证明。

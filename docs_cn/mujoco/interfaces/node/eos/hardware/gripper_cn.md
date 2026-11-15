@@ -16,7 +16,16 @@
 EOS 发给适配器的准入命令：
 
 ```json
-{"run_id":"run-7","revision":"rev-2","command_id":"grip-18","stop_epoch":"0","port":"command","payload":{"close":true}}
+{
+  "run_id": "run-7",
+  "revision": "rev-2",
+  "command_id": "grip-18",
+  "stop_epoch": "0",
+  "port": "command",
+  "payload": {
+    "close": true
+  }
+}
 ```
 
 对于原生节点，`stop_epoch` 是健康检查或先前停止证明的当前令牌。EOS 提供运行屏障及命令 ID，代理不能直接调用私有服务。适配器通过 `command_result` 发出服务确认，并在请求观察时通过 `state` 发出状态。

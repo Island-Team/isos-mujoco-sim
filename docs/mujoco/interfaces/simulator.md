@@ -35,11 +35,22 @@ The exact field set, enum values, and protobuf JSON spelling are in `proto/simul
 A protobuf JSON command and result:
 
 ```json
-{"deviceId":"base-0","baseNavigateRelative":{"xM":0.45,"yM":-1.3,"yawRad":0.0,"footprintWidthM":0.5,"footprintLengthM":0.6}}
+{
+  "deviceId": "base-0",
+  "baseNavigateRelative": {
+    "xM": 0.45,
+    "yM": -1.3,
+    "yawRad": 0.0,
+    "footprintWidthM": 0.5,
+    "footprintLengthM": 0.6
+  }
+}
 ```
 
 ```json
-{"accepted":true}
+{
+  "accepted": true
+}
 ```
 
 A mismatched command returns `{"accepted":false,"errorCode":"unsupported_device_command"}`. `ReadTelemetry` for the base sends `{"deviceId":"base-0","kind":"BASE"}`. A camera response carries JPEG bytes as base64 in protobuf JSON. Reset and scoring are outside this service. Stop or halt interrupts active work; a connection failure, deadline, or engine fault is an unsuccessful result or gRPC status error. EOS must not infer physical stop proof from this retained route.

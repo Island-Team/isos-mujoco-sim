@@ -18,7 +18,21 @@
 典型输出画面，图像字节已缩短：
 
 ```json
-{"port":"frame","payload":{"sample":{"source_time_ns":100000000,"sequence":4,"clock":"simulation","frame_id":"cam-0"},"width_px":640,"height_px":480,"encoding":"jpeg","data":"/9j/4AAQ"}}
+{
+  "port": "frame",
+  "payload": {
+    "sample": {
+      "source_time_ns": 100000000,
+      "sequence": 4,
+      "clock": "simulation",
+      "frame_id": "cam-0"
+    },
+    "width_px": 640,
+    "height_px": 480,
+    "encoding": "jpeg",
+    "data": "/9j/4AAQ"
+  }
+}
 ```
 
 示例 `data` 仅用于说明字段。原生预设声明最高 30 帧/秒和 12,582,912 字节观察负载。每个 RoboCasa 相机声明最高 30 帧/秒和 20 MiB；worker 的原始 RGB8 套接字负载另有 12 MiB 上限。这些是准入和负载上限，不保证实际帧率。

@@ -128,7 +128,29 @@ IsOS 保留 P01 诊断结构 `{code,path,message,id,version,stage}` 和 HTTP 422
 目标描述符示例摘录（完整样本含两个场景、三台设备）：
 
 ```json
-{"schema_version":"2.0.0","catalog_version":"0.1.0","package":{"id":"island/mujoco-sim","version":"0.1.2"},"scenes":[{"id":"pick-place","label":"Pick and place","description":"Reach, grasp and place an object","profile":"eos_benchmark_pick_place_v1","path":"assets/scene.xml","sha256":"6c677b07597ddf3d18cf7b30dddd407a09d1c53086d61c919592d16723d32aea"}],"devices":{"camera":"cam-0","base":"base-0","manipulator":"arm-0"}}
+{
+  "schema_version": "2.0.0",
+  "catalog_version": "0.1.0",
+  "package": {
+    "id": "island/mujoco-sim",
+    "version": "0.1.2"
+  },
+  "scenes": [
+    {
+      "id": "pick-place",
+      "label": "Pick and place",
+      "description": "Reach, grasp and place an object",
+      "profile": "eos_benchmark_pick_place_v1",
+      "path": "assets/scene.xml",
+      "sha256": "6c677b07597ddf3d18cf7b30dddd407a09d1c53086d61c919592d16723d32aea"
+    }
+  ],
+  "devices": {
+    "camera": "cam-0",
+    "base": "base-0",
+    "manipulator": "arm-0"
+  }
+}
 ```
 
 若所选 `navigation` 场景的 XML 却声明 `eos_benchmark_pick_place_v1`，IsOS 在进程的 `settings.scene` 路径报告场景/profile 不匹配，已保存及已激活修订不变。若 `navigation` 的设备支持列表缺少 `arm-0`，机械臂选项不可用并附有有界原因，Apply 在其适配器设置处失败。若 `MUJOCO_ROOT` 缺少所需库，包可以保留安装，但所选场景不能就绪。MuJoCo 构建工具使用这些 P02 代码分类直接描述符错误；IsOS 配套切片将图时失败映射到上表精确路径。
