@@ -22,15 +22,22 @@
     ]},
     {"id": "services.native", "label": {"en": "Native service", "cn": "原生服务"},
      "description": {"en": "MuJoCo scene used by native robot nodes.", "cn": "原生机器人节点使用的 MuJoCo 场景。"}, "fields": [
-      {"name": "scene", "type": "string", "required": true,
+      {"name": "scene", "type": "enum", "required": true, "default": "pick-place",
        "label": {"en": "Scene", "cn": "场景"},
-       "description": {"en": "Verified scene ID: pick-place or navigation.", "cn": "已验证场景 ID：pick-place 或 navigation。"}}
+       "description": {"en": "Verified native scene ID.", "cn": "已验证的原生场景 ID。"},
+       "options": [
+         {"value": "pick-place", "label": {"en": "Pick and place", "cn": "抓取放置"}},
+         {"value": "navigation", "label": {"en": "Navigation", "cn": "导航"}}
+       ]}
     ]},
     {"id": "services.robocasa", "label": {"en": "RoboCasa service", "cn": "RoboCasa 服务"},
      "description": {"en": "Task and seed for RoboCasa robot nodes.", "cn": "RoboCasa 机器人节点使用的任务和种子。"}, "fields": [
-      {"name": "task", "type": "string", "required": false,
+      {"name": "task", "type": "enum", "required": false, "default": "CloseFridge",
        "label": {"en": "Task", "cn": "任务"},
-       "description": {"en": "Pinned RoboCasa Gym task name.", "cn": "固定的 RoboCasa Gym 任务名。"}},
+       "description": {"en": "Locally verified RoboCasa Gym task.", "cn": "已在本地验证的 RoboCasa Gym 任务。"},
+       "options": [
+         {"value": "CloseFridge", "label": {"en": "Close fridge", "cn": "关闭冰箱"}}
+       ]},
       {"name": "seed", "type": "integer", "required": false,
        "label": {"en": "Reset seed", "cn": "重置种子"},
        "description": {"en": "Deterministic episode seed.", "cn": "确定性回合种子。"}}

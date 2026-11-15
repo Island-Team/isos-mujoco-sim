@@ -24,6 +24,29 @@ def strings(value: object) -> list[str]:
 
 
 class NodeContributionTests(unittest.TestCase):
+  def test_package_selectors_match_verified_resources_and_defaults(self) -> None:
+    root = Path(__file__).resolve().parents[1]
+    descriptor = json.loads((root / "config/package-config.json").read_text())
+    sections = {section["id"]: section for section in descriptor["sections"]}
+    config = tomllib.loads((root / "config/package.toml").read_text())
+    resources = json.loads((root / "tests/fixtures/scene_catalog/target-descriptor.json").read_text())
+    scene = next(field for field in sections["services.native"]["fields"]
+                 if field["name"] == "scene")
+    task = next(field for field in sections["services.robocasa"]["fields"]
+                if field["name"] == "task")
+    for field in (scene, task):
+      self.assertEqual(field["type"], "enum")
+      self.assertEqual(len({option["value"] for option in field["options"]}),
+                       len(field["options"]))
+      for option in field["options"]:
+        self.assertTrue(option["label"]["en"])
+        self.assertTrue(option["label"]["cn"])
+    self.assertEqual({option["value"] for option in scene["options"]},
+                     {item["id"] for item in resources["scenes"]})
+    self.assertEqual([option["value"] for option in task["options"]], ["CloseFridge"])
+    self.assertEqual(scene["default"], config["services"]["native"]["scene"])
+    self.assertEqual(task["default"], config["services"]["robocasa"]["task"])
+
   def test_user_camera_configuration_defaults_and_bounds(self) -> None:
     root = Path(__file__).resolve().parents[1]
     descriptor = json.loads((root / "config/package-config.json").read_text())
