@@ -15,7 +15,7 @@ from types import ModuleType
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from robocasa_worker import Service, camera_dimension, camera_size_from_environment, create_hardware, response, serve  # noqa: E402
+from robocasa_worker import Service, camera_dimension, camera_sizes_from_environment, create_hardware, response, serve  # noqa: E402
 
 
 class FakeHardware:
@@ -85,9 +85,46 @@ class WorkerTests(unittest.TestCase):
 
     def test_missing_camera_handoff_is_rejected(self):
         with patch.dict("os.environ", {}, clear=True), self.assertRaises(KeyError):
-            camera_size_from_environment()
-        with patch.dict("os.environ", {"ISOS_ROBOCASA_CAMERA_WIDTH": "256"}, clear=True), self.assertRaises(KeyError):
-            camera_size_from_environment()
+            camera_sizes_from_environment()
+        for value in ('[]', '{"robocasa/camera/agentview-left":{"camera_width":63,"camera_height":192}}',
+                      '{"robocasa/camera/agentview-left":{"camera_width":true,"camera_height":192}}',
+                      '{"robocasa/camera/agentview-left":{"camera_width":256}}'):
+            with self.subTest(value=value), patch.dict("os.environ", {"ISOS_ROBOCASA_CAMERA_SIZES": value}, clear=True), self.assertRaises(ValueError):
+                camera_sizes_from_environment()
+
+    def test_per_camera_handoff_and_resize(self):
+        sizes = {"robocasa/camera/agentview-left": {"camera_width": 256, "camera_height": 192},
+                 "robocasa/camera/agentview-right": {"camera_width": 128, "camera_height": 96},
+                 "robocasa/camera/eye-in-hand": {"camera_width": 64, "camera_height": 64}}
+        with patch.dict("os.environ", {"ISOS_ROBOCASA_CAMERA_SIZES": json.dumps(sizes)}, clear=True):
+            selected = camera_sizes_from_environment()
+        self.assertEqual(selected["robocasa/camera/agentview-right"], (128, 96))
+        class Image:
+            shape = (192, 256, 3)
+            def tobytes(self):
+                return b"\x7f" * (self.shape[0] * self.shape[1] * 3)
+        cv2 = ModuleType("cv2")
+        cv2.INTER_AREA = 3
+        calls = []
+        def resize(image, size, interpolation):
+            calls.append((size, interpolation))
+            output = Image()
+            output.shape = (size[1], size[0], 3)
+            return output
+        cv2.resize = resize
+        hardware = FakeHardware()
+        hardware.observe = lambda: {"agentview-left": Image(), "agentview-right": Image(), "eye-in-hand": Image()}
+        with patch.dict(sys.modules, {"cv2": cv2}):
+            service = Service(hardware, selected)
+            for device, expected in selected.items():
+                result = service.dispatch({"op": "observe", "node": device})
+                self.assertEqual((result["width_px"], result["height_px"], len(result["_binary"])),
+                                 (*expected, expected[0] * expected[1] * 3))
+        self.assertEqual(calls, [((128, 96), 3), ((64, 64), 3)])
+        with self.assertRaises(ValueError):
+            Service(hardware, selected).dispatch({"op": "observe", "node": "robocasa/camera/unknown"})
+        with self.assertRaises(ValueError):
+            Service(hardware, {}).dispatch({"op": "observe", "node": "robocasa/camera/agentview-left"})
 
     def test_camera_dimensions_reach_gym(self):
         calls = []

@@ -21,6 +21,9 @@ from typing import Any
 
 
 MAX_REQUEST = 65536
+CAMERA_NODES = frozenset((
+    "robocasa/camera/agentview-left", "robocasa/camera/agentview-right",
+    "robocasa/camera/eye-in-hand"))
 
 
 def read_exact(stream: socket.socket, count: int) -> bytes:
@@ -50,9 +53,24 @@ def camera_dimension(value: str) -> int:
     return dimension
 
 
-def camera_size_from_environment() -> tuple[int, int]:
-    return (camera_dimension(os.environ["ISOS_ROBOCASA_CAMERA_WIDTH"]),
-            camera_dimension(os.environ["ISOS_ROBOCASA_CAMERA_HEIGHT"]))
+def camera_sizes_from_environment() -> dict[str, tuple[int, int]]:
+    raw = os.environ["ISOS_ROBOCASA_CAMERA_SIZES"]
+    if len(raw) > 4096:
+        raise ValueError("camera settings exceed bound")
+    values = json.loads(raw)
+    if not isinstance(values, dict):
+        raise ValueError("camera settings must be an object")
+    sizes: dict[str, tuple[int, int]] = {}
+    for device, settings in values.items():
+        if device not in CAMERA_NODES:
+            continue
+        if not isinstance(settings, dict) or set(settings) != {"camera_width", "camera_height"}:
+            raise ValueError("camera node requires width and height")
+        width, height = settings["camera_width"], settings["camera_height"]
+        if type(width) is not int or type(height) is not int:
+            raise ValueError("camera dimensions must be integers")
+        sizes[device] = (camera_dimension(str(width)), camera_dimension(str(height)))
+    return sizes
 
 
 def create_hardware(task: str, seed: int, assets: str, width: int, height: int):
@@ -73,8 +91,9 @@ def create_hardware(task: str, seed: int, assets: str, width: int, height: int):
 
 
 class Service:
-    def __init__(self, hardware):
+    def __init__(self, hardware, camera_sizes: dict[str, tuple[int, int]] | None = None):
         self.hardware = hardware
+        self.camera_sizes = camera_sizes
         self.lock = threading.Lock()
         self.stopped = False
         self.stop_result: dict[str, Any] | None = None
@@ -109,10 +128,17 @@ class Service:
                 if keys is None:
                     raise ValueError("unknown observation device")
                 if node.startswith("robocasa/camera/"):
+                    if self.camera_sizes is not None and node not in self.camera_sizes:
+                        raise ValueError("camera node is not selected")
                     image = observation[keys[0]]
                     height, width, channels = image.shape
                     if channels != 3 or not 64 <= width <= 2048 or not 64 <= height <= 2048:
                         raise ValueError("invalid camera shape")
+                    requested = self.camera_sizes.get(node) if self.camera_sizes is not None else None
+                    if requested and requested != (width, height):
+                        import cv2
+                        image = cv2.resize(image, requested, interpolation=cv2.INTER_AREA)
+                        height, width, channels = image.shape
                     return {"generation_id": self.generation_id, "sequence": self.sequence,
                             "timestamp_ns": time.monotonic_ns(), "node": node,
                             "width_px": width, "height_px": height,
@@ -250,8 +276,10 @@ def main() -> None:
     task = os.environ.get("ISOS_ROBOCASA_TASK", "CloseFridge")
     seed = int(os.environ.get("ISOS_ROBOCASA_SEED", "42"))
     assets = os.environ.get("ISOS_ROBOCASA_ASSETS", "")
-    width, height = camera_size_from_environment()
-    serve(args.socket, Service(create_hardware(task, seed, assets, width, height)))
+    sizes = camera_sizes_from_environment()
+    width = max((size[0] for size in sizes.values()), default=64)
+    height = max((size[1] for size in sizes.values()), default=64)
+    serve(args.socket, Service(create_hardware(task, seed, assets, width, height), sizes))
 
 
 if __name__ == "__main__":
