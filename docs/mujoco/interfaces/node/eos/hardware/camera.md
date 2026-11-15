@@ -15,6 +15,8 @@
 
 There is no command input. EOS requests an observation and the adapter emits `frame: image_frame@v0.2` as an in-process event. The frame payload has `width_px`, `height_px`, `encoding`, base64 `data`, and a `sample` with `source_time_ns`, `sequence`, `clock`, and `frame_id`. Native `encoding:"jpeg"` uses the simulation clock; RoboCasa `encoding:"rgb8"` uses the host monotonic clock. RoboCasa data decodes to exactly `width_px × height_px × 3` bytes in row-major RGB order. Its configured width and height are each 64–2048 px. Native dimensions come from the selected camera render. A frame includes no task text, reward, or success truth.
 
+The registered `frame` output declares image data class and a 30 Hz expected source rate. Each preset camera sets `node.adapter.settings.frequency_hz` to 30 Hz so EOS schedules capture into the source pool. The actual frame rate can be lower when the service or rendering is slow.
+
 A representative emitted frame (shortened image bytes) is:
 
 ```json

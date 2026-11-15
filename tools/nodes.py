@@ -141,7 +141,7 @@ def full_hardware_contributions(version: str) -> dict:
 
   hardware_types = (
     (CAMERA, "camera", "camera", ["jpeg", "rgb8"], None, [],
-     [live_port("frame", "image_frame@v0.2", "observation")]),
+     [live_port("frame", "image_frame@v0.2", "image")]),
     ("eos.hardware.base.device@v0.2", "base", "base", ["body_velocity"],
      "base_velocity", [live_port("command", "base_twist_command@v0.2", "command")],
      [live_port("state", "base_state@v0.2", "observation")]),
@@ -171,6 +171,8 @@ def full_hardware_contributions(version: str) -> dict:
                   "inputs": inputs, "outputs": outputs,
                   "implementation": {"kind": "native_plugin", "abi": "isos_node_v2",
                                      "library": library}}
+    if kind == "camera":
+      definition["outputs"][0]["frequency_hz"] = 30.0
     if safety is not None:
       definition["safety_adapter_type"] = safety
     definitions.append(definition)
@@ -197,6 +199,8 @@ def full_hardware_contributions(version: str) -> dict:
     item["package"] = package
     item["references"] = []
     item["adapter"]["settings"] = {"service_instance": service, "device_id": device}
+    if kind == "camera":
+      item["adapter"]["settings"]["frequency_hz"] = rate
     if service == "native" and kind == "manipulator":
       item["joint_names"] = ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint",
                              "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"]

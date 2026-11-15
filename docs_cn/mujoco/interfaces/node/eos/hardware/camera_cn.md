@@ -15,6 +15,8 @@
 
 没有命令输入。EOS 请求观察，适配器通过进程内事件端口 `frame: image_frame@v0.2` 发出结果。负载含 `width_px`、`height_px`、`encoding`、base64 `data`，以及包含 `source_time_ns`、`sequence`、`clock`、`frame_id` 的 `sample`。原生 `encoding:"jpeg"` 使用模拟时钟；RoboCasa `encoding:"rgb8"` 使用主机单调时钟。RoboCasa 数据解码后恰好为 `width_px × height_px × 3` 字节，按行排列 RGB。配置宽高各为 64–2048 px。原生尺寸来自所选相机渲染。画面不含任务文本、奖励或成功真值。
 
+注册的 `frame` 输出声明图像数据类别和 30 Hz 预期源频率。每个预设相机将 `node.adapter.settings.frequency_hz` 设为 30 Hz，使 EOS 把采集帧送入来源池。服务或渲染较慢时，实际帧率可以低于该值。
+
 典型输出画面，图像字节已缩短：
 
 ```json
