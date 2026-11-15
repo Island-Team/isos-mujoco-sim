@@ -219,6 +219,8 @@ R06 design and negative fixture coverage is [frozen here](../../../tests/fixture
 
 ## Hardware service runtime control
 
+The package adapter exposes a general control/status boundary to its implementations while retaining the EOS graph's declared `command`, `mode`, `state`, `frame`, and `command_result` port names. EOS and its Vision route depend on those exact names. On an admitted command, the adapter selects only fields used by the bound device and ignores unrelated payload fields; missing or invalid required fields still reject control. The private RoboCasa worker deduplicates on the selected device, command mode, and effective supported values, so unrelated fields do not create a second action and a changed arm mode conflicts with a reused command ID. This tolerance does not bypass EOS Dispatcher admission or its public payload validation.
+
 The native preset exposes `cam-0`, `base-0`, `arm-0`, and `gripper-0`. Its strict socket supports JPEG capture, SI base state/twist, six-joint state/position, gripper opening/close, generation-fenced commands, and whole-robot stop proof with separate base, arm, and gripper outcomes. The gripper observation has a named `opening` channel in percent. The scene is `pick-place` or `navigation`; the package's verified scene resource supplies the path.
 
 The RoboCasa worker's private `observe` reply carries camera dimensions in `width_px` and `height_px` metadata and exactly `width_px × height_px × 3` RGB8 bytes in the socket payload. Metadata remains bounded to 64 KiB and the payload to 12 MiB. State observations keep their JSON `values` response. The plugin verifies the exact dimensions and byte count before emitting the graph's typed frame.

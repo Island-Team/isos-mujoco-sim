@@ -97,7 +97,7 @@ class Service:
                 if self.stopped or self.faulted:
                     raise ValueError("service is not ready")
                 node = request.get("node")
-                observation = self.hardware.observe()
+                observation = self.hardware.status(node)
                 keys = {
                     "robocasa/base/mobile-base": ("base_position", "base_rotation"),
                     "robocasa/arm/right-arm": ("end_effector_position_relative", "end_effector_rotation_relative"),
@@ -126,27 +126,27 @@ class Service:
                 command_id = request.get("command_id")
                 if not isinstance(command_id, str) or not 1 <= len(command_id) <= 128:
                     raise ValueError("invalid command ID")
-                prior = self.commands.get(command_id)
-                if prior is not None:
-                    if prior["node"] != request.get("node") or prior["values"] != request.get("values"):
-                        raise ValueError("command ID conflict")
-                    return prior["result"]
                 node = request.get("node")
                 values = request.get("values")
-                if request.get("control_mode") == "mode" and node == "robocasa/arm/right-arm":
-                    self.hardware.set_control_mode(values)
-                elif node == "robocasa/base/mobile-base":
-                    self.hardware.command_base(values)
-                elif node == "robocasa/torso/torso":
-                    self.hardware.command_torso(values)
-                elif node == "robocasa/arm/right-arm":
-                    if not isinstance(values, dict):
-                        raise ValueError("arm requires position and rotation")
-                    self.hardware.command_arm(values.get("position"), values.get("rotation"))
+                mode = "mode" if (node == "robocasa/arm/right-arm" and
+                                  request.get("control_mode") == "mode") else "command"
+                if node == "robocasa/arm/right-arm" and mode == "mode":
+                    payload = {"mode": values}
+                elif node == "robocasa/arm/right-arm" and isinstance(values, dict):
+                    payload = {key: values[key] for key in ("position", "rotation") if key in values}
+                elif node in ("robocasa/base/mobile-base", "robocasa/torso/torso"):
+                    payload = {"motion": values}
                 elif node == "robocasa/gripper/right-gripper":
-                    self.hardware.command_gripper(values)
+                    payload = {"close": values}
                 else:
                     raise ValueError("unknown command device")
+                fingerprint = {"node": node, "control_mode": mode, "payload": payload}
+                prior = self.commands.get(command_id)
+                if prior is not None:
+                    if prior["fingerprint"] != fingerprint:
+                        raise ValueError("command ID conflict")
+                    return prior["result"]
+                self.hardware.control(node, payload)
                 try:
                     self.hardware.step()
                 except Exception:
@@ -155,7 +155,7 @@ class Service:
                 self.sequence += 1
                 result = {"accepted": True, "sequence": self.sequence,
                           "generation_id": self.generation_id}
-                self.commands[command_id] = {"node": node, "values": values, "result": result}
+                self.commands[command_id] = {"fingerprint": fingerprint, "result": result}
                 return result
             if op == "stop":
                 if self.stop_result is not None:

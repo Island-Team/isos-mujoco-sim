@@ -250,6 +250,8 @@ def full_hardware_contributions(version: str) -> dict:
        "config_service_type": "native", "node_types": sorted({item[2] for item in native})},
       {"id": "robocasa", "entrypoint": "bin/robocasa-worker",
        "args": ["--socket", "${socket}"], "config_service_type": "robocasa",
+       "requirements": [{"path": "${config.host.python_interpreter}", "kind": "file"},
+                        {"path": "${config.host.robocasa_assets}", "kind": "directory"}],
        "environment": [
          {"name": "ISOS_PACKAGE_PYTHON", "value": "${config.host.python_interpreter}"},
          {"name": "ISOS_ROBOCASA_ASSETS", "value": "${config.host.robocasa_assets}"},

@@ -42,6 +42,14 @@ class NodeContributionTests(unittest.TestCase):
     self.assertEqual(environment["ISOS_ROBOCASA_CAMERA_WIDTH"], "${config.service.camera_width}")
     self.assertEqual(environment["ISOS_ROBOCASA_CAMERA_HEIGHT"], "${config.service.camera_height}")
 
+  def test_robocasa_service_requires_prepared_host_paths(self) -> None:
+    services = {item["id"]: item for item in contributions("0.2.4")["runtime_services"]}
+    self.assertEqual(services["robocasa"]["requirements"], [
+      {"path": "${config.host.python_interpreter}", "kind": "file"},
+      {"path": "${config.host.robocasa_assets}", "kind": "directory"},
+    ])
+    self.assertNotIn("python_interpreter", str(services["native"]))
+
   def test_full_hardware_cameras_allow_2048_rgb_payload(self) -> None:
     contract = contributions("0.2.4")
     cameras = [node["profile"] for node_set in contract["node_sets"]

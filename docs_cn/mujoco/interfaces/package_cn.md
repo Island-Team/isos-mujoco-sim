@@ -18,17 +18,20 @@
 | `runtime_services[].node_types` | 字符串数组 / — | 服务可提供的类型 | 必需且非空，须由精确发布包贡献。 |
 | `runtime_services[].resources` | 对象数组 / — | 原生场景选择器，绑定 `package-resources.json` | 原生服务必需；RoboCasa 缺省。 |
 | `runtime_services[].environment` | 对象数组 / — | 子进程所需的已验证主机与服务值 | 缺少必需配置值时阻止 Run。 |
+| `runtime_services[].requirements` | 路径与种类数组 / — | 所选服务的本地前提 | 原生服务要求 MuJoCo 库文件；RoboCasa 要求配置的 Python 解释器文件及资源目录。IsOS 只检查所选服务。 |
 | `node_sets[].nodes[].profile.adapter.settings` | 对象 / — | `service_instance` 和 `device_id` 绑定预设设备 | 两个必需字符串，无默认值；IsOS 校验服务、类型和设备关系。 |
 
 RoboCasa 服务配置还要求 `[services.robocasa]` 中的整数 `camera_width` 和 `camera_height`。模板默认宽 1280、高 720，允许范围均为 64–2048 像素。经过验证的服务交接将其作为 `ISOS_ROBOCASA_CAMERA_WIDTH` 和 `ISOS_ROBOCASA_CAMERA_HEIGHT` 传入；工作进程在创建 Gym 环境前验证两者，并将所得尺寸用于全部三路相机观测。尺寸修改在下次运行时生效。已发布的 `0.2.3` 仍限制为 64–512 像素，模板默认 64 × 64。更大的范围需要新的软件包版本和相应的 IsOS 运行时边界；安装并配置准确版本后，更新节点图的软件包锁定并 Apply。
 
 `config/package-config.json` 为通用 IsOS 软件包配置界面声明中英文标签和说明。`config/package.toml` 提供 `[package]`、`[host]`、`[services.native]` 和 `[services.robocasa]`。已选原生服务需要本地 MuJoCo 3.3.1 目录；已选 RoboCasa 服务需要本地资源及明确选定的 Python 解释器。这些大型主机资源不随软件包下载。路径属于本地部署配置，不属于图节点设置。每个硬件适配器通过 `service_instance` 选择服务；IsOS 在 Apply 与 Run 时解析它。
 
-使用 `./build.sh --output 绝对路径的空目录 --version 0.2.4` 或更高的未使用版本构建候选版。截至 v0.2.3 的已发布标签保持不变。只有两套预设都通过 IsOS `pkg check` 回放，包括拒绝、崩溃、日志和停止场景，候选版才可发布。
+使用 `./build.sh --output 绝对路径的空目录 --version 0.2.5` 或更高的未使用版本构建候选版。截至 v0.2.4 的已发布标签保持不变。只有两套预设都通过 IsOS `pkg check` 回放，包括拒绝、崩溃、日志和停止场景，候选版才可发布。
 
 2026-11-13，`0.2.3` 源码候选版使用 IsOS PR #504 的 EOS 命令确认修复，通过隔离的 `isos pkg check`。设置 `ISOS_AETHER_BIN_DIR` 指向已修复的 EOS 可执行文件，并提供本机 EI 与 MuJoCo 路径，当时运行 `isos pkg check --source <本源码目录> --version 0.2.3 --output <空证据目录> --graph <锁定 0.2.3 的 RoboCasa 完整预设图> --graph <锁定 0.2.3 的原生完整预设图> --package-config <本机 package.toml>`。256 × 192 和 512 × 512 两种配置均通过静态验证、原生 ABI、所有者准入、托管观测／控制／日志及两套预设的确认停止；RoboCasa 三路相机帧均报告请求的尺寸。准确命令、输入、`check.json`、所有者交换和完整构建日志保存在被 Git 忽略的 `data/test/2026-11-13-camera-size/`；候选归档 SHA-256 为 `58e3d9fa8d45345d5fe9a0da5f804d016bc6fbddbcb08fcceeece32d92c0bf6f`。发布和更新图中的精确版本锁定仍需另外执行。
 
 2026-11-13，2048 像素候选版通过 18 项 Python 测试、全部 33 项 CTest、原生插件的 2048 × 2048 RGB8 交换、0.2.4 候选包构建及静态 `isos pkg verify`。修改的双语页面通过链接审计。完整输出位于忽略的 `data/test/20261113-robocasa-2048/`。托管 `pkg check` 和正式发布仍是独立关卡。
+
+RoboCasa 启动器通过 `ISOS_PACKAGE_PYTHON` 接收 `host.python_interpreter`，用 `-B` 执行包内 worker。软件包包含 Python 源码，不包含冻结的 Python 二进制文件或 RoboCasa 环境。IsOS 在 Apply 和 Run 校验所选解释器和资源路径；启动器还要求解释器可执行。缺少 Python 模块或环境不兼容时，worker 在健康检查就绪前启动失败。只选原生服务时不要求 Python。
 
 ## 历史进程节点声明（0.2.0）
 

@@ -28,6 +28,25 @@ class FakeHardware:
     def observe(self):
         return {}
 
+    def status(self, node):
+        del node
+        return self.observe()
+
+    def control(self, node, payload):
+        if node == "robocasa/base/mobile-base":
+            self.command_base(payload["motion"])
+        elif node == "robocasa/torso/torso":
+            self.command_torso(payload["motion"])
+        elif node == "robocasa/arm/right-arm":
+            if "mode" in payload:
+                self.set_control_mode(payload["mode"])
+            else:
+                self.command_arm(payload["position"], payload["rotation"])
+        elif node == "robocasa/gripper/right-gripper":
+            self.command_gripper(payload["close"])
+        else:
+            raise ValueError("unknown control device")
+
     def command_base(self, values):
         self.commands.append(("base", values))
 
@@ -167,7 +186,7 @@ class WorkerTests(unittest.TestCase):
         command = {"op": "command", "node": "robocasa/base/mobile-base",
                    "command_id": "c-1", "values": [0.1, 0, 0]}
         first = service.dispatch(command)
-        self.assertEqual(first, service.dispatch(command))
+        self.assertEqual(first, service.dispatch(command | {"control_mode": "unused"}))
         self.assertEqual(hardware.steps, 1)
         with self.assertRaises(ValueError):
             service.dispatch(command | {"values": [0.2, 0, 0]})
@@ -177,6 +196,20 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(hardware.steps, 2)
         with self.assertRaises(ValueError):
             service.dispatch(command | {"command_id": "c-2"})
+
+    def test_extra_fields_do_not_change_command_identity(self):
+        hardware = FakeHardware()
+        service = Service(hardware)
+        command = {"op": "command", "node": "robocasa/arm/right-arm",
+                   "command_id": "arm-1", "values": {"position": [0, 0, 0],
+                                                      "rotation": [0, 0, 0], "unused": 5}}
+        first = service.dispatch(command)
+        self.assertEqual(first, service.dispatch(command | {
+            "values": {"position": [0, 0, 0], "rotation": [0, 0, 0], "other": True}}))
+        self.assertEqual(hardware.steps, 1)
+        with self.assertRaises(ValueError):
+            service.dispatch(command | {"control_mode": "mode", "values": 0})
+        self.assertEqual(hardware.steps, 1)
 
     def test_step_failure_fences_commands_and_unknown_stop(self):
         hardware = FakeHardware()

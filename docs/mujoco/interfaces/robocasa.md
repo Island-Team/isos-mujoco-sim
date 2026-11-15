@@ -18,13 +18,15 @@ Call `reset(seed)` before control. `command_arm(position, rotation)`, `command_g
 
 Invalid shape, nonfinite or out-of-range motion, nonbinary gripper or mode, missing observation, and use before reset or after close raise `HardwareError`. When RoboCasa reports a terminated or truncated episode, the final step returns robot observations and further control requires reset. An upstream environment exception propagates and faults the core until reset. There is no deadline, asynchronous command, or physical stop guarantee in this in-process interface. A caller needing an emergency stop must provide that policy at its owning control layer.
 
+`control(device_id, payload)` is the general in-process control entry point. It accepts the full `robocasa/...` device ID and an object containing that device's own fields: arm `position` and `rotation` (or `mode`), gripper `close`, and base or torso `motion`. It reads supported fields and ignores unrelated keys. A payload with no usable control field, an incomplete arm pair, or an unknown or read-only device raises `HardwareError`; an invalid supported value still fails its normal validation. `status(device_id)` returns only that device's copied measured fields. The torso reports status unavailable because the pinned wrapper has no torso measurement. Camera status returns its selected RGB8 image; camera control is unsupported. The existing specialized command methods and `observe()` remain available.
+
 ```python
 hardware = Hardware(env)
 hardware.reset(42)
-hardware.command_arm([0, 0, 0], [0, 0, 0])
-hardware.command_gripper(0)
-robot = hardware.step()
-frame = robot["eye-in-hand"]
+hardware.control("robocasa/arm/right-arm", {"position": [0, 0, 0], "rotation": [0, 0, 0]})
+hardware.control("robocasa/gripper/right-gripper", {"close": 0})
+hardware.step()
+frame = hardware.status("robocasa/camera/eye-in-hand")["eye-in-hand"]
 hardware.close()
 ```
 
