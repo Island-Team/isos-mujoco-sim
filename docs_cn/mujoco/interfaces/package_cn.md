@@ -33,6 +33,8 @@ RoboCasa 服务配置还要求 `[services.robocasa]` 中的整数 `camera_width`
 
 RoboCasa 启动器通过 `ISOS_PACKAGE_PYTHON` 接收 `host.python_interpreter`，用 `-B` 执行包内 worker。软件包包含 Python 源码，不包含冻结的 Python 二进制文件或 RoboCasa 环境。IsOS 在 Apply 和 Run 校验所选解释器和资源路径；启动器还要求解释器可执行。缺少 Python 模块或环境不兼容时，worker 在健康检查就绪前启动失败。只选原生服务时不要求 Python。
 
+`0.2.5` 源码候选版于 2026-11-15 通过 24 项 RoboCasa Python 边界测试、11 项节点声明测试和全部 34 项 CTest。打包启动器在创建套接字前拒绝缺失或不可执行的解释器及未准备好依赖的 Python 环境。IsOS 使用 `pkg check --source <源码目录> --version 0.2.5 --output <空证据目录> --graph <RoboCasa 图> --graph <原生图> --package-config <本机 package.toml>`，对两套预设报告 `qualified:true`，静态验证、原生 ABI、所有者校验和托管回放均通过。准确输入和完整日志位于忽略的 `data/test/20261115-general-hardware/`；其中 `pkg-check/check.json` 记录已检查源码提交和资产摘要。这是候选版资格检查，不是正式发布。
+
 ## 历史进程节点声明（0.2.0）
 
 历史 `isos.package@v1` schema `0.2.0` 的 `release.json` 为 `eos.process.mujoco.simulator@v0.2` 增加 `node_contributions.processes[]`。IsOS 根据归档字节和已贡献的进程类型验证声明，EOS 实现指定的生命周期适配器。先前已验证发布包中的历史 `@v1.0` 类型仍按原有路径读取；本清单不贡献该类型。图只保存准确包版本和稳定场景 ID，不保存解析后的路径。
