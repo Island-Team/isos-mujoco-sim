@@ -1,10 +1,38 @@
 # MuJoCo package descriptor and contributions
 
-The [v0.2.1 full hardware contract](full-hardware.md) supersedes the process-only preset described below for new releases. The sections below remain the published v0.2.0 contract and its historical admission evidence.
+This page owns the current hardware package declaration and the historical process node declaration. Runtime control fields for the RoboCasa and native presets are in the [control contract](control.md).
 
-## Generic package process declaration
+## Full robot hardware package
 
-The current `isos.package@v1` schema `0.2.0` `release.json` adds `node_contributions.processes[]` for `eos.process.mujoco.simulator@v0.2`. IsOS verifies the declaration against archived bytes and the contributed process type. EOS implements the named lifecycle adapter. Previously verified releases containing the historical `@v1.0` type remain readable through their existing reader path; this manifest does not contribute that type. Graphs store the exact package pin and stable scene ID, never resolved paths.
+The `0.2.4` source candidate contributes seven EOS hardware type definitions and **Native robot** and **RoboCasa robot** device presets. Each instance pins the exact package both as its type owner and as its adapter owner. The types live in the EOS hardware layer under camera, base, manipulator, gripper, and torso groups; other packages may choose different layers and groups. A preset contains no process node. IsOS starts only the package service referenced by selected nodes, owns its child and logs, and passes a private service endpoint to EOS. EOS loads the verified `libmujoco-eos-node.so` through `isos_node_v2` and admits actuator commands through its Dispatcher.
+
+The exact node type declarations are indexed under [EOS hardware node interfaces](README.md#simulator-interfaces). The following fields follow the current generic IsOS package release and service declarations; IsOS validates the archived bytes and resolves host configuration at Apply and Run.
+
+| Declaration | Type / unit | Purpose and required value | Absence, validation, and compatibility |
+| --- | --- | --- | --- |
+| `node_contributions.node_types[]` | object array / — | Seven EOS hardware types across camera, base, manipulator, gripper, torso | Required for these presets; exact type IDs and port types are in the node interface pages. Unknown types fail admission. |
+| `node_contributions.runtime_services[].id` | string / — | `native` or `robocasa` service identity | Required, unique; no default. |
+| `runtime_services[].entrypoint` | package path / — | `bin/eos-mujoco-sim` or `bin/robocasa-worker` | Required verified executable inside the archive; no path escape or default. |
+| `runtime_services[].args` | string array / — | Owner launch template using `${socket}` and verified scene resource where applicable | Required; references must resolve from declared service inputs. |
+| `runtime_services[].config_service_type` | string / — | Selects `native` or `robocasa` configuration | Required and matched to a configured service instance. |
+| `runtime_services[].node_types` | string array / — | Types eligible for this service | Required, nonempty, and contributed by the exact release. |
+| `runtime_services[].resources` | object array / — | Native scene selector bound to `package-resources.json` | Required for native; absent for RoboCasa. |
+| `runtime_services[].environment` | object array / — | Verified host and service values for the child | Required variables are declared by the exact service; missing configured values block Run. |
+| `node_sets[].nodes[].profile.adapter.settings` | object / — | `service_instance` and `device_id` bind each preset device | Both required strings, no defaults; IsOS verifies service/type/device relation. |
+
+The RoboCasa service configuration also requires integer `camera_width` and `camera_height` in `[services.robocasa]`. The template defaults to 1280 × 720 and must be 64–2048 pixels. The verified service handoff passes them as `ISOS_ROBOCASA_CAMERA_WIDTH` and `ISOS_ROBOCASA_CAMERA_HEIGHT`; the worker validates both before creating the Gym environment and uses the resulting dimensions for all three camera observations. A changed size takes effect on the next Run. Published `0.2.3` retains the 64–512 pixel range and 64 × 64 template default. This larger range requires a new package release and matching IsOS runtime bounds; install and configure that exact pin, then repin and Apply the graph.
+
+`config/package-config.json` declares bilingual labels and descriptions for the generic IsOS package form. `config/package.toml` provides `[package]`, `[host]`, `[services.native]`, and `[services.robocasa]`. A selected native service needs a local MuJoCo 3.3.1 root. A selected RoboCasa service needs local assets and an explicitly selected Python interpreter. These large host resources are not downloaded with the release. Their paths are local deployment configuration, not graph node settings. Every hardware adapter setting selects a `service_instance`; IsOS resolves that instance at Apply and Run.
+
+Build the candidate with `./build.sh --output ABSOLUTE_EMPTY_DIRECTORY --version 0.2.4` or a later unused version. Published tags through v0.2.3 remain unchanged. A candidate is publishable only after the IsOS `pkg check` replay succeeds for both presets, including rejection, crash, logs, and Stop cases.
+
+On 2026-11-13, the `0.2.3` source candidate passed isolated `isos pkg check` with the EOS command acknowledgment fix from IsOS PR #504. That qualification ran `isos pkg check --source <this checkout> --version 0.2.3 --output <empty evidence directory> --graph <RoboCasa full-preset graph pinned to 0.2.3> --graph <native full-preset graph pinned to 0.2.3> --package-config <local package.toml>` with `ISOS_AETHER_BIN_DIR` pointing to the corrected EOS binaries and the normal local EI and MuJoCo host paths set. The 256 × 192 and 512 × 512 configurations each passed static verification, native ABI, owner admission, managed observation/control/logs, and confirmed Stop for both presets. All three RoboCasa camera frames reported the requested dimensions. The exact commands, inputs, `check.json`, owner exchanges, and complete build logs are retained under ignored `data/test/2026-11-13-camera-size/`; the candidate archive SHA-256 is `58e3d9fa8d45345d5fe9a0da5f804d016bc6fbddbcb08fcceeece32d92c0bf6f`. Publication and graph repinning remain separate operator actions.
+
+On 2026-11-13, the 2048-pixel candidate passed 18 Python tests, all 33 CTest cases, a native plugin 2048 × 2048 RGB8 exchange, the 0.2.4 candidate build, and static `isos pkg verify`. Changed bilingual pages passed the link audit. Complete output is under ignored `data/test/20261113-robocasa-2048/`. Managed `pkg check` and release publication remain separate gates.
+
+## Historical process node declaration (0.2.0)
+
+The historical `isos.package@v1` schema `0.2.0` `release.json` adds `node_contributions.processes[]` for `eos.process.mujoco.simulator@v0.2`. IsOS verifies the declaration against archived bytes and the contributed process type. EOS implements the named lifecycle adapter. Previously verified releases containing the historical `@v1.0` type remain readable through their existing reader path; this manifest does not contribute that type. Graphs store the exact package pin and stable scene ID, never resolved paths.
 
 | Field | JSON type / unit | Purpose | Validation and default |
 | --- | --- | --- | --- |
@@ -25,9 +53,9 @@ The package build entrypoint is `build.sh --output <empty-absolute-directory>`. 
 
 `package-resources.json` has `contract:"isos.package-resources@v1"`, string `schema_version:"0.1.0"`, and `resources[]`. A scene resource requires `kind:"scene"`, a unique stable string `id`, nonblank `label` and `description`, a contained relative `path` to MJCF, and its lowercase SHA-256 `sha256`. A device resource requires `kind:"device"`, unique stable string `id`, nonblank `label` and `description`, `metadata.device_kind` (`camera`, `base`, or `manipulator`), and nonempty unique `metadata.scene_ids[]` referencing declared scene IDs. All fields are required and have no default. The generic IsOS selector reads this file; `backend-v2.json` remains the MuJoCo-specific EOS adapter contract and legacy descriptor.
 
-[中文](../../../docs_cn/mujoco/interfaces/package_cn.md) · [Socket](socket.md) · [Package release](../usage/isos-pkg.md#package-release-record)
+[中文](../../../docs_cn/mujoco/interfaces/package_cn.md) · [Socket](control.md) · [Package release](../start/isos-pkg.md#package-release-record)
 
-**Owner and status.** This repository owns the MuJoCo-specific `backend-v2.json` descriptor and `node_contributions` in its current release manifest. The P02 sections below document the historical 0.1.2 candidate; the current source uses the 0.2.0 contract above. IsOS owns the general release-manifest schema, [verified receipt and package admission](https://github.com/Island-Team/isos/blob/master/docs/isos/interfaces/package-verification.md), graph revision, and `/node-options` response. `tools/bundle.py` emits the P02 catalog and `@v0.2` process contribution; IsOS semantic admission and the generic P03 option API are implemented in their owner repository; the pinned R05 replay verifies their use with this package. `backend-v2.json`, schema `2.0.0`, protocol name `mujoco-v2`, and socket wire `2.0.0` remain compatibility identities when the authored graph format is `0.2.1`.
+**Owner and status.** This repository owns the MuJoCo-specific `backend-v2.json` descriptor and `node_contributions` in its current release manifest. The P02 sections below document the historical 0.1.2 candidate; the current source uses the 0.2.0 contract above. IsOS owns the general release-manifest schema, verified receipt and package admission, graph revision, and `/node-options` response. `tools/bundle.py` emits the P02 catalog and `@v0.2` process contribution; IsOS semantic admission and the generic P03 option API are implemented in their owner repository; the pinned R05 replay verifies their use with this package. `backend-v2.json`, schema `2.0.0`, protocol name `mujoco-v2`, and socket wire `2.0.0` remain compatibility identities when the authored graph format is `0.2.1`.
 
 ## Historical 0.1.2 descriptor fields
 
@@ -115,6 +143,6 @@ The candidate archive contains the CMake-installed `bin/eos-mujoco-sim`, with no
 
 Historical verified sidecars contributed only `eos.process.mujoco@v1.0`, had no process-type description or selector, and composed a `1.0.0` graph with fixed device IDs. Old sidecars may receive a catalog-only description fallback from their readers, without changed verified bytes. The current builder emits one `eos.process.mujoco.simulator@v0.2` process type and a two-node `0.2.1` camera-only set; IsOS accepts and verifies the new descriptor before publishing this preset as a graph option. Package assets may use the same P03 option mechanism later; this release defines no `egia.tensor` execution.
 
-## Current v0.2.x binary adapter
+## Historical v0.2.0 binary adapter
 
 The release schema `0.2.0` declares `adapters:[{"family":"mujoco-v2","library":"lib/libmujoco-eos-node.so","sha256":"<64 lowercase hex>"}]` and an identical `node_contributions.libraries` path/digest. This library implements the versioned `isos_node_v1` C ABI; it is not a second simulator process. EOS passes the admitted graph instance to `create`, owns callback lifetime and the simulator child, and calls `stop` before unloading. A successful plugin Stop means observation callbacks are quiescent; EOS separately proves actuator stop through the strict companion socket before child termination. The first `sim-hardware` set contains only the simulator process and JPEG camera. Base and manipulator remain cataloged resources but are unavailable for managed execution until EOS proves actuator Stop.

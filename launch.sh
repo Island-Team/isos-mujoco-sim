@@ -19,6 +19,8 @@ Usage: ./launch.sh --list-benchmarks [--split target|pretrain|all] [--filter TEX
                    [--gui|--no-gui] [--run-dir PATH] [--executable PATH]
                    [--manual-step]
        ./launch.sh --show-config
+       ./launch.sh --record-demo [FILE]
+       ./launch.sh --replay-record FILE
 
 SIM_PROFILE=dev runs the configured benchmark with a GUI by default.
 SIM_PROFILE=isos-pkg selects the IsOS package profile. Use --benchmark
@@ -43,9 +45,38 @@ case "${1:-}" in
     printf 'Camera: %s | render=%sx%s GUI width=%s\n' \
       "$BENCHMARK_CAMERA" "$BENCHMARK_CAMERA_WIDTH" "$BENCHMARK_CAMERA_HEIGHT" "$BENCHMARK_GUI_WIDTH"
     printf 'RoboCasa root: %s\n' "$(resolve_launch_path "${ROBOCASA_ROOT:-.local/robocasa}")"
+    printf 'Hardware record: enabled=%s path=%s\n' \
+      "$BENCHMARK_RECORD_ENABLED" "$(resolve_launch_path "$BENCHMARK_RECORD_PATH")"
     printf 'Native scene: %s | executable=%s\n' "$SIM_SCENE" "$SIM_EXECUTABLE"
     exit ;;
 esac
+
+if [[ ${1:-} == --record-demo || ${1:-} == --replay-record ]]; then
+  record_action=$1
+  shift
+  venv="$launcher_root/.local/robocasa-venv"
+  [[ -x "$venv/bin/python" ]] || {
+    echo "Run ./build.sh to prepare the RoboCasa Python environment" >&2
+    exit 2
+  }
+  if [[ "$record_action" == --record-demo ]]; then
+    [[ "$BENCHMARK_RECORD_ENABLED" == true ]] || {
+      echo "Recording is disabled; set [record].enabled=true or BENCHMARK_RECORD_ENABLED=true" >&2
+      exit 2
+    }
+    if (($# == 0)); then
+      exec env PYTHONPATH="$launcher_root" "$venv/bin/python" \
+        "$launcher_root/tools/robocasarecord.py" --demo \
+        "$(resolve_launch_path "$BENCHMARK_RECORD_PATH")"
+    fi
+    [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+    exec env PYTHONPATH="$launcher_root" "$venv/bin/python" \
+      "$launcher_root/tools/robocasarecord.py" --demo "$1"
+  fi
+  [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+  exec env PYTHONPATH="$launcher_root" "$venv/bin/python" \
+    "$launcher_root/tools/robocasarecord.py" --replay "$1"
+fi
 
 if [[ $# -eq 0 && "$SIM_PROFILE" == isos-pkg ]]; then
   echo "IsOS package profile selected. Run ./build.sh --output ABSOLUTE_EMPTY_DIRECTORY to create a package asset; use --benchmark or --scene for a local launch." >&2

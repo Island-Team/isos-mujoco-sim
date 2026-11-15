@@ -45,9 +45,9 @@ required = {
 }
 assert required <= set(ids)
 for relative in (
-    "docs/mujoco/interfaces/socket.md", "docs_cn/mujoco/interfaces/socket_cn.md",
+    "docs/mujoco/interfaces/control.md", "docs_cn/mujoco/interfaces/control_cn.md",
     "docs/mujoco/architecture.md", "docs_cn/mujoco/architecture_cn.md",
-    "docs/mujoco/usage/isos-pkg.md", "docs_cn/mujoco/usage/isos-pkg_cn.md",
+    "docs/mujoco/start/isos-pkg.md", "docs_cn/mujoco/start/isos-pkg_cn.md",
 ):
     content = (ROOT / relative).read_text(encoding="utf-8")
     for marker in ("R06", "strict-stop-v1", "base_stop", "arm_stop", "stop_epoch", "generation_id", ".stop"):

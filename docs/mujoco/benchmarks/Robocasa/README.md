@@ -1,6 +1,6 @@
 # RoboCasa benchmark
 
-[Package overview](../../README.md) · [Usage](../../usage/README.md) · [中文](../../../../docs_cn/mujoco/benchmarks/Robocasa/README_cn.md)
+[Package overview](../../README.md) · [Usage](../../start/README.md) · [中文](../../../../docs_cn/mujoco/benchmarks/Robocasa/README_cn.md)
 
 The active benchmark is the upstream RoboCasa365 `CloseFridge` atomic task. The first local episode uses the official `robocasa/CloseFridge` Gym environment, target split, seed 42, and RoboCasa's own success check: the selected fridge door must be closed. The script in `tools/robocasahrun.py` takes 20 bounded random actions with base motion held at zero as a smoke baseline. Its result demonstrates environment launch and scoring, not a trained policy or a comparable leaderboard score. RoboCasa recommends 20 episodes per task for evaluation; retain seeds, assets, policy revision, and horizon when reporting a benchmark result.
 
@@ -8,7 +8,7 @@ The active benchmark is the upstream RoboCasa365 `CloseFridge` atomic task. The 
 
 RoboCasa source is [MIT licensed](https://github.com/robocasa/robocasa/blob/main/LICENSE); its [README](https://github.com/robocasa/robocasa#license) identifies assets and datasets as CC BY 4.0. The task implementation and success rule are in upstream `robocasa/environments/kitchen/atomic/kitchen_doors.py`. The [RoboCasa365 paper](https://robocasa.ai/assets/robocasa365_iclr26.pdf) describes the benchmark. Keep the downloaded asset attribution with any redistributed results or assets.
 
-The former package-authored pick-and-place and navigation tasks are legacy simulator fixtures for compatibility tests and are not active benchmarks. Their private C++ benchmark RPC remains outside EOS and EGIA. RoboCasa runs in the upstream environment; the [Python robot hardware core](../../interfaces/robocasa-hardware.md) controls and observes its PandaOmron robot in process, and [local records](../../interfaces/robocasa-record.md) replay hardware commands for control testing. EOS agent control still requires a governed adapter before it can be claimed as an end-to-end EOS evaluation.
+The former package-authored pick-and-place and navigation tasks are legacy simulator fixtures for compatibility tests and are not active benchmarks. Their private C++ benchmark RPC remains outside EOS and EGIA. RoboCasa runs in the upstream environment; the [Python robot hardware core](../../interfaces/robocasa.md) controls and observes its PandaOmron robot in process, and [local records](../../interfaces/record.md) replay hardware commands for control testing. EOS agent control still requires a governed adapter before it can be claimed as an end-to-end EOS evaluation.
 
 ## List and select a task
 
@@ -26,6 +26,10 @@ The benchmark list comes from the pinned RoboCasa task registry. By default it s
 Set `[task].name`, `split`, `scene`, `seed`, and `steps` in `config/benchmarks/robocasa.toml` to change shared defaults. Root `config.toml` selects this file with `BENCHMARK_CONFIG`. The ignored `.env` can override each value with `export BENCHMARK_TASK=...` and similar assignments, including `export BENCHMARK_SCENE=1:1`. Command-line flags override both. Run `./launch.sh` for the configured benchmark or `./launch.sh --native` for the configured native `SIM_SCENE`. `--show-config` prints the effective selection. The JSON result records the actual kitchen `scene` as `layout:style`. The upstream horizon is task metadata; this runner's `--steps` is a shorter smoke budget and does not claim a full evaluation episode.
 
 The checked-in [RoboCasa preset](../../../../config/benchmarks/robocasa.toml) groups the task selection, camera observation, and GUI display settings. To use another checked-in preset, set `BENCHMARK_CONFIG` in root `config.toml` to its path. The loader rejects missing sections, missing fields, unknown fields, and wrong TOML types before starting a run.
+
+## Local hardware records
+
+`[record].enabled` in `config/benchmarks/robocasa.toml` defaults to `false`; `[record].path` defaults to `.run/hardware-record.json`. After enabling, `./launch.sh --record-demo` writes a two-step PandaOmron hardware record to that path, and `./launch.sh --replay-record FILE` checks a selected record. These records exercise hardware control and contain no benchmark reward, success, task text, or images. The [record interface](../../interfaces/record.md) owns the format and replay limits.
 
 ## Camera and display configuration
 

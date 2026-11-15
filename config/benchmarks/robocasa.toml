@@ -14,3 +14,7 @@ height = 1080
 
 [gui]
 width = 1920
+
+[record]
+enabled = false
+path = ".run/hardware-record.json"

@@ -17,6 +17,12 @@ load_launch_config() {
   [[ "$DEV_GUI" == true || "$DEV_GUI" == false ]] || {
     echo "DEV_GUI must be true or false" >&2; return 2;
   }
+  [[ "$BENCHMARK_RECORD_ENABLED" == true || "$BENCHMARK_RECORD_ENABLED" == false ]] || {
+    echo "BENCHMARK_RECORD_ENABLED must be true or false" >&2; return 2;
+  }
+  [[ -n "$BENCHMARK_RECORD_PATH" ]] || {
+    echo "BENCHMARK_RECORD_PATH must be a nonempty path" >&2; return 2;
+  }
 }
 
 new_dev_log() {

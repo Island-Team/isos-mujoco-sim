@@ -2,7 +2,7 @@
 
 **状态：** 场景引擎、分帧套接字、包拥有的 P02 场景/设备目录及 IsOS P02/P03 准入和选项均已实现。R05 严格启动与健康集成已在固定版本的 IsOS → EOS → MuJoCo 回放中通过限定范围验收。R06 MuJoCo 停止通道已合并，限定范围的真实 IsOS → EOS → MuJoCo 停止回放通过；更完整的 R06 故障验收及 M3 控制验收仍待完成。产品版本 `0.1.1` 不代表套接字协议 `2.0.0` 是产品发布版本。
 
-所有者契约见[包描述符与声明](interfaces/package_cn.md)、[EOS 持有的套接字](interfaces/socket_cn.md)和[评测 RPC](../../docs/mujoco/interfaces/benchmark.md)。本页描述算法，不重复负载定义。
+所有者契约见[包描述符与声明](interfaces/package_cn.md)、[EOS 持有的套接字](interfaces/control_cn.md)和[评测 RPC](../../docs/mujoco/interfaces/benchmark.md)。本页描述算法，不重复负载定义。
 
 ## 目标激活算法
 
@@ -24,7 +24,7 @@ IsOS 先运行 P01 收据与路径验证，再解析精确验证过的描述符�
 
 ## 目标命令与日志算法
 
-**R05 模拟器实现。** [套接字契约](interfaces/socket_cn.md)拥有精确的标志、健康字段、边界、错误码及保留期。IsOS 生成配置为 EOS 管理的启动选择已验证包和场景。EOS 根据管理关系推导 `--managed-strict-socket`，而不是从图可写设置读取。严格模式拒绝历史 gRPC `SimulatorService` 与 benchmark 套接字参数；否则 `SimulatorService.Execute` 会成为绕过 Dispatcher 的第二条执行器路线，而 benchmark Reset/Step 也能改变同一引擎状态。可信评测器使用独立直接启动。不带标志的直接启动保留线协议 `2.0.0` 下现有的旧帧、gRPC 和 benchmark 行为。
+**R05 模拟器实现。** [套接字契约](interfaces/control_cn.md)拥有精确的标志、健康字段、边界、错误码及保留期。IsOS 生成配置为 EOS 管理的启动选择已验证包和场景。EOS 根据管理关系推导 `--managed-strict-socket`，而不是从图可写设置读取。严格模式拒绝历史 gRPC `SimulatorService` 与 benchmark 套接字参数；否则 `SimulatorService.Execute` 会成为绕过 Dispatcher 的第二条执行器路线，而 benchmark Reset/Step 也能改变同一引擎状态。可信评测器使用独立直接启动。不带标志的直接启动保留线协议 `2.0.0` 下现有的旧帧、gRPC 和 benchmark 行为。
 
 严格就绪须端到端核对，不能仅依赖连接成功。EOS 探测图中每个已声明的场景设备，检查协议版本、回显请求 ID、正面的 `ok` 与 `accepted`，以及响应特性列表中的 `strict-socket-v1`。模拟器只有能执行精确设备/操作匹配、有限的有类型运动限制与有界 ID 后，才绑定严格帧监听器。子进程遗漏或矛盾地公告特性时，EOS 拒绝并回收。EOS 的 `BackendChild::wait_ready` 与适配器健康现已在发布就绪前要求精确特性；固定版本的真实子进程回放覆盖了两个场景。
 
@@ -46,7 +46,7 @@ EOS 中封存的 `logs/test/20261102-r05-cross-owner-qualifier/qualification.md`
 
 ## R06 停止通道设计目标
 
-[所有者套接字契约](interfaces/socket_cn.md#r06-受管理停止契约)固定新增字段、稳定错误码、1000 ms 停止期限、每连接 250 ms 入口期限和 `strict-stop-v1` 特性。[48 个设计用例](../../tests/fixtures/strict_stop_lane/cases.json)固定故障、并发及生命周期行为。三个入口工作线程的变更已通过独立设计及实现复审，并在 PR #21 合并。限定范围的跨所有者安全停止回放通过；更完整的故障验收仍待完成。
+[所有者套接字契约](interfaces/control_cn.md#r06-受管理停止契约)固定新增字段、稳定错误码、1000 ms 停止期限、每连接 250 ms 入口期限和 `strict-stop-v1` 特性。[48 个设计用例](../../tests/fixtures/strict_stop_lane/cases.json)固定故障、并发及生命周期行为。三个入口工作线程的变更已通过独立设计及实现复审，并在 PR #21 合并。限定范围的跨所有者安全停止回放通过；更完整的故障验收仍待完成。
 
 受管理主监听器最多使用 32 个普通工作槽和 8 个入口槽。它从既有路径推导独立、仅所有者可访问的 `.stop` 套接字，后者具有自己的监听器、三个停止入口工作线程、从 accept 起计算的 250 ms 部分帧到期机制和一个预留停止执行槽。伴随监听器只解析 `health` 与 `stop`；EOS 探测其健康，并把所有受管停止发送到此处。主入口中八条阻塞连接不能占用伴随槽。若此前只有两个部分停止帧且没有其他排队者，第三个工作线程可在有效停止连接后的自身 250 ms 入口期限内完成分类，保持 500 ms 分类上界；若三个较早的部分帧占满入口，第四帧可能在队列中到期，停止结果为未知。不能用脱离管理的线程或无限制的客户分配持有引擎状态。停止通道在预留时记录新的引擎停止 epoch，使两个运动租期及旧命令令牌失效，再在短时引擎命令状态锁内分别保持底盘和机械臂。每个受管理子进程启动时还生成全新的 128 位 `generation_id`；两个健康路径都返回它，EOS 在每次受管理运动和伴随停止中回传。即使旧代请求的 epoch 与新代初始 `"0"` 相同，旧代延迟请求仍以 `stale_generation` 拒绝。每个受管理运动还携带当前 `stop_epoch` 前提，初始值为 `"0"`；引擎在同一锁内写目标前复核。比较**新键**的 epoch 前须先查询运动日志：相同旧键的重发在停止后仍返回原结果，旧键改变 epoch 则报冲突。屏障前已提交的运动可能之后才返回响应，但停止必须覆盖其目标之后才能确认；已排队的旧运动返回 `command_interrupted`，屏障后才解析的延迟**新键**旧帧返回 `stop_fenced`。这是 EOS `has_terminal_stop_fence` 所需的次序证明，旧响应中的 `accepted` 位不足以证明。
 
@@ -66,13 +66,13 @@ EOS 中封存的 `logs/test/20261102-r05-cross-owner-qualifier/qualification.md`
 
 **文档状态修正，2026-11-02：** 在已合并的所有者树 `c171208` 上，`python3 tests/fixtures/strict_stop_lane/check.py`、`python3 tests/fixtures/strict_socket/check.py`、`python3 tests/catalogtest.py`、`python3 tests/nodes.py`、`python3 tests/release.py`、`cmake -S . -B build -DMUJOCO_ROOT=/home/ashex/mujoco-3.16.0-linux-x86_64/mujoco-3.16.0`、`cmake --build build -j4`、`ctest --test-dir build --output-on-failure`、已修改 Markdown 的相对链接检查及 `git diff --check` 均通过。CTest 为 24/24；已修改文档的 119 个相对链接目标均存在。完整输出在忽略的 `logs/test/20261102-r06-doc-status/`。
 
-[English](../../docs/mujoco/architecture.md) · [使用指南](usage/README_cn.md)
+[English](../../docs/mujoco/architecture.md) · [使用指南](start/README_cn.md)
 
 一个模拟器进程在启动时加载一个场景。引擎持有 MuJoCo 模型与数据、带种子的确定性重置、固定步长物理计算、机器人命令目标、遥测、相机渲染和场景评分。EOS 面向机器人的接口与可信评测接口共享引擎，但发布不同的信息。评测器可以重置、步进、读取真实状态与评分；代理只能通过 EOS 使用已声明的观察和动作。
 
 直接运行以 `--scene` 选场景；当前 IsOS/EOS v2 部署在已应用的共享图中选择场景，EOS 将路径传给其模拟器子进程。MJCF 必须且只能包含一个支持的自定义数值标记：`eos_benchmark_pick_place_v1` 或 `eos_benchmark_navigation_v1`。引擎还验证必要命名元素，包括导航场景的 `navigation_goal`。可加载的任意 XML 不会自动成为受支持的评测场景；新场景需要明确的重置、评分、能力和测试。更换场景需要重启进程。
 
-模拟器仍提供旧版 `eos.simulator.v1.SimulatorService` gRPC 套接字，供旧的直接集成使用。当前 IsOS/EOS v2 运行时使用独立的、仅所有者可访问的帧格式套接字，由 `--v2-socket` 指定；契约见 [backend_cn.md](usage/isos-pkg_cn.md)。EOS 持有模拟器子进程，将图中声明的观察与 primitive 端口交给代理。benchmark 套接字与两种机器人接口均分离。此软件包不链接到 EOS core。
+模拟器仍提供旧版 `eos.simulator.v1.SimulatorService` gRPC 套接字，供旧的直接集成使用。当前 IsOS/EOS v2 运行时使用独立的、仅所有者可访问的帧格式套接字，由 `--v2-socket` 指定；契约见 [backend_cn.md](start/isos-pkg_cn.md)。EOS 持有模拟器子进程，将图中声明的观察与 primitive 端口交给代理。benchmark 套接字与两种机器人接口均分离。此软件包不链接到 EOS core。
 
 EGIA 连接已运行的 EOS，发现健康设备和版本化 primitive，并通过 EOS 执行。它不能获得评测种子、目标真值、特权状态或评分。代理评测将通过 EOS 可见的行为与独立评测器的私有结果比较。
 
@@ -107,7 +107,7 @@ IsOS 受管理路径使用严格模式的 v2 帧套接字。以下旧路径仍�
 
 - 命令：`eos-mujoco-sim --help` 列出直接运行的 `--socket`、`--benchmark-socket`、可选 `--v2-socket` 与 `--managed-strict-socket`；`launch.sh`/`kill.sh` 持有独立进程；`benchmark-eval` 仅供评测器使用。
 - 安装：`CMakeLists.txt` 只将 `eos-mujoco-sim` 安装到 `bin`。`tools/bundle.py` 生成独立的 IsOS 包；CMake 不安装测试及基准工具。
-- 接口：直接运行的历史 gRPC simulator 与 benchmark 套接字仍为私有路径；受管理路径仅开放 v2 帧套接字和派生的 `.stop` 伴随套接字。精确请求与响应契约见 `docs/mujoco/interfaces/socket.md`。
+- 接口：直接运行的历史 gRPC simulator 与 benchmark 套接字仍为私有路径；受管理路径仅开放 v2 帧套接字和派生的 `.stop` 伴随套接字。精确请求与响应契约见 `docs/mujoco/interfaces/control.md`。
 - 图版本：`tools/nodes.py` 输出七个 `@v0.1` 注册类型；`tools/catalog.py` 输出 catalog `0.1.0`。IsOS 持有编写图的版本与持久化；模拟器不修改已应用图。
 
 ## 后续验证
@@ -118,7 +118,7 @@ IsOS 受管理路径使用严格模式的 v2 帧套接字。以下旧路径仍�
 
 [English](../../docs/mujoco/architecture.md)
 
-**状态：**归属方源码检查、Q03 final-17 选定源码重放及 Q04 final-5 合并后提交重放均已通过。独立 Q04 归档审查没有 P1/P2 发现。`v0.1.1` 标签已发布，后续五方发布资产重放通过了其既定 Q04/M5 关卡；详见[软件包发布记录](usage/isos-pkg_cn.md#软件包发布记录)和 [EOS Q04 验证记录](https://github.com/Island-Team/Island-eos/blob/master/docs_cn/island/q04-merged-qualification_cn.md)。仿真器拥有场景加载、确定性复位、物理、渲染、私有套接字及基准评分。EOS 拥有机器人侧路由。基准真实状态不得通过 EOS、EGIA 或界面暴露。
+**状态：**归属方源码检查、Q03 final-17 选定源码重放及 Q04 final-5 合并后提交重放均已通过。独立 Q04 归档审查没有 P1/P2 发现。`v0.1.1` 标签已发布，后续五方发布资产重放通过了其既定 Q04/M5 关卡；详见[软件包发布记录](start/isos-pkg_cn.md#软件包发布记录)和 [EOS Q04 验证记录](https://github.com/Island-Team/Island-eos/blob/master/docs_cn/island/q04-merged-qualification_cn.md)。仿真器拥有场景加载、确定性复位、物理、渲染、私有套接字及基准评分。EOS 拥有机器人侧路由。基准真实状态不得通过 EOS、EGIA 或界面暴露。
 
 **Q03 所有者初始基线（2026-11-03）：**已实现 `tests/q03bench.py`、私有 `benchmark-reset` 工具及失败路径单元测试。此处是本机直接套接字证据，不等同于跨仓库安装重放或发布批准。初次完整输出保留在 Git 忽略的 `logs/test/20261103-q03-mujoco/`；最终渲染器探针软件包保存在 `logs/test/20261103-q03-mujoco-review-final/`；无碰撞的逐请求原始样本及六份子进程日志保存在 `logs/test/20261103-q03-mujoco-review-final-2/`。
 

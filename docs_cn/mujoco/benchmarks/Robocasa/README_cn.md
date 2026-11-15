@@ -1,6 +1,6 @@
 # RoboCasa 基准
 
-[English](../../../../docs/mujoco/benchmarks/Robocasa/README.md) · [使用指南](../../usage/README_cn.md)
+[English](../../../../docs/mujoco/benchmarks/Robocasa/README.md) · [使用指南](../../start/README_cn.md)
 
 当前基准采用上游 RoboCasa365 的 `CloseFridge` 原子任务。首次本地回合使用官方 `robocasa/CloseFridge` Gym 环境、target 划分、种子 42 和 RoboCasa 自身的成功判定：选定的冰箱门必须关闭。`tools/robocasahrun.py` 在底盘运动为零的条件下执行 20 个有界随机动作，作为启动冒烟基线。结果只证明环境启动与评分，并不代表训练策略或可与排行榜比较的成绩。正式评测按 RoboCasa 建议每任务运行 20 回合，并记录种子、资源、策略版本和时长。
 
@@ -8,7 +8,7 @@
 
 RoboCasa [源码采用 MIT 许可](https://github.com/robocasa/robocasa/blob/main/LICENSE)；其 [README](https://github.com/robocasa/robocasa#license) 说明资源与数据集采用 CC BY 4.0。任务实现和成功规则位于上游 `robocasa/environments/kitchen/atomic/kitchen_doors.py`。[RoboCasa365 论文](https://robocasa.ai/assets/robocasa365_iclr26.pdf) 描述基准。再分发资源或结果时应保留资源署名。
 
-原有自行设计的抓取放置和导航任务仅作为历史模拟器兼容性测试场景，不再是当前基准。其私有 C++ 基准 RPC 仍不通过 EOS 或 EGIA 暴露。RoboCasa 在上游环境中运行；[Python 机器人硬件核心](../../interfaces/robocasa-hardware_cn.md)在进程内控制并观测 PandaOmron 机器人，[本地记录](../../interfaces/robocasa-record_cn.md)可重放硬件命令以测试控制逻辑。EOS 代理控制仍需受控适配器，完成之前不能称为 EOS 端到端评测。
+原有自行设计的抓取放置和导航任务仅作为历史模拟器兼容性测试场景，不再是当前基准。其私有 C++ 基准 RPC 仍不通过 EOS 或 EGIA 暴露。RoboCasa 在上游环境中运行；[Python 机器人硬件核心](../../interfaces/robocasa_cn.md)在进程内控制并观测 PandaOmron 机器人，[本地记录](../../interfaces/record_cn.md)可重放硬件命令以测试控制逻辑。EOS 代理控制仍需受控适配器，完成之前不能称为 EOS 端到端评测。
 
 ## 列出并选择任务
 
@@ -26,6 +26,10 @@ RoboCasa [源码采用 MIT 许可](https://github.com/robocasa/robocasa/blob/mai
 在 `config/benchmarks/robocasa.toml` 的 `[task]` 中设置 `name`、`split`、`scene`、`seed` 和 `steps`，可修改共享默认值。根目录 `config.toml` 通过 `BENCHMARK_CONFIG` 指向该文件。被忽略的 `.env` 可用 `export BENCHMARK_TASK=...` 等赋值覆盖，也可设置 `export BENCHMARK_SCENE=1:1`。命令行参数优先于两者。运行 `./launch.sh` 使用配置的基准，或运行 `./launch.sh --native` 使用配置的原生 `SIM_SCENE`。`--show-config` 输出生效的选择。JSON 结果会以 `layout:style` 记录实际厨房 `scene`。上游时长是任务元数据；此运行器的 `--steps` 是较短的冒烟预算，不表示完成正式评测回合。
 
 纳入版本控制的 [RoboCasa 预设](../../../../config/benchmarks/robocasa.toml) 将任务选择、相机观测和 GUI 显示设置分组。要使用另一份预设，可在根目录 `config.toml` 将 `BENCHMARK_CONFIG` 设为其路径。启动前，加载器会拒绝缺失的分组或字段、未知字段以及错误的 TOML 类型。
+
+## 本地硬件记录
+
+`config/benchmarks/robocasa.toml` 中的 `[record].enabled` 默认 `false`；`[record].path` 默认 `.run/hardware-record.json`。启用后，`./launch.sh --record-demo` 在该路径写入两步 PandaOmron 硬件记录，`./launch.sh --replay-record FILE` 检查指定记录。记录用于硬件控制测试，不包含基准奖励、成功信息、任务文本或图像。格式与重放限制见[记录接口](../../interfaces/record_cn.md)。
 
 ## 相机和显示配置
 

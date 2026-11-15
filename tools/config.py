@@ -30,6 +30,8 @@ BENCHMARK_FIELDS = {
              "width": ("BENCHMARK_CAMERA_WIDTH", int),
              "height": ("BENCHMARK_CAMERA_HEIGHT", int)},
   "gui": {"width": ("BENCHMARK_GUI_WIDTH", int)},
+  "record": {"enabled": ("BENCHMARK_RECORD_ENABLED", bool),
+             "path": ("BENCHMARK_RECORD_PATH", str)},
 }
 
 
