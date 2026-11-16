@@ -4,16 +4,12 @@ launcher_root=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 load_launch_config() {
   local assignments
-  assignments=$(python3 "$launcher_root/tools/config.py" "$launcher_root/config.toml") || return
+  assignments=$(python3 "$launcher_root/tools/config.py" "$launcher_root/config/dev.toml") || return
   eval "$assignments"
   if [[ -f "$launcher_root/.env" ]]; then
     # Local shell overrides are operator-owned.
     source "$launcher_root/.env"
   fi
-  case "$SIM_PROFILE" in
-    dev|isos-pkg) ;;
-    *) echo "SIM_PROFILE must be dev or isos-pkg" >&2; return 2 ;;
-  esac
   [[ "$DEV_GUI" == true || "$DEV_GUI" == false ]] || {
     echo "DEV_GUI must be true or false" >&2; return 2;
   }

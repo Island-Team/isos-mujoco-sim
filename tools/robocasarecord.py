@@ -24,7 +24,7 @@ def environment(record):
 
 def main():
   root = Path(__file__).resolve().parent.parent
-  with (root / "config.toml").open("rb") as source:
+  with (root / "config/dev.toml").open("rb") as source:
     benchmark_path = Path(os.environ.get("BENCHMARK_CONFIG",
                                          tomllib.load(source)["BENCHMARK_CONFIG"]))
   if not benchmark_path.is_absolute():

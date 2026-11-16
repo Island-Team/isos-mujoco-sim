@@ -4,7 +4,7 @@
 
 当前基准采用上游 RoboCasa365 的 `CloseFridge` 原子任务。首次本地回合使用官方 `robocasa/CloseFridge` Gym 环境、target 划分、种子 42 和 RoboCasa 自身的成功判定：选定的冰箱门必须关闭。`tools/robocasahrun.py` 在底盘运动为零的条件下执行 20 个有界随机动作，作为启动冒烟基线。结果只证明环境启动与评分，并不代表训练策略或可与排行榜比较的成绩。正式评测按 RoboCasa 建议每任务运行 20 回合，并记录种子、资源、策略版本和时长。
 
-默认运行 `./launch.sh` 即启动此回合。脚本从根目录 `config.toml` 读取 `ROBOCASA_ROOT`，然后由 `.env` 覆盖；空值使用忽略的 `.local/robocasa`。若源码、运行环境或资源缺失，启动脚本先询问再设置。`./launch.sh --robocasa --seed 42 --steps 20` 可显式指定任务预算。设置脚本固定 RoboCasa 与 robosuite 源码版本、安装私有 Python 3.11 环境，并从固定版本的官方 RoboCasa 资源数据集下载纹理和通用装置资源，再从经过校验和验证的社区镜像下载 Lightwheel 装置与物体资源。这些文件位于忽略的 `.local/`。Python 运行环境及 C++ 构建均使用 MuJoCo 3.3.1。
+默认运行 `./launch.sh` 即启动此回合。脚本从`config/dev.toml` 读取 `ROBOCASA_ROOT`，然后由 `.env` 覆盖；空值使用忽略的 `.local/robocasa`。若源码、运行环境或资源缺失，启动脚本先询问再设置。`./launch.sh --robocasa --seed 42 --steps 20` 可显式指定任务预算。设置脚本固定 RoboCasa 与 robosuite 源码版本、安装私有 Python 3.11 环境，并从固定版本的官方 RoboCasa 资源数据集下载纹理和通用装置资源，再从经过校验和验证的社区镜像下载 Lightwheel 装置与物体资源。这些文件位于忽略的 `.local/`。Python 运行环境及 C++ 构建均使用 MuJoCo 3.3.1。
 
 RoboCasa [源码采用 MIT 许可](https://github.com/robocasa/robocasa/blob/main/LICENSE)；其 [README](https://github.com/robocasa/robocasa#license) 说明资源与数据集采用 CC BY 4.0。任务实现和成功规则位于上游 `robocasa/environments/kitchen/atomic/kitchen_doors.py`。[RoboCasa365 论文](https://robocasa.ai/assets/robocasa365_iclr26.pdf) 描述基准。再分发资源或结果时应保留资源署名。
 
@@ -23,9 +23,9 @@ RoboCasa [源码采用 MIT 许可](https://github.com/robocasa/robocasa/blob/mai
 
 基准列表取自固定版本的 RoboCasa 任务注册表。默认显示有 `target` 数据集条目的任务；使用 `--split pretrain` 或 `--split all` 查看其他集合。每行包含上游回合时长和本地资源状态。`--list-kitchens` 显示厨房布局与风格候选组合；具体任务可能排除某些组合。target 划分使用 `1:1` 至 `10:10` 的配对场景；不传 `--kitchen-scene` 时，RoboCasa 按种子选择场景。`CloseFridge` 已通过冒烟验证。选择其他已注册任务或固定厨房场景需要完整物体资源。启动器和默认 `./build.sh` 会在配置的选择需要这些资源时先询问；压缩文件约 8 GB，解压还需额外空间。拒绝下载不影响首个任务设置。也可显式运行 `./tools/robocasasetup.sh --full`。更广的目录已在上游注册，但尚未逐任务完成冒烟验证。原生场景列表取自软件包拥有的目录，显示两个兼容性场景 ID。
 
-在 `config/benchmarks/robocasa.toml` 的 `[task]` 中设置 `name`、`split`、`scene`、`seed` 和 `steps`，可修改共享默认值。根目录 `config.toml` 通过 `BENCHMARK_CONFIG` 指向该文件。被忽略的 `.env` 可用 `export BENCHMARK_TASK=...` 等赋值覆盖，也可设置 `export BENCHMARK_SCENE=1:1`。命令行参数优先于两者。运行 `./launch.sh` 使用配置的基准，或运行 `./launch.sh --native` 使用配置的原生 `SIM_SCENE`。`--show-config` 输出生效的选择。JSON 结果会以 `layout:style` 记录实际厨房 `scene`。上游时长是任务元数据；此运行器的 `--steps` 是较短的冒烟预算，不表示完成正式评测回合。
+在 `config/benchmarks/robocasa.toml` 的 `[task]` 中设置 `name`、`split`、`scene`、`seed` 和 `steps`，可修改共享默认值。`config/dev.toml` 通过 `BENCHMARK_CONFIG` 指向该文件。被忽略的 `.env` 可用 `export BENCHMARK_TASK=...` 等赋值覆盖，也可设置 `export BENCHMARK_SCENE=1:1`。命令行参数优先于两者。运行 `./launch.sh` 使用配置的基准，或运行 `./launch.sh --native` 使用配置的原生 `SIM_SCENE`。`--show-config` 输出生效的选择。JSON 结果会以 `layout:style` 记录实际厨房 `scene`。上游时长是任务元数据；此运行器的 `--steps` 是较短的冒烟预算，不表示完成正式评测回合。
 
-纳入版本控制的 [RoboCasa 预设](../../../config/benchmarks/robocasa.toml) 将任务选择、相机观测和 GUI 显示设置分组。要使用另一份预设，可在根目录 `config.toml` 将 `BENCHMARK_CONFIG` 设为其路径。启动前，加载器会拒绝缺失的分组或字段、未知字段以及错误的 TOML 类型。
+纳入版本控制的 [RoboCasa 预设](../../../config/benchmarks/robocasa.toml) 将任务选择、相机观测和 GUI 显示设置分组。要使用另一份预设，可在`config/dev.toml` 将 `BENCHMARK_CONFIG` 设为其路径。启动前，加载器会拒绝缺失的分组或字段、未知字段以及错误的 TOML 类型。
 
 ## 本地硬件记录
 

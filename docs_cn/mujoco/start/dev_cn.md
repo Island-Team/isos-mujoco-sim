@@ -23,7 +23,7 @@ C++ 构建需要 **MuJoCo 3.3.1** 安装目录、C++20 编译器、CMake 3.22 �
 
 ## 配置本地路径
 
-根目录的 [`config.toml`](../../../config.toml) 提供仓库级默认值，并指定 [`config/benchmarks/robocasa.toml`](../../../config/benchmarks/robocasa.toml) 作为基准配置。把示例文件复制为忽略的 `.env`，再设置本机的 MuJoCo 路径。同名 `.env` 赋值覆盖 `config.toml`。将机器特定路径保存在 `.env`，避免写入仓库。
+开发配置 [`config/dev.toml`](../../../config/dev.toml) 提供仓库级默认值，并指定 [`config/benchmarks/robocasa.toml`](../../../config/benchmarks/robocasa.toml) 作为基准配置。把示例文件复制为忽略的 `.env`，再设置本机的 MuJoCo 路径。同名 `.env` 赋值覆盖 `config/dev.toml`。将机器特定路径保存在 `.env`，避免写入仓库。
 
 ```sh
 cp .env.example .env
@@ -33,19 +33,18 @@ cp .env.example .env
 
 | 配置项 | 默认值 | 用途 |
 | --- | --- | --- |
-| `MUJOCO_ROOT` | 空；在 `.env` 中设置 | 原生构建、查看器和 IsOS 软件包 |
-| `SIM_PROFILE` | `isos-pkg`；本机设置 `dev` | 构建和启动模式 |
-| `DEV_GUI` | `true` | dev 模式的默认 GUI |
+| `MUJOCO_ROOT` | 空；在 `.env` 中设置 | 开发构建和查看器 |
+| `DEV_GUI` | `true` | 开发启动的默认 GUI |
 | `ROBOCASA_ROOT` | 空，即 `.local/robocasa` | RoboCasa 源码和解压后的资源 |
-| `BENCHMARK_CONFIG` | `config/benchmarks/robocasa.toml` | 根目录 `config.toml` 选择的基准配置文件 |
+| `BENCHMARK_CONFIG` | `config/benchmarks/robocasa.toml` | `config/dev.toml` 选择的基准配置文件 |
 | `BENCHMARK_TASK` | `CloseFridge` | 默认的 RoboCasa 注册任务 |
 | `BENCHMARK_SPLIT` | `target` | 任务划分：`target`、`pretrain` 或 `all` |
 | `BENCHMARK_SCENE` | 空；在划分内随机选择 | 固定的厨房 `layout:style` 组合 |
 | `BENCHMARK_SEED` | `42` | 重置与随机动作的种子 |
 | `BENCHMARK_STEPS` | `20` | 冒烟动作数上限 |
 | `BENCHMARK_CAMERA` | `robot0_agentview_left` | GUI 显示的相机视角 |
-| `BENCHMARK_CAMERA_WIDTH`、`BENCHMARK_CAMERA_HEIGHT` | 各 `256` | 实际渲染的观测像素 |
-| `BENCHMARK_GUI_WIDTH` | `768` | GUI 显示宽度，保持宽高比 |
+| `BENCHMARK_CAMERA_WIDTH`、`BENCHMARK_CAMERA_HEIGHT` | `1920` 和 `1080` | 实际渲染的观测像素 |
+| `BENCHMARK_GUI_WIDTH` | `1920` | GUI 显示宽度，保持宽高比 |
 | `BENCHMARK_RECORD_ENABLED` | `false` | 允许 `--record-demo` 写入本地硬件记录 |
 | `BENCHMARK_RECORD_PATH` | `.run/hardware-record.json` | 默认本地记录文件 |
 | `SIM_EXECUTABLE` | `build/eos-mujoco-sim` | `--scene` 启动器 |
@@ -54,9 +53,9 @@ cp .env.example .env
 | `SIM_GUI` | `false` | 独立原生场景查看器 |
 | `SIM_MANUAL_STEP` | `false` | 原生模拟器的初始步进模式 |
 
-表中除 `MUJOCO_ROOT` 外的路径均可相对于仓库根目录。若要把 RoboCasa 源码放到别处，在 `config.toml` 设置 `ROBOCASA_ROOT`，或在 `.env` 添加 `export ROBOCASA_ROOT=/absolute/path/to/robocasa`。Python 环境和 robosuite 源码仍位于本仓库忽略的 `.local/` 目录。
+包部署使用独立的 [`config/package.toml`](../../../config/package.toml)；其中的主机路径和服务选择不继承开发配置或 `.env`。表中除 `MUJOCO_ROOT` 外的路径均可相对于仓库根目录。若要把 RoboCasa 源码放到别处，在 `config/dev.toml` 设置 `ROBOCASA_ROOT`，或在 `.env` 添加 `export ROBOCASA_ROOT=/absolute/path/to/robocasa`。Python 环境和 robosuite 源码仍位于本仓库忽略的 `.local/` 目录。
 
-表中的 `BENCHMARK_*` 值来自所选基准 TOML 文件的 `[task]`、`[camera]`、`[gui]` 和 `[record]`。根目录的 `BENCHMARK_CONFIG` 指定该文件；可在 `config.toml` 修改路径以使用另一份纳入版本控制的预设。`.env` 赋值覆盖基准文件中的值，单次命令参数再覆盖 `.env`。
+表中的 `BENCHMARK_*` 值来自所选基准 TOML 文件的 `[task]`、`[camera]`、`[gui]` 和 `[record]`。根目录的 `BENCHMARK_CONFIG` 指定该文件；可在 `config/dev.toml` 修改路径以使用另一份纳入版本控制的预设。`.env` 赋值覆盖基准文件中的值，单次命令参数再覆盖 `.env`。
 
 ## 构建和运行原生模拟器
 
@@ -68,7 +67,7 @@ ctest --test-dir build --output-on-failure
 build/mujoco-core --scene "$PWD/assets/scene.xml" --seed 42 --steps 20
 ```
 
-`./build.sh` 将原生程序输出到 `build/`。`SIM_PROFILE=dev` 时，还会检查 RoboCasa 源码、Python 环境和资源。若有缺失，下载前会先询问；拒绝下载时原生程序已构建，但完整设置尚未完成，脚本退出。`mujoco-core` 可供开发时直接加载场景并推进引擎；`eos-mujoco-sim` 是面向 IsOS/EOS 的包装层。测试覆盖场景加载、回放、渲染、套接字、包生成和停止行为。CMake 的 MuJoCo 检查失败通常意味着 `MUJOCO_ROOT` 指向了其他版本，或目录缺少所需头文件、库或工具。
+`./build.sh` 将原生程序输出到 `build/`。开发构建还会检查 RoboCasa 源码、Python 环境和资源。若有缺失，下载前会先询问；拒绝下载时原生程序已构建，但完整设置尚未完成，脚本退出。`mujoco-core` 可供开发时直接加载场景并推进引擎；`eos-mujoco-sim` 是面向 IsOS/EOS 的包装层。测试覆盖场景加载、回放、渲染、套接字、包生成和停止行为。CMake 的 MuJoCo 检查失败通常意味着 `MUJOCO_ROOT` 指向了其他版本，或目录缺少所需头文件、库或工具。
 
 若不经过 IsOS 检查兼容性包装层，运行：
 
@@ -98,7 +97,7 @@ build/mujoco-core --scene "$PWD/assets/scene.xml" --seed 42 --steps 20
 ./launch.sh --robocasa --seed 42 --steps 20
 ```
 
-`SIM_PROFILE=dev` 时，不带参数的 `./launch.sh` 运行同一任务和默认参数。若未通过 `./build.sh` 完成设置，启动器会检查 RoboCasa 源码、Python 环境和资源；下载前提示 `Download and set up ...? [y/N]`。输入 `y`，安装到 `ROBOCASA_ROOT` 或本地默认目录。输入 `N` 则退出，不启动回合。后续运行复用已下载的源码和资源。决定下载后，也可直接运行 `./tools/robocasasetup.sh`；`python3 tools/robocasasource.py check --path .local/robocasa` 只检查现有源码，不下载。
+不带参数的 `./launch.sh` 运行同一任务和默认参数。若未通过 `./build.sh` 完成设置，启动器会检查 RoboCasa 源码、Python 环境和资源；下载前提示 `Download and set up ...? [y/N]`。输入 `y`，安装到 `ROBOCASA_ROOT` 或本地默认目录。输入 `N` 则退出，不启动回合。后续运行复用已下载的源码和资源。决定下载后，也可直接运行 `./tools/robocasasetup.sh`；`python3 tools/robocasasource.py check --path .local/robocasa` 只检查现有源码，不下载。
 
 命令先输出 RoboCasa 启动信息，最后输出类似 JSON：
 
@@ -126,6 +125,6 @@ RoboCasa 基准在前台运行，结果输出到终端。原生启动器将日�
 
 ## 开发界面和本地日志
 
-在本机被忽略的 `.env` 中设置 `export SIM_PROFILE=dev`。运行 `./launch.sh --benchmark CloseFridge --steps 20` 可在图像窗口查看 RoboCasa 当前回合的相机画面；回合结束后在图像窗口按任意键关闭。`--no-gui` 关闭图形窗口。运行 `./launch.sh --scene navigation` 会默认打开独立的静态 MuJoCo XML 查看器，`./kill.sh` 停止原生进程及查看器。后者不显示套接字模拟器的实时状态。
+运行 `./launch.sh --benchmark CloseFridge --steps 20` 可在图像窗口查看 RoboCasa 当前回合的相机画面；回合结束后在图像窗口按任意键关闭。`--no-gui` 关闭图形窗口。运行 `./launch.sh --scene navigation` 会默认打开独立的静态 MuJoCo XML 查看器，`./kill.sh` 停止原生进程及查看器。后者不显示套接字模拟器的实时状态。
 
 每次本地运行的日志保存在被 Git 忽略的 `logs/dev/`。`logs/dev/robocasa/latest.log` 和 `logs/dev/native/latest.log` 指向最近的运行文件；原生查看器日志使用同一时间戳的 `*-viewer.log`。启动器检查活跃套接字后自动清理遗留套接字。

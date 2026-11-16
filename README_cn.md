@@ -23,7 +23,7 @@ ctest --test-dir build --output-on-failure
 ./launch.sh --benchmark CloseFridge --seed 42 --steps 20 --no-gui
 ```
 
-默认的 `SIM_PROFILE=isos-pkg` 构建原生目标。在 `.env` 中设置 `export SIM_PROFILE=dev`，使 `./build.sh` 准备本地 RoboCasa 源码、资源和 Python 环境；缺少资源时会先询问。基准输出包含任务、场景、相机、种子、动作数、指令和成功状态的 JSON。运行器使用有界随机动作，`success: false` 仍是有效冒烟结果。依赖、配置、GUI 和故障排查见[首次运行指南](docs_cn/mujoco/start/dev_cn.md)。
+`./build.sh` 构建原生目标并准备本地开发所需的 RoboCasa 源码、资源和 Python 环境；`./build.sh --output 绝对空目录 --version 0.2.x` 使用 `config/package.toml` 构建包候选。缺少资源时会先询问。基准输出包含任务、场景、相机、种子、动作数、指令和成功状态的 JSON。运行器使用有界随机动作，`success: false` 仍是有效冒烟结果。依赖、配置、GUI 和故障排查见[首次运行指南](docs_cn/mujoco/start/dev_cn.md)。
 
 ## 选择和检查
 
@@ -36,7 +36,7 @@ ctest --test-dir build --output-on-failure
 ./kill.sh
 ```
 
-`config.toml` 选择 `config/benchmarks/robocasa.toml`；`.env` 覆盖相同配置，命令参数再次覆盖。原生包装层在后台启动并打印仅所有者可访问的套接字和日志路径。`./kill.sh` 停止启动器记录的进程。详见[任务选择](docs_cn/mujoco/core/benchmark_cn.md)和[原生运行指南](docs_cn/mujoco/start/dev_cn.md)。
+`config/dev.toml` 选择 `config/benchmarks/robocasa.toml`；`.env` 覆盖相同配置，命令参数再次覆盖。原生包装层在后台启动并打印仅所有者可访问的套接字和日志路径。`./kill.sh` 停止启动器记录的进程。详见[任务选择](docs_cn/mujoco/core/benchmark_cn.md)和[原生运行指南](docs_cn/mujoco/start/dev_cn.md)。
 
 ## 记录硬件控制
 
