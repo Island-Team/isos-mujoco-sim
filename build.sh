@@ -23,20 +23,27 @@ if [[ $# -eq 4 ]]; then
 fi
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 source "$root/tools/launcher.sh"
-explicit_mujoco_root=${MUJOCO_ROOT-}
-load_launch_config
-if [[ -n $explicit_mujoco_root ]]; then
-  MUJOCO_ROOT=$explicit_mujoco_root
+if [[ $# -eq 0 ]]; then
+  explicit_mujoco_root=${MUJOCO_ROOT-}
+  load_launch_config
+  if [[ -n $explicit_mujoco_root ]]; then MUJOCO_ROOT=$explicit_mujoco_root; fi
+  : "${MUJOCO_ROOT:?Set MUJOCO_ROOT in the environment or .env to a MuJoCo 3.3.1 installation}"
+else
+  # The package build reads only the package host configuration; environment wins.
+  if [[ -z ${MUJOCO_ROOT:-} ]]; then
+    MUJOCO_ROOT=$(python3 - "$root/config/package.toml" <<'PYCONFIG'
+import sys, tomllib
+with open(sys.argv[1], "rb") as source:
+    print(tomllib.load(source)["host"]["mujoco_root"])
+PYCONFIG
+)
+  fi
+  : "${MUJOCO_ROOT:?Set MUJOCO_ROOT or [host].mujoco_root in config/package.toml to a MuJoCo 3.3.1 installation}"
 fi
-: "${MUJOCO_ROOT:?Set MUJOCO_ROOT in the environment or .env to a MuJoCo 3.3.1 installation}"
 if [[ $# -eq 0 ]]; then
   cmake -S "$root" -B "$root/build" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release
   cmake --build "$root/build" --parallel "${BUILD_JOBS:-4}"
-  echo "Built $root/build/eos-mujoco-sim and $root/build/mujoco-core ($SIM_PROFILE profile)"
-  if [[ "$SIM_PROFILE" == isos-pkg ]]; then
-    echo "IsOS package build is ready; use ./build.sh --output ABSOLUTE_EMPTY_DIRECTORY for a bundle"
-    exit 0
-  fi
+  echo "Built $root/build/eos-mujoco-sim and $root/build/mujoco-core (development)"
   source_dir=$(resolve_launch_path "${ROBOCASA_ROOT:-.local/robocasa}")
   venv="$root/.local/robocasa-venv"
   if [[ -x "$venv/bin/python" ]] &&

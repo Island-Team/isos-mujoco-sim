@@ -357,6 +357,7 @@ void Serve(const std::filesystem::path& simulator_socket,
     if (!v2_socket.empty())
       v2_server = std::make_unique<V2Server>(v2_socket, engine, managed_strict_socket);
     if (gui) live_window = std::make_unique<GuiWindow>(engine);
+    std::cout << "mujoco_native_ready" << std::endl;
     std::atomic_bool ticker_stop{false};
     std::thread ticker([&] {
       auto next = std::chrono::steady_clock::now();
@@ -390,5 +391,6 @@ void Serve(const std::filesystem::path& simulator_socket,
   std::error_code ignored;
   std::filesystem::remove(benchmark_socket, ignored);
   std::filesystem::remove(simulator_socket, ignored);
+  std::cout << "mujoco_native_stopped" << std::endl;
 }
 }  // namespace eos_mujoco

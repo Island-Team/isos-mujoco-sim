@@ -23,7 +23,7 @@ ctest --test-dir build --output-on-failure
 ./launch.sh --benchmark CloseFridge --seed 42 --steps 20 --no-gui
 ```
 
-The default `SIM_PROFILE=isos-pkg` builds the native targets. Set `export SIM_PROFILE=dev` in `.env` when you want `./build.sh` to prepare the local RoboCasa source, assets, and Python environment. Setup asks before downloading missing assets. The benchmark emits JSON with task, scene, camera, seed, action count, instruction, and success. Its bounded random actions make `success: false` a valid smoke result. See the [first-run guide](docs/mujoco/start/dev.md) for dependencies, configuration, GUI behavior, and troubleshooting.
+`./build.sh` builds native targets and prepares the local RoboCasa source, assets, and Python environment for development. `./build.sh --output ABSOLUTE_EMPTY_DIRECTORY --version 0.2.x` builds a package candidate using `config/package.toml`. Setup asks before downloading missing assets. The benchmark emits JSON with task, scene, camera, seed, action count, instruction, and success. Its bounded random actions make `success: false` a valid smoke result. See the [first-run guide](docs/mujoco/start/dev.md) for dependencies, configuration, GUI behavior, and troubleshooting.
 
 ## Select and inspect
 
@@ -36,7 +36,7 @@ The default `SIM_PROFILE=isos-pkg` builds the native targets. Set `export SIM_PR
 ./kill.sh
 ```
 
-`config.toml` selects the benchmark config at `config/benchmarks/robocasa.toml`; `.env` overrides matching values and command flags override both. The native wrapper starts in the background and prints its owner-only sockets and log path. `./kill.sh` stops the process recorded by the launcher. See the [task selection guide](docs/mujoco/core/benchmark.md) and [native runtime guide](docs/mujoco/start/dev.md).
+`config/dev.toml` selects the benchmark config at `config/benchmarks/robocasa.toml`; `.env` overrides matching values and command flags override both. The native wrapper starts in the background and prints its owner-only sockets and log path. `./kill.sh` stops the process recorded by the launcher. See the [task selection guide](docs/mujoco/core/benchmark.md) and [native runtime guide](docs/mujoco/start/dev.md).
 
 ## Record hardware control
 

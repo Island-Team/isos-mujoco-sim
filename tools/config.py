@@ -9,7 +9,6 @@ from pathlib import Path
 
 KEYS = {
   "MUJOCO_ROOT": str,
-  "SIM_PROFILE": str,
   "DEV_GUI": bool,
   "SIM_EXECUTABLE": str,
   "SIM_SCENE": str,
@@ -47,7 +46,7 @@ def main() -> None:
     config = tomllib.load(source)
   unknown = config.keys() - KEYS.keys()
   if unknown:
-    raise ValueError(f"Unknown config.toml keys: {', '.join(sorted(unknown))}")
+    raise ValueError(f"Unknown development config keys: {', '.join(sorted(unknown))}")
   for key, value in config.items():
     if type(value) is not KEYS[key]:
       raise ValueError(f"{key} must be {KEYS[key].__name__}")
@@ -55,7 +54,7 @@ def main() -> None:
 
   benchmark_path = Path(config["BENCHMARK_CONFIG"])
   if not benchmark_path.is_absolute():
-    benchmark_path = root_file.parent / benchmark_path
+    benchmark_path = root_file.resolve().parents[1] / benchmark_path
   with benchmark_path.open("rb") as source:
     benchmark = tomllib.load(source)
   unknown_sections = benchmark.keys() - BENCHMARK_FIELDS.keys()

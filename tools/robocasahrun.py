@@ -94,10 +94,14 @@ def main() -> None:
   parser.add_argument("--kitchen-scene", default="", help="fixed kitchen layout:style pair")
   parser.add_argument("--seed", type=int, default=42)
   parser.add_argument("--steps", type=int, default=20)
+  parser.add_argument("--record-actions", default="", help="write sampled actions for a repeatable episode")
+  parser.add_argument("--replay-actions", default="", help="replay actions from a recorded episode")
   parser.add_argument("--camera", choices=CAMERAS, default=CAMERAS[0], help="camera shown in the GUI")
   parser.add_argument("--camera-width", type=int, default=256, help="rendered observation width")
   parser.add_argument("--camera-height", type=int, default=256, help="rendered observation height")
   parser.add_argument("--gui-width", type=int, default=768, help="display window width in pixels")
+  parser.add_argument("--gui-exit-ms", type=int, default=0,
+                      help="close the GUI automatically after the final frame (0 waits for a key)")
   parser.add_argument("--gui", action="store_true", help="show live camera frames and hold the final frame")
   parser.add_argument("--no-gui", dest="gui", action="store_false", help="run without a window")
   args = parser.parse_args()
@@ -108,8 +112,12 @@ def main() -> None:
     parser.error("camera width and height must each be 64–2048")
   if not (256 <= args.gui_width <= 3840):
     parser.error("GUI width must be 256–3840")
+  if not 0 <= args.gui_exit_ms <= 60000:
+    parser.error("GUI exit delay must be 0–60000 ms")
   if args.filter and not args.list:
     parser.error("--filter requires --list-benchmarks")
+  if args.record_actions and args.replay_actions:
+    parser.error("record and replay actions are mutually exclusive")
   if args.list:
     list_tasks(args.split, selected, args.filter)
     return
@@ -195,15 +203,42 @@ def main() -> None:
     instruction = observation["annotation.human.task_description"]
     success = False
     elapsed = 0
-    for elapsed in range(1, args.steps + 1):
-      action = env.action_space.sample()
-      action["action.base_motion"][:] = 0.0
+    recorded_actions = []
+    replay = None
+    if args.replay_actions:
+      import numpy as np
+      replay = json.loads(open(args.replay_actions, encoding="utf-8").read())
+      if (replay.get("task"), replay.get("split"), replay.get("scene"), replay.get("seed")) != (
+          task, args.split, args.kitchen_scene, args.seed):
+        parser.error("recorded episode does not match task, split, scene, and seed")
+      if not isinstance(replay.get("actions"), list) or not replay["actions"]:
+        parser.error("recorded episode has no actions")
+    replay_steps = min(args.steps, len(replay["actions"])) if replay is not None else args.steps
+    for elapsed in range(1, replay_steps + 1):
+      if replay is None:
+        action = env.action_space.sample()
+        action["action.base_motion"][:] = 0.0
+      else:
+        saved = replay["actions"][elapsed - 1]
+        action = {key: np.asarray(saved[key], dtype=space.dtype)
+                  for key, space in env.action_space.spaces.items()}
+        if not env.action_space.contains(action):
+          parser.error(f"recorded action {elapsed} is outside the action space")
+      recorded_actions.append({key: value.tolist() for key, value in action.items()})
       observation, _, terminated, truncated, info = env.step(action)
       show_frame(observation, 1)
       success = bool(info["success"])
       if success or terminated or truncated:
         break
     actual_scene = f"{env.unwrapped.env.layout_id}:{env.unwrapped.env.style_id}"
+    if args.record_actions:
+      with open(args.record_actions, "w", encoding="utf-8") as output:
+        json.dump({"task": task, "split": args.split, "scene": args.kitchen_scene,
+                   "actual_scene": actual_scene, "seed": args.seed,
+                   "actions": recorded_actions}, output, indent=2)
+        output.write("\n")
+    if replay is not None and replay["actual_scene"] != actual_scene:
+      parser.error("replayed episode selected a different kitchen scene")
     print(json.dumps({"task": task, "split": args.split, "scene": actual_scene,
                       "camera": args.camera, "camera_width": args.camera_width,
                       "camera_height": args.camera_height,
@@ -211,12 +246,16 @@ def main() -> None:
                       "steps": elapsed, "instruction": instruction,
                       "success": success}, sort_keys=True))
     if args.gui:
-      print("RoboCasa GUI: press any key in the image window to close.", flush=True)
+      print("RoboCasa GUI: final frame shown; closing automatically."
+            if args.gui_exit_ms else
+            "RoboCasa GUI: press any key in the image window to close.", flush=True)
       if tkinter is not None:
         if window_open[0]:
+          if args.gui_exit_ms:
+            window.after(args.gui_exit_ms, close_window)
           window.mainloop()
       else:
-        cv2.waitKey(0)
+        cv2.waitKey(args.gui_exit_ms)
   finally:
     env.close()
     if cv2 is not None and tkinter is None:

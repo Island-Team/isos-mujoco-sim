@@ -22,9 +22,8 @@ Usage: ./launch.sh --list-benchmarks [--split target|pretrain|all] [--filter TEX
        ./launch.sh --record-demo [FILE]
        ./launch.sh --replay-record FILE
 
-SIM_PROFILE=dev runs the configured benchmark with a GUI by default.
-SIM_PROFILE=isos-pkg selects the IsOS package profile. Use --benchmark
-to run RoboCasa explicitly, or --scene for the local wrapper.
+This is the development entry point. Package deployment uses IsOS with
+config/package.toml; package building uses ./build.sh --output.
 List RoboCasa tasks before selecting one; only CloseFridge has a verified
 local smoke run, and other tasks may require more upstream assets.
 --scene starts the native compatibility simulator in the background.
@@ -38,7 +37,7 @@ case "${1:-}" in
   --list-scenes) [[ $# -eq 1 ]] || { usage >&2; exit 2; }; python3 "$launcher_root/tools/scenes.py"; exit ;;
   --show-config)
     [[ $# -eq 1 ]] || { usage >&2; exit 2; }
-    printf 'Profile: %s | dev GUI: %s\n' "$SIM_PROFILE" "$DEV_GUI"
+    printf 'Development GUI: %s\n' "$DEV_GUI"
     printf 'Benchmark config: %s\n' "$(resolve_launch_path "$BENCHMARK_CONFIG")"
     printf 'Benchmark: %s | split=%s kitchen=%s seed=%s steps=%s\n' \
       "$BENCHMARK_TASK" "$BENCHMARK_SPLIT" "${BENCHMARK_SCENE:-random}" "$BENCHMARK_SEED" "$BENCHMARK_STEPS"
@@ -76,11 +75,6 @@ if [[ ${1:-} == --record-demo || ${1:-} == --replay-record ]]; then
   [[ $# -eq 1 ]] || { usage >&2; exit 2; }
   exec env PYTHONPATH="$launcher_root" "$venv/bin/python" \
     "$launcher_root/tools/robocasarecord.py" --replay "$1"
-fi
-
-if [[ $# -eq 0 && "$SIM_PROFILE" == isos-pkg ]]; then
-  echo "IsOS package profile selected. Run ./build.sh --output ABSOLUTE_EMPTY_DIRECTORY to create a package asset; use --benchmark or --scene for a local launch." >&2
-  exit 2
 fi
 
 camera_args=(--camera "$BENCHMARK_CAMERA" --camera-width "$BENCHMARK_CAMERA_WIDTH"
@@ -149,7 +143,7 @@ if [[ $# -eq 0 || ${1:-} == --robocasa || ${1:-} == --benchmark ||
     fi
   fi
   gui_args=()
-  if [[ "$SIM_PROFILE" == dev && "$DEV_GUI" == true ]]; then gui_args+=(--gui); fi
+  if [[ "$DEV_GUI" == true ]]; then gui_args+=(--gui); fi
   log=$(new_dev_log robocasa)
   echo "RoboCasa log: $log"
   set +e
@@ -168,7 +162,6 @@ scene=$SIM_SCENE
 run_dir=$SIM_RUN_DIR
 executable=$SIM_EXECUTABLE
 gui=$SIM_GUI
-if [[ "$SIM_PROFILE" == dev ]]; then gui=$DEV_GUI; fi
 manual_step=$SIM_MANUAL_STEP
 while (($#)); do
   case "$1" in

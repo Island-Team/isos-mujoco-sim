@@ -6,6 +6,7 @@ These pages explain the simulator implementation, benchmark behavior, and EOS in
 
 | Page | Scope |
 | --- | --- |
+| [Full interface replay](verification.md) | Custom-scene and three-kitchen replay, package checks, and log correlation. |
 | [Architecture](architecture.md) | Source ownership, runtime data flow, and verification evidence. |
 | [Simulator](mujoco.md) | Scene loading, physics, rendering, and runtime service design. |
 | [RoboCasa benchmark](benchmark.md) | Active task, provenance, scoring, and limits. |
