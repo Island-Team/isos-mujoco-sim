@@ -42,9 +42,9 @@ def main() -> None:
     results = []
     for scene in SCENES:
         actions = output / f"{scene.replace(':', '-')}-actions.json"
-        recorded = episode(args.python.resolve(), args.runner.resolve(), output, scene,
+        recorded = episode(args.python.absolute(), args.runner.resolve(), output, scene,
                            actions, False, not args.no_gui)
-        replayed = episode(args.python.resolve(), args.runner.resolve(), output, scene,
+        replayed = episode(args.python.absolute(), args.runner.resolve(), output, scene,
                            actions, True, False)
         assert recorded == replayed, f"{scene} replay result changed"
         results.append({"scene": scene, "actions": len(json.loads(actions.read_text())["actions"]),
