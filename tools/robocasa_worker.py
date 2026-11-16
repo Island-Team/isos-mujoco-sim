@@ -218,6 +218,7 @@ def serve(socket_path: Path, service: Service, stop_event: threading.Event | Non
         stop_listener.bind(str(stop_path))
         stop_path.chmod(0o600)
         stop_listener.listen(8)
+        print("robocasa_worker_ready", flush=True)
         try:
             data_slots = threading.BoundedSemaphore(8)
             def send_data(connection: socket.socket, result: dict[str, Any], binary: bytes) -> None:
@@ -267,6 +268,7 @@ def serve(socket_path: Path, service: Service, stop_event: threading.Event | Non
             socket_path.unlink(missing_ok=True)
             stop_path.unlink(missing_ok=True)
             service.hardware.close()
+            print("robocasa_worker_stopped", flush=True)
 
 
 def main() -> None:
