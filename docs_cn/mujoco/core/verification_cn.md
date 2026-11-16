@@ -27,3 +27,7 @@ ISOS_AETHER_BIN_DIR=<isos-build-directory> isos pkg check \
   --package-config <local-package.toml>
 python3 tests/package_logs.py <check-output-directory>
 ```
+
+## 本地验证，2026-11-16
+
+原生自定义场景 GUI 回放通过并自动退出。使用 256 × 192 相机设置的原生和 RoboCasa 完整图在候选版本 `0.2.6` 上通过 IsOS `pkg check`；`tests/package_logs.py` 找到服务输出与 EOS 运行 ID 的对应记录。三厨房 GUI 记录和无窗口重放在 `1:1`、`2:2`、`3:3` 全部完成，每个厨房执行三个动作且摘要一致。这些有界动作没有完成 `CloseFridge` 任务；此回放验证启动、动作传递、确定性重放、GUI 自动退出及清理。完整本地输出位于忽略目录 `data/test/20261116-full-interfaces/`，其中包含 `robocasa-three-final/summary.json`。

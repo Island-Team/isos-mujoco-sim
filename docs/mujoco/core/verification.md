@@ -27,3 +27,7 @@ ISOS_AETHER_BIN_DIR=<isos-build-directory> isos pkg check \
   --package-config <local-package.toml>
 python3 tests/package_logs.py <check-output-directory>
 ```
+
+## Local verification, 2026-11-16
+
+The native custom-scene GUI replay passed and exited automatically. IsOS `pkg check` passed for native and RoboCasa full graphs at candidate version `0.2.6` with 256 × 192 camera settings; `tests/package_logs.py` found matching service output and EOS run IDs. The three-kitchen GUI record and headless replay completed for `1:1`, `2:2`, and `3:3`, with three actions and matching summaries per kitchen. The bounded actions did not complete the `CloseFridge` task; this replay verifies launch, action delivery, deterministic replay, GUI exit, and cleanup. Complete local output is under ignored `data/test/20261116-full-interfaces/`, including `robocasa-three-final/summary.json`.
