@@ -162,7 +162,6 @@ scene=$SIM_SCENE
 run_dir=$SIM_RUN_DIR
 executable=$SIM_EXECUTABLE
 gui=$SIM_GUI
-gui=$DEV_GUI
 manual_step=$SIM_MANUAL_STEP
 while (($#)); do
   case "$1" in

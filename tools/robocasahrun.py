@@ -211,9 +211,10 @@ def main() -> None:
       if (replay.get("task"), replay.get("split"), replay.get("scene"), replay.get("seed")) != (
           task, args.split, args.kitchen_scene, args.seed):
         parser.error("recorded episode does not match task, split, scene, and seed")
-      if len(replay.get("actions", [])) < args.steps:
-        parser.error("recorded episode has fewer actions than requested steps")
-    for elapsed in range(1, args.steps + 1):
+      if not isinstance(replay.get("actions"), list) or not replay["actions"]:
+        parser.error("recorded episode has no actions")
+    replay_steps = min(args.steps, len(replay["actions"])) if replay is not None else args.steps
+    for elapsed in range(1, replay_steps + 1):
       if replay is None:
         action = env.action_space.sample()
         action["action.base_motion"][:] = 0.0
