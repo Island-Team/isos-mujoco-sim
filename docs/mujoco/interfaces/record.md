@@ -1,6 +1,6 @@
 # RoboCasa local hardware record and replay
 
-[Hardware core](robocasa.md) · [RoboCasa benchmark](../benchmarks/Robocasa/README.md) · [中文](../../../docs_cn/mujoco/interfaces/record_cn.md)
+[Hardware core](robocasa.md) · [RoboCasa benchmark](../core/benchmark.md) · [中文](../../../docs_cn/mujoco/interfaces/record_cn.md)
 
 `EpisodeRecorder` writes a versioned local JSON record of one PandaOmron hardware episode. `load_record(path)` selects a local file, validates it, and `replay_record(hardware, record)` resets a fresh environment with the recorded seed, applies the group commands in order, and checks robot state after reset and each step. The caller owns the environment and file path. This is an in-process test interface with no network transport or authentication.
 

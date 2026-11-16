@@ -1,6 +1,6 @@
 # RoboCasa 机器人硬件核心接口
 
-[RoboCasa 基准](../benchmarks/Robocasa/README_cn.md) · [English](../../../docs/mujoco/interfaces/robocasa.md)
+[RoboCasa 基准](../core/benchmark_cn.md) · [English](../../../docs/mujoco/interfaces/robocasa.md)
 
 Python `robocasa_core.Hardware` 管理调用方传入的固定版本 RoboCasa PandaOmron Gym 环境。目录使用 `robocasa` 层；组表示硬件功能，节点是稳定的可绑定端点。调用方负责创建环境、串行调用并关闭核心。此进程内 API 没有认证或传输。打包后的 worker 经私有服务端点提供硬件；调用方及准入规则见[控制契约](control_cn.md)。
 

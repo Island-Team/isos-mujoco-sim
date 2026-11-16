@@ -2,7 +2,7 @@
 
 A MuJoCo simulator package for IsOS and EOS, with a local RoboCasa benchmark workflow.
 
-[中文](README_cn.md) · [Start here](docs/mujoco/start/README.md) · [Interfaces](docs/mujoco/interfaces/README.md) · [Design](docs/mujoco/design/README.md)
+[中文](README_cn.md) · [Start here](docs/mujoco/start/README.md) · [Interfaces](docs/mujoco/interfaces/README.md) · [Design](docs/mujoco/core/README.md)
 
 | Path | What it runs | Current scope |
 | --- | --- | --- |
@@ -36,7 +36,7 @@ The default `SIM_PROFILE=isos-pkg` builds the native targets. Set `export SIM_PR
 ./kill.sh
 ```
 
-`config.toml` selects the benchmark config at `config/benchmarks/robocasa.toml`; `.env` overrides matching values and command flags override both. The native wrapper starts in the background and prints its owner-only sockets and log path. `./kill.sh` stops the process recorded by the launcher. See the [task selection guide](docs/mujoco/benchmarks/Robocasa/README.md) and [native runtime guide](docs/mujoco/start/dev.md).
+`config.toml` selects the benchmark config at `config/benchmarks/robocasa.toml`; `.env` overrides matching values and command flags override both. The native wrapper starts in the background and prints its owner-only sockets and log path. `./kill.sh` stops the process recorded by the launcher. See the [task selection guide](docs/mujoco/core/benchmark.md) and [native runtime guide](docs/mujoco/start/dev.md).
 
 ## Record hardware control
 

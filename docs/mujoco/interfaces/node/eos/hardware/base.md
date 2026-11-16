@@ -1,6 +1,6 @@
 # EOS base nodes
 
-[Interface index](../../../README.md) · [Design](../../../../design/eos/hardware/base.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/hardware/base_cn.md)
+[Interface index](../../../README.md) · [Design](../../../../core/eos/hardware/base.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/hardware/base_cn.md)
 
 A base node represents one simulated mobile base. The **Native robot** preset offers velocity control and a planar state; the **RoboCasa robot** preset offers normalized controller axes and a world-frame pose. An operator selects the preset and service configuration in IsOS; an agent sees only the capabilities EOS publishes after health and Dispatcher admission.
 

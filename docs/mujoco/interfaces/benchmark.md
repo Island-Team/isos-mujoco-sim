@@ -1,6 +1,6 @@
 # Private benchmark RPC
 
-[Interface index](README.md) · [Simulator RPC](simulator.md) · [Benchmark method](../benchmarks/Robocasa/README.md) · [中文](../../../docs_cn/mujoco/interfaces/benchmark_cn.md)
+[Interface index](README.md) · [Simulator RPC](simulator.md) · [Benchmark method](../core/benchmark.md) · [中文](../../../docs_cn/mujoco/interfaces/benchmark_cn.md)
 
 ## Owner, caller, and admission
 

@@ -1,6 +1,6 @@
 # RoboCasa 本地硬件记录与重放
 
-[硬件核心](robocasa_cn.md) · [RoboCasa 基准](../benchmarks/Robocasa/README_cn.md) · [English](../../../docs/mujoco/interfaces/record.md)
+[硬件核心](robocasa_cn.md) · [RoboCasa 基准](../core/benchmark_cn.md) · [English](../../../docs/mujoco/interfaces/record.md)
 
 `EpisodeRecorder` 将一次 PandaOmron 硬件回合写为带版本的本地 JSON 记录。`load_record(path)` 选择并校验本地文件；`replay_record(hardware, record)` 用记录的种子重置新环境，按顺序执行各组命令，并在重置后和每一步检查机器人状态。调用方拥有环境和文件路径。这是没有网络传输或认证的进程内测试接口。
 

@@ -1,8 +1,8 @@
 # 从源码首次运行
 
-[MuJoCo 文档](../README_cn.md) · [构建与运行](README_cn.md) · [RoboCasa 基准](../benchmarks/Robocasa/README_cn.md) · [English](../../../docs/mujoco/start/dev.md)
+[MuJoCo 文档](../README_cn.md) · [构建与运行](README_cn.md) · [RoboCasa 基准](../core/benchmark_cn.md) · [English](../../../docs/mujoco/start/dev.md)
 
-本指南包含两条本地流程。`./launch.sh` 在前台运行当前上游 RoboCasa `CloseFridge` 冒烟回合。`./build.sh` 构建本仓库的 C++ MuJoCo 核心及 IsOS/EOS 软件包包装层，并在下载前询问后准备 RoboCasa；`./launch.sh --scene ...` 在后台启动该兼容性模拟器。RoboCasa 环境目前尚未连接 EOS。将 C++ 包安装到 IsOS 时，使用[受管理后端指南](isos-pkg_cn.md)。
+本指南包含两条本地流程。`./launch.sh` 在前台运行当前上游 RoboCasa `CloseFridge` 冒烟回合。`./build.sh` 构建本仓库的 C++ MuJoCo 核心及 IsOS/EOS 软件包包装层，并在下载前询问后准备 RoboCasa；`./launch.sh --scene ...` 在后台启动该兼容性模拟器。本地 RoboCasa 冒烟运行器直接调用 Gym；打包后的 RoboCasa worker 通过独立的 `robocasa_core.Hardware` API 向 EOS 提供设备。软件包路径见[受管理后端指南](isos-pkg_cn.md)。
 
 ## 前提条件
 
@@ -106,7 +106,7 @@ build/mujoco-core --scene "$PWD/assets/scene.xml" --seed 42 --steps 20
 {"instruction":"Close the fridge doors.","scene":"8:8","seed":42,"split":"target","steps":20,"success":false,"task":"robocasa/CloseFridge"}
 ```
 
-`success` 来自 RoboCasa 的冰箱门判定规则。随附运行器采样有界随机动作，并将底盘运动置零；`false` 是有效的冒烟结果，不代表安装失败。`--steps` 指定动作预算，`--seed` 控制重置与动作采样。回合结束后进程自行退出，无需运行 `kill.sh`。任务、资源来源、许可和限制见[基准指南](../benchmarks/Robocasa/README_cn.md)。
+`success` 来自 RoboCasa 的冰箱门判定规则。随附运行器采样有界随机动作，并将底盘运动置零；`false` 是有效的冒烟结果，不代表安装失败。`--steps` 指定动作预算，`--seed` 控制重置与动作采样。回合结束后进程自行退出，无需运行 `kill.sh`。任务、资源来源、许可和限制见[基准指南](../core/benchmark_cn.md)。
 
 ## 故障排查
 

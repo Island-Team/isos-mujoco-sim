@@ -17,7 +17,7 @@
 
 下述 `0.1.2` 软件包是使用 MuJoCo 3.3.1 的本地开发候选，尚未发布；本页后面的历史 `0.1.1` 证据仍对应 MuJoCo 3.16.0。
 
-**当前实现：** 本页记录现有包与集成路径。[包描述符与声明](../interfaces/package_cn.md)和[模拟器套接字](../interfaces/control_cn.md)是本包拥有的字段契约；[架构](../architecture_cn.md)说明集成方式，[后续验证](../architecture_cn.md#后续验证)记录尚未完成的检查。协议或已生成描述符文件名中的 `v2` 为兼容而保留；本主题页文件名不带版本后缀。
+**当前实现：** 本页记录现有包与集成路径。[包描述符与声明](../interfaces/package_cn.md)和[模拟器套接字](../interfaces/control_cn.md)是本包拥有的字段契约；[架构](../core/architecture_cn.md)说明集成方式，[后续验证](../core/architecture_cn.md#后续验证)记录尚未完成的检查。协议或已生成描述符文件名中的 `v2` 为兼容而保留；本主题页文件名不带版本后缀。
 
 [English](../../../docs/mujoco/start/isos-pkg.md)
 
@@ -47,7 +47,7 @@ isos pkg link island/mujoco-sim 0.1.2 /absolute/path/to/mujoco-v2-bundle --manif
 
 v2 Unix 套接字帧以八字节小端长度头开头，后接 JSON 元数据和可选 JPEG 负载。元数据上限为 64 KiB，负载上限为 8 MiB。请求包含 `version: "2.0.0"`、字符串 `id`、`node` 和 `op`；响应回显 ID 与版本，并返回 `ok` 或 `error.message`。
 
-**R05 限定范围验收：** EOS 管理的严格子进程只接受帧格式 v2 套接字，拒绝历史 gRPC 机器人套接字与 benchmark 套接字。独立直接启动仍为旧客户端与可信评测保留这些套接字。固定版本的 IsOS → EOS → MuJoCo 回放验证了两个场景中相机、底盘和机械臂的严格健康检查、只读图像及状态、子进程和套接字清理。R06 所有者停止屏障已合并，限定范围跨所有者运动与停止回放通过；更完整的 R06 故障验收仍待完成。详见[所有者套接字契约](../interfaces/control_cn.md)和 [R05 证据](../architecture_cn.md#r05-跨所有者验收)。
+**R05 限定范围验收：** EOS 管理的严格子进程只接受帧格式 v2 套接字，拒绝历史 gRPC 机器人套接字与 benchmark 套接字。独立直接启动仍为旧客户端与可信评测保留这些套接字。固定版本的 IsOS → EOS → MuJoCo 回放验证了两个场景中相机、底盘和机械臂的严格健康检查、只读图像及状态、子进程和套接字清理。R06 所有者停止屏障已合并，限定范围跨所有者运动与停止回放通过；更完整的 R06 故障验收仍待完成。详见[所有者套接字契约](../interfaces/control_cn.md)和 [R05 证据](../core/architecture_cn.md#r05-跨所有者验收)。
 
 | 操作 | 请求字段 | 响应字段 |
 | --- | --- | --- |
@@ -91,7 +91,7 @@ isos pkg node-sets
 
 另一终端运行 `isos run` 启动已应用部署。IsOS 启动前检查精确的软件包、资源、场景、MuJoCo 库、EOS 程序、套接字与端口；EOS 将模拟器作为直接子进程。限定范围的 R06 回放已证明 pick-place 和 navigation 的物理停止顺序；更完整的故障验收仍待完成。`isos deployment stop` 只停止部署，`isos stop` 停止管理器、API、UI、部署和独立服务。EGIA 只通过 EOS 的正常代理接口行动，不连接私有评测套接字。模型类服务管理器独立于此硬件图。
 
-**R05 管理模式就绪，限定范围验收通过：** Apply 后，EOS 以严格模式启动已验证子进程，对图中每台相机、底盘和机械臂设备探测 `health`，要求 `version:"2.0.0"`、回显请求 ID、`ok:true`、`accepted:true` 以及包含 `strict-socket-v1` 的 `features`。套接字文件或进程启动日志只表示进度，不表示就绪。特性缺失、设备错误、相机渲染失败或子进程退出都使后端不可用；先看当前运行的首条失败事件。固定版本跨所有者回放已验证 pick-place 和 navigation 两个场景的这一路径以及只读拍摄和观察。当时的 R05 EOS 目录只公开 `safety.estop`，未公开 `base.velocity` 与 `arm.movej`；下文 R06 回放随后执行了受治理的运动与停止。R05 回放本身没有下发受管理运动。详见[验收证据](../architecture_cn.md#r05-跨所有者验收)。
+**R05 管理模式就绪，限定范围验收通过：** Apply 后，EOS 以严格模式启动已验证子进程，对图中每台相机、底盘和机械臂设备探测 `health`，要求 `version:"2.0.0"`、回显请求 ID、`ok:true`、`accepted:true` 以及包含 `strict-socket-v1` 的 `features`。套接字文件或进程启动日志只表示进度，不表示就绪。特性缺失、设备错误、相机渲染失败或子进程退出都使后端不可用；先看当前运行的首条失败事件。固定版本跨所有者回放已验证 pick-place 和 navigation 两个场景的这一路径以及只读拍摄和观察。当时的 R05 EOS 目录只公开 `safety.estop`，未公开 `base.velocity` 与 `arm.movej`；下文 R06 回放随后执行了受治理的运动与停止。R05 回放本身没有下发受管理运动。详见[验收证据](../core/architecture_cn.md#r05-跨所有者验收)。
 
 直接验证模拟器所有者切片：在私有目录运行 `build/eos-mujoco-sim --managed-strict-socket --v2-socket /absolute/private/run/strict.sock --scene "$PWD/assets/scene.xml"`，再发送 `node:"base-0"` 的分帧 `health` 请求。响应必须回显 ID，并包含 `ok:true`、`accepted:true` 与 `strict-socket-v1`。受管理启动拒绝 `--socket` 和 `--benchmark-socket`；不带标志的直接启动继续支持两者。运行 `ctest --test-dir build -R 'strict-socket|strict-capacity|v2-socket' --output-on-failure` 可回放所有者检查，包括完整保留容量。
 
@@ -99,7 +99,7 @@ isos pkg node-sets
 
 检查结果和当前运行日志后，通过 `isos deployment stop` 停止。R05 增加严格身份和传输重发保护；已合并的 R06 伴随通道及限定范围回放证明两个场景在模拟器终止并回收前分别确认底盘/机械臂。仅凭 `accepted:true` 响应始终不能证明安全停止已确认；须核对 EOS 选定的终态回执与 IsOS 的最终结果。
 
-**R06 限定范围首次使用行为：** 经审查的 `strict-stop-v1` 所有者实现已在 [PR #21](https://github.com/Island-Team/isos-mujoco-sim/pull/21) 合并；真实 pick-place/navigation 的 IsOS → EOS → MuJoCo 回放执行了受治理的运动与停止。使用精确且已验证的所有者构建，重复 Validate/Apply/Run。受管理子进程在主套接字路径追加 `.stop`，得到仅所有者可访问的伴随套接字；图不增加字段。EOS 目录公开 `base.velocity` 或 `arm.movej` 前，检查每个执行器的 `health` 同时具有 `strict-socket-v1` 与 `strict-stop-v1`，且 EOS 已探测伴随停止套接字。EOS 在第一次有界受管理运动中传入两个健康路径匹配的 32 字符 `generation_id` 和 `stop_epoch:"0"`，之后传入当前已证明的 epoch；旧令牌的**新**命令返回 `stop_fenced`，相同旧命令 ID 仍返回 R05 已存储结果。通过 EOS 下发运动，在运动或拍摄进行时通过 EOS/IsOS 停止；EOS 将带代际 ID 的受管停止送到伴随套接字。上代延迟请求返回 `stale_generation`。严格 `stop` 响应须回显请求 ID，包含 `base_stop:"stopped"`、`arm_stop:"stopped"`、匹配的 `generation_id`、非空十进制字符串 `stop_epoch`、`ok:true` 及 `accepted:true`；EOS 须在终止和回收直接子进程前校验该证明，清理后才发布选定的终态回执。[套接字契约](../interfaces/control_cn.md#r06-受管理停止契约)定义这些值：状态字符串是无量纲证明状态，`stop_epoch` 是子进程内次序计数，也是运动请求的前提。缺失或未知状态、超时、子进程崩溃、`stop_outcome_unknown` 均表示安全停止未确认；检查首条关联故障事件与 EOS 日志，再核对有界的子进程及两个套接字路径清理。不能仅从进程退出或 `accepted` 推断物理停止。限定范围回放确认了两部分停止、匹配的代际与 epoch `1`，且没有残留子进程、进程组或套接字；停止套接字丢失与子进程崩溃仍判为未知。详见 [R06 证据](../architecture_cn.md#r06-所有者合并与限定范围跨所有者回放)。强制超时/KILL、GUI 不可用、过期或错误管道及崩溃恢复仍需更完整的 R06 验收，才能宣称 M3 控制全部完成。
+**R06 限定范围首次使用行为：** 经审查的 `strict-stop-v1` 所有者实现已在 [PR #21](https://github.com/Island-Team/isos-mujoco-sim/pull/21) 合并；真实 pick-place/navigation 的 IsOS → EOS → MuJoCo 回放执行了受治理的运动与停止。使用精确且已验证的所有者构建，重复 Validate/Apply/Run。受管理子进程在主套接字路径追加 `.stop`，得到仅所有者可访问的伴随套接字；图不增加字段。EOS 目录公开 `base.velocity` 或 `arm.movej` 前，检查每个执行器的 `health` 同时具有 `strict-socket-v1` 与 `strict-stop-v1`，且 EOS 已探测伴随停止套接字。EOS 在第一次有界受管理运动中传入两个健康路径匹配的 32 字符 `generation_id` 和 `stop_epoch:"0"`，之后传入当前已证明的 epoch；旧令牌的**新**命令返回 `stop_fenced`，相同旧命令 ID 仍返回 R05 已存储结果。通过 EOS 下发运动，在运动或拍摄进行时通过 EOS/IsOS 停止；EOS 将带代际 ID 的受管停止送到伴随套接字。上代延迟请求返回 `stale_generation`。严格 `stop` 响应须回显请求 ID，包含 `base_stop:"stopped"`、`arm_stop:"stopped"`、匹配的 `generation_id`、非空十进制字符串 `stop_epoch`、`ok:true` 及 `accepted:true`；EOS 须在终止和回收直接子进程前校验该证明，清理后才发布选定的终态回执。[套接字契约](../interfaces/control_cn.md#r06-受管理停止契约)定义这些值：状态字符串是无量纲证明状态，`stop_epoch` 是子进程内次序计数，也是运动请求的前提。缺失或未知状态、超时、子进程崩溃、`stop_outcome_unknown` 均表示安全停止未确认；检查首条关联故障事件与 EOS 日志，再核对有界的子进程及两个套接字路径清理。不能仅从进程退出或 `accepted` 推断物理停止。限定范围回放确认了两部分停止、匹配的代际与 epoch `1`，且没有残留子进程、进程组或套接字；停止套接字丢失与子进程崩溃仍判为未知。详见 [R06 证据](../core/architecture_cn.md#r06-所有者合并与限定范围跨所有者回放)。强制超时/KILL、GUI 不可用、过期或错误管道及崩溃恢复仍需更完整的 R06 验收，才能宣称 M3 控制全部完成。
 
 v2 图中的模拟器节点可以在 `settings.env` 设置 `MUJOCO_GUI=1`，以同一模拟器引擎打开实时 X11 视图；独立启动脚本的 `--gui` 只是静态场景查看器。节点与套接字契约见 [backend_cn.md](isos-pkg_cn.md)。
 
@@ -113,7 +113,7 @@ v2 图中的模拟器节点可以在 `settings.env` 设置 `MUJOCO_GUI=1`，以�
 
 **状态：**`v0.1.1` 已从准确的二进制构建源码 `04b65882cd11b0aff8ce56473164691dbd662196` 发布。重新下载的公开清单与归档摘要均与下文选定值一致。独立的干净 IsOS 主目录测试已验证并安装公开软件包、选择场景和设备、应用图、将 EOS 启动至就绪，并确认 Stop 与子进程回收。后续五方发布资产重放通过了既定 Q04/M5 关卡；具体范围与限制见下文。从较新的文档提交重新构建会产生新候选包，必须重新验证。
 
-**操作员可见变化。** IsOS 可以验证并安装 `island/mujoco-sim@0.1.1`，列出两个场景及可用的相机、底盘、机械臂设备，预览 `sim-hardware` 节点集，并对选定图执行 Validate/Apply。EOS 将已验证仿真器作为直接子进程启动，读取真实相机帧，经 Dispatcher 准入运动，并在终止和回收子进程前确认物理 Stop。选定的干净主目录运行还覆盖子进程故障、受治理重启、软件包与边拒绝，以及显式图迁移。[Q03 验证记录](../architecture_cn.md)及 [EOS Q04 重放记录](https://github.com/Island-Team/Island-eos/blob/master/docs_cn/island/q04-merged-qualification_cn.md)说明范围和原始证据。
+**操作员可见变化。** IsOS 可以验证并安装 `island/mujoco-sim@0.1.1`，列出两个场景及可用的相机、底盘、机械臂设备，预览 `sim-hardware` 节点集，并对选定图执行 Validate/Apply。EOS 将已验证仿真器作为直接子进程启动，读取真实相机帧，经 Dispatcher 准入运动，并在终止和回收子进程前确认物理 Stop。选定的干净主目录运行还覆盖子进程故障、受治理重启、软件包与边拒绝，以及显式图迁移。[Q03 验证记录](../core/architecture_cn.md)及 [EOS Q04 重放记录](https://github.com/Island-Team/Island-eos/blob/master/docs_cn/island/q04-merged-qualification_cn.md)说明范围和原始证据。
 
 **兼容与迁移。** 此包采用 IsOS schema v4，节点集面向 `0.2.1` 图和已注册的 `@v0.2` 类型。先前已验证发布包中的 `eos.process.mujoco@v1.0` 仍由旧读取器处理；本候选包不贡献该类型。迁移须显式执行并检查修订。已发布的 `v1.0.1` 包使用退役图形态，属于另一版本。当前 `0.1.2` 候选包要求操作员提供 MuJoCo 3.3.1 库。已发布 `v0.1.1` 资产使用 MuJoCo 3.16.0，并记录 Ubuntu 24.04、`glibc>=2.39` 和 x86_64。原生依赖规则见[软件包契约](../interfaces/package_cn.md)。
 

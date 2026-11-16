@@ -1,6 +1,6 @@
 # EOS 机械臂节点
 
-[接口目录](../../../README_cn.md) · [设计](../../../../design/eos/hardware/manipulator_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/hardware/manipulator.md)
+[接口目录](../../../README_cn.md) · [设计](../../../../core/eos/hardware/manipulator_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/hardware/manipulator.md)
 
 这两种节点控制机器人手臂。原生预设使用六个 MuJoCo 关节目标；RoboCasa 预设使用六个归一化末端控制轴及独立控制模式输入。两者的命令与观察单位不同，不能互换。
 

@@ -1,6 +1,6 @@
 # Historical EOS MuJoCo process node
 
-[Interface index](../../../README.md) · [Design](../../../../design/eos/process/mujoco.md) · [Package declaration](../../../package.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/process/mujoco_cn.md)
+[Interface index](../../../README.md) · [Design](../../../../core/eos/process/mujoco.md) · [Package declaration](../../../package.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/process/mujoco_cn.md)
 
 `eos.process.mujoco.simulator@v0.2` belongs to the historical `0.2.0` `sim-hardware` set. It starts one verified MuJoCo scene as an EOS-owned child and provides the private service used by that set's JPEG camera. It is a process lifecycle node, not an agent control or observation port. Current full hardware presets contain device nodes and let IsOS start their selected runtime service implicitly; they do not include this process node.
 

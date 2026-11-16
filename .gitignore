@@ -19,8 +19,8 @@ _deps/
 *.sock
 *.sock.lock
 MUJOCO_LOG.TXT
-core
-core.*
+/core
+/core.*
 
 # Python helpers and local environments.
 __pycache__/

@@ -1,6 +1,6 @@
 # 私有评测 RPC
 
-[接口目录](README_cn.md) · [模拟器 RPC](simulator_cn.md) · [基准方法](../benchmarks/Robocasa/README_cn.md) · [English](../../../docs/mujoco/interfaces/benchmark.md)
+[接口目录](README_cn.md) · [模拟器 RPC](simulator_cn.md) · [基准方法](../core/benchmark_cn.md) · [English](../../../docs/mujoco/interfaces/benchmark.md)
 
 ## 归属、调用方与准入
 

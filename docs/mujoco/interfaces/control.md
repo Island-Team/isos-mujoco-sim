@@ -2,7 +2,7 @@
 
 The v0.2.1 native hardware extension adds `gripper_observe` (`opening_percent` in `[0,100]`) and `gripper_move` (`close:bool`, `command_id`, `generation_id`, `stop_epoch`). Managed Stop now reports `gripper_stop` separately alongside `base_stop` and `arm_stop`; all three must be `stopped` for successful actuator proof. See the [full hardware package contract](package.md). Existing wire version `2.0.0` and framing remain unchanged.
 
-[中文](../../../docs_cn/mujoco/interfaces/control_cn.md) · [Package descriptor](package.md) · [Design](../architecture.md)
+[中文](../../../docs_cn/mujoco/interfaces/control_cn.md) · [Package descriptor](package.md) · [Design](../core/architecture.md)
 
 **Ownership, identity and status.** This package owns the simulator socket protocol; EOS owns the client adapter and direct-child lifecycle. The existing wire protocol is `2.0.0`; its number is a compatibility identity and does not set the package or graph release version. The simulator implements the framed Unix socket and operations below. R05 managed mode enforces `node` device identity, `command_id` deduplication and stable errors. The R06 `strict-stop-v1` owner implementation passed independent design and implementation review and merged through [PR #21](https://github.com/Island-Team/isos-mujoco-sim/pull/21); the scoped cross-owner replay passed, while broader R06 qualification remains open. EOS is the sole robot-side caller through its internal `mujoco-v2` adapter family; EGIA and IsosUI call EOS, never this socket. Benchmark RPC is separate and evaluator-only. The old gRPC simulator socket is documented as a retained legacy side chain in [simulator.md](simulator.md).
 
@@ -215,7 +215,7 @@ Partial proof example; EOS treats the overall outcome as unknown and still termi
 }
 ```
 
-R06 design and negative fixture coverage is [frozen here](../../../tests/fixtures/strict_stop_lane/README.md). The reviewed MuJoCo owner head `212f757` passed 24/24 CTest cases and ten repetitions of the queued accept-deadline regression, plus the 48-case R06 and 31-case R05 fixture checks, before [PR #21](https://github.com/Island-Team/isos-mujoco-sim/pull/21) merged at `c171208`. The scoped IsOS → EOS → MuJoCo replay confirmed dual-part stops and cleanup for pick-place and navigation, and classified lost stop socket and child crash as unknown. [Evidence and reproducible commands](../architecture.md#r06-stop-lane-design-target) record the exact scope. Forced timeout/KILL, GUI unavailability, stale or wrong pipe, and crash recovery remain broader R06 qualification work; this package merge does not publish a `0.1.1` release tag.
+R06 design and negative fixture coverage is [frozen here](../../../tests/fixtures/strict_stop_lane/README.md). The reviewed MuJoCo owner head `212f757` passed 24/24 CTest cases and ten repetitions of the queued accept-deadline regression, plus the 48-case R06 and 31-case R05 fixture checks, before [PR #21](https://github.com/Island-Team/isos-mujoco-sim/pull/21) merged at `c171208`. The scoped IsOS → EOS → MuJoCo replay confirmed dual-part stops and cleanup for pick-place and navigation, and classified lost stop socket and child crash as unknown. [Evidence and reproducible commands](../core/architecture.md#r06-stop-lane-design-target) record the exact scope. Forced timeout/KILL, GUI unavailability, stale or wrong pipe, and crash recovery remain broader R06 qualification work; this package merge does not publish a `0.1.1` release tag.
 
 ## Hardware service runtime control
 
