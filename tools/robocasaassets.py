@@ -4,7 +4,7 @@
 import argparse
 import hashlib
 from pathlib import Path
-import shutil
+import time
 from urllib.request import Request, urlopen
 from zipfile import BadZipFile, ZipFile
 
@@ -40,9 +40,27 @@ def download_archive(url: str, partial: Path) -> None:
   offset = partial.stat().st_size if partial.exists() else 0
   request = Request(url, headers={"Range": f"bytes={offset}-"} if offset else {})
   with urlopen(request) as response:
-    mode = "ab" if offset and response.status == 206 else "wb"
+    resumed = offset and response.status == 206
+    if offset and not resumed:
+      print(f"{partial.name}: server did not accept resume; restarting download", flush=True)
+    written = offset if resumed else 0
+    length = response.headers.get("Content-Length")
+    total = written + int(length) if length and length.isdigit() else None
+    print(f"Downloading {partial.name}: {written:,} bytes already saved"
+          + (f" of {total:,}" if total is not None else ""), flush=True)
+    last_report = time.monotonic()
+    mode = "ab" if resumed else "wb"
     with partial.open(mode) as destination:
-      shutil.copyfileobj(response, destination)
+      while chunk := response.read(1024 * 1024):
+        destination.write(chunk)
+        written += len(chunk)
+        now = time.monotonic()
+        if now - last_report >= 5:
+          print(f"Downloading {partial.name}: {written:,} bytes"
+                + (f" / {total:,} ({written / total:.0%})" if total else ""),
+                flush=True)
+          last_report = now
+    print(f"Downloaded {partial.name}: {written:,} bytes", flush=True)
 
 
 def main() -> None:
@@ -65,6 +83,8 @@ def main() -> None:
       partial = archive.with_suffix(archive.suffix + ".part")
       download_archive(url, partial)
       partial.replace(archive)
+    else:
+      print(f"Using cached {filename}", flush=True)
     if not valid_zip(archive):
       raise ValueError(f"incomplete asset archive: {filename}")
     if digest:
@@ -74,6 +94,7 @@ def main() -> None:
     target = assets / "objects" if filename in {
       "objects_lightwheel.zip", "objaverse.zip", "aigen_objs.zip"} else assets
     target.mkdir(parents=True, exist_ok=True)
+    print(f"Extracting {filename} into {target}", flush=True)
     with ZipFile(archive) as contents:
       for item in contents.infolist():
         resolved = (target / item.filename).resolve()

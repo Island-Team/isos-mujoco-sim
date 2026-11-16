@@ -11,6 +11,8 @@ python3 tests/full_interfaces.py build/eos-mujoco-sim assets/scene.xml \
 
 RoboCasa uses the upstream Gym environment rather than the native C++ engine. Install the pinned full object assets with `./tools/robocasasetup.sh --full` before testing fixed kitchens. The three-kitchen harness records three bounded actions in each of `1:1`, `2:2`, and `3:3`, shows each live camera GUI, closes it after the final frame, then replays the exact actions without a window and compares the result. Its files stay under ignored `data/test/`.
 
+Asset setup prints each archive's cached, download, and extraction state to the terminal. During a download it reports bytes received and, when the server supplies the length, the total and percentage about every five seconds. Interrupted `.part` downloads resume when the server supports byte ranges.
+
 ```sh
 python3 tests/full_robocasa.py .local/robocasa-venv/bin/python \
   tools/robocasahrun.py data/test/<run-id>/robocasa

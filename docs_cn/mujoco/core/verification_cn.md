@@ -11,6 +11,8 @@ python3 tests/full_interfaces.py build/eos-mujoco-sim assets/scene.xml \
 
 RoboCasa 使用上游 Gym 环境，而非原生 C++ 引擎。测试固定厨房前，使用 `./tools/robocasasetup.sh --full` 安装固定版本的完整物体资源。三厨房测试分别在 `1:1`、`2:2`、`3:3` 记录三个有界动作，显示实时相机窗口，在最后一帧后自动关闭，再无窗口地重放相同动作并比较结果。文件保存在忽略目录 `data/test/`。
 
+资源安装会在终端显示各压缩包的缓存、下载和解压状态。下载时约每五秒显示已接收字节数；服务器提供总长度时，还显示总量和百分比。下载中断后，若服务器支持字节范围请求，`.part` 文件可以续传。
+
 ```sh
 python3 tests/full_robocasa.py .local/robocasa-venv/bin/python \
   tools/robocasahrun.py data/test/<run-id>/robocasa
