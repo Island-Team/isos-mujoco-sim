@@ -106,6 +106,8 @@ The command prints RoboCasa startup messages followed by a JSON result such as:
 {"instruction":"Close the fridge doors.","scene":"8:8","seed":42,"split":"target","steps":20,"success":false,"task":"robocasa/CloseFridge"}
 ```
 
+`--gui-exit-ms 300` closes the GUI 300 ms after the final frame instead of waiting for a key. `--record-actions PATH` stores the sampled action sequence; `--replay-actions PATH` reuses it for the same task, split, scene, and seed. Use the [full interface replay](../core/verification.md) to exercise three fixed kitchens with bounded GUI exit.
+
 `success` comes from RoboCasa's fridge-door rule. The bundled runner samples bounded random actions and holds base motion at zero; `false` is a valid smoke result, not an installation failure. `--steps` sets the action budget and `--seed` controls the reset and sampled actions. The process exits after the episode, so `kill.sh` is not needed. The task, asset origin, license, and limits are in the [benchmark guide](../core/benchmark.md).
 
 ## Troubleshooting

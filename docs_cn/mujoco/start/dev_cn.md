@@ -106,6 +106,8 @@ build/mujoco-core --scene "$PWD/assets/scene.xml" --seed 42 --steps 20
 {"instruction":"Close the fridge doors.","scene":"8:8","seed":42,"split":"target","steps":20,"success":false,"task":"robocasa/CloseFridge"}
 ```
 
+`--gui-exit-ms 300` 在最后一帧显示 300 毫秒后关闭窗口，无需按键。`--record-actions PATH` 保存采样动作序列；`--replay-actions PATH` 在相同任务、数据分组、场景和种子下重用该序列。使用[完整接口回放](../core/verification_cn.md)测试三个固定厨房场景及自动关闭窗口。
+
 `success` 来自 RoboCasa 的冰箱门判定规则。随附运行器采样有界随机动作，并将底盘运动置零；`false` 是有效的冒烟结果，不代表安装失败。`--steps` 指定动作预算，`--seed` 控制重置与动作采样。回合结束后进程自行退出，无需运行 `kill.sh`。任务、资源来源、许可和限制见[基准指南](../core/benchmark_cn.md)。
 
 ## 故障排查
