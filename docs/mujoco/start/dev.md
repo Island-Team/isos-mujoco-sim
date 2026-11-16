@@ -1,6 +1,6 @@
 # First run from source
 
-[MuJoCo documentation](../README.md) · [Build and run](README.md) · [RoboCasa benchmark](../benchmarks/Robocasa/README.md) · [中文](../../../docs_cn/mujoco/start/dev_cn.md)
+[MuJoCo documentation](../README.md) · [Build and run](README.md) · [RoboCasa benchmark](../core/benchmark.md) · [中文](../../../docs_cn/mujoco/start/dev_cn.md)
 
 This guide has two local workflows. `./launch.sh` runs the active upstream RoboCasa `CloseFridge` smoke episode in the foreground. `./build.sh` builds this repository's C++ MuJoCo core and IsOS/EOS package wrapper, then prepares RoboCasa after asking before any needed download; `./launch.sh --scene ...` starts that compatibility simulator in the background. The RoboCasa environment does not yet connect to EOS. Use the [managed backend guide](isos-pkg.md) to install the C++ wrapper in IsOS.
 
@@ -106,7 +106,7 @@ The command prints RoboCasa startup messages followed by a JSON result such as:
 {"instruction":"Close the fridge doors.","scene":"8:8","seed":42,"split":"target","steps":20,"success":false,"task":"robocasa/CloseFridge"}
 ```
 
-`success` comes from RoboCasa's fridge-door rule. The bundled runner samples bounded random actions and holds base motion at zero; `false` is a valid smoke result, not an installation failure. `--steps` sets the action budget and `--seed` controls the reset and sampled actions. The process exits after the episode, so `kill.sh` is not needed. The task, asset origin, license, and limits are in the [benchmark guide](../benchmarks/Robocasa/README.md).
+`success` comes from RoboCasa's fridge-door rule. The bundled runner samples bounded random actions and holds base motion at zero; `false` is a valid smoke result, not an installation failure. `--steps` sets the action budget and `--seed` controls the reset and sampled actions. The process exits after the episode, so `kill.sh` is not needed. The task, asset origin, license, and limits are in the [benchmark guide](../core/benchmark.md).
 
 ## Troubleshooting
 

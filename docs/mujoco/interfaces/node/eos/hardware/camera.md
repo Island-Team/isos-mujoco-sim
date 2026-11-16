@@ -1,6 +1,6 @@
 # EOS camera node
 
-[Interface index](../../../README.md) · [Design](../../../../design/eos/hardware/camera.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/hardware/camera_cn.md)
+[Interface index](../../../README.md) · [Design](../../../../core/eos/hardware/camera.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/hardware/camera_cn.md)
 
 `eos.hardware.camera.device@v0.2` is a read-only camera node. The native preset offers one JPEG view of the MuJoCo scene; the RoboCasa preset offers three RGB8 views of the PandaOmron robot. Select a preset to choose the actual camera devices. The type advertises both `jpeg` and `rgb8`; each instance advertises only the encoding it supplies.
 

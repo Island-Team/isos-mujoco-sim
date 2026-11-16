@@ -1,6 +1,6 @@
 # EOS manipulator nodes
 
-[Interface index](../../../README.md) · [Design](../../../../design/eos/hardware/manipulator.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/hardware/manipulator_cn.md)
+[Interface index](../../../README.md) · [Design](../../../../core/eos/hardware/manipulator.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/hardware/manipulator_cn.md)
 
 These nodes control the robot arm. The native preset uses six MuJoCo joint targets. The RoboCasa preset uses six normalized end-effector controller axes and a separate control-mode input. Their commands and observations have different units and must not be interchanged.
 

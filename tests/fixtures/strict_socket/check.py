@@ -39,8 +39,8 @@ assert required <= set(ids)
 for relative in (
     "docs/mujoco/interfaces/control.md",
     "docs_cn/mujoco/interfaces/control_cn.md",
-    "docs/mujoco/architecture.md",
-    "docs_cn/mujoco/architecture_cn.md",
+    "docs/mujoco/core/architecture.md",
+    "docs_cn/mujoco/core/architecture_cn.md",
     "docs/mujoco/start/isos-pkg.md",
     "docs_cn/mujoco/start/isos-pkg_cn.md",
 ):

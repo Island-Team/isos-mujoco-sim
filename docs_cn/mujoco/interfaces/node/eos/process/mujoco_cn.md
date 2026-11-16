@@ -1,6 +1,6 @@
 # 历史 EOS MuJoCo 进程节点
 
-[接口目录](../../../README_cn.md) · [设计](../../../../design/eos/process/mujoco_cn.md) · [包声明](../../../package_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/process/mujoco.md)
+[接口目录](../../../README_cn.md) · [设计](../../../../core/eos/process/mujoco_cn.md) · [包声明](../../../package_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/process/mujoco.md)
 
 `eos.process.mujoco.simulator@v0.2` 属于历史 `0.2.0` 的 `sim-hardware` 节点集。它把一个已验证 MuJoCo 场景作为 EOS 管理的子进程启动，为该节点集的 JPEG 相机提供私有服务。它是进程生命周期节点，不是代理控制或观察端口。当前完整硬件预设包含设备节点，由 IsOS 隐式启动所选运行服务，不含此进程节点。
 

@@ -1,6 +1,6 @@
 # Repository agent guide
 
-Follow [Island coding conventions 1.4.0](docs/island/conventions.v1.4.0.md) and the [MuJoCo documentation index](docs/mujoco/README.md). This file maps the current source and ownership; the owning `interfaces/` pages define public behavior. Read the relevant `start/`, `interfaces/`, and `design/` pages before changing a boundary. Keep English `docs/` and Chinese `docs_cn/` pages, examples, and links aligned.
+Follow [Island coding conventions 1.4.0](docs/island/conventions.v1.4.0.md) and the [MuJoCo documentation index](docs/mujoco/README.md). This file maps the current source and ownership; the owning `interfaces/` pages define public behavior. Read the relevant `start/`, `interfaces/`, and `core/` pages before changing a boundary. Keep English `docs/` and Chinese `docs_cn/` pages, examples, and links aligned.
 
 ## Current source and ownership
 

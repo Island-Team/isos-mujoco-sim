@@ -1,6 +1,6 @@
 # RoboCasa robot hardware core
 
-[RoboCasa benchmark](../benchmarks/Robocasa/README.md) · [中文](../../../docs_cn/mujoco/interfaces/robocasa_cn.md)
+[RoboCasa benchmark](../core/benchmark.md) · [中文](../../../docs_cn/mujoco/interfaces/robocasa_cn.md)
 
 The Python `robocasa_core.Hardware` owns one caller-supplied, pinned RoboCasa PandaOmron Gym environment. Its catalog uses layer `robocasa`; groups describe hardware functions and nodes are stable bindable endpoints. The caller owns environment creation, serializes all calls, and closes the core. This in-process API has no authentication or transport. The packaged worker exposes the hardware through a private service endpoint; its caller and admission rules are in the [control contract](control.md).
 

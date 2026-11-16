@@ -1,6 +1,6 @@
 # EOS 躯干节点
 
-[接口目录](../../../README_cn.md) · [设计](../../../../design/eos/hardware/torso_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/hardware/torso.md)
+[接口目录](../../../README_cn.md) · [设计](../../../../core/eos/hardware/torso_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/hardware/torso.md)
 
 `eos.hardware.torso.normalized_axes@v0.2` 只在 **RoboCasa 机器人**预设中出现，节点引用为 `robocasa/lift`，设备为 `robocasa/torso/torso`。原生机器人预设没有躯干节点。它通过归一化控制器输入指挥 PandaOmron 躯干升降，不发布实测躯干位置。
 

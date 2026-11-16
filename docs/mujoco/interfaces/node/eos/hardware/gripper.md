@@ -1,6 +1,6 @@
 # EOS gripper node
 
-[Interface index](../../../README.md) · [Design](../../../../design/eos/hardware/gripper.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/hardware/gripper_cn.md)
+[Interface index](../../../README.md) · [Design](../../../../core/eos/hardware/gripper.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/hardware/gripper_cn.md)
 
 `eos.hardware.gripper.binary@v0.2` opens or closes one simulated gripper. Both presets expose the same binary command type, but their observations describe different physical quantities.
 

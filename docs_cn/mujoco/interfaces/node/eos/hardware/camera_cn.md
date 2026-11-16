@@ -1,6 +1,6 @@
 # EOS 相机节点
 
-[接口目录](../../../README_cn.md) · [设计](../../../../design/eos/hardware/camera_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/hardware/camera.md)
+[接口目录](../../../README_cn.md) · [设计](../../../../core/eos/hardware/camera_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/hardware/camera.md)
 
 `eos.hardware.camera.device@v0.2` 是只读相机节点。原生预设提供一个 MuJoCo 场景 JPEG 画面；RoboCasa 预设提供三个 PandaOmron RGB8 画面。预设决定具体设备。类型声明 `jpeg` 和 `rgb8`，每个实例只声明实际提供的编码。
 

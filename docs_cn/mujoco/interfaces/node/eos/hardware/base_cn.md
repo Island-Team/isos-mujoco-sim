@@ -1,6 +1,6 @@
 # EOS 底盘节点
 
-[接口目录](../../../README_cn.md) · [设计](../../../../design/eos/hardware/base_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/hardware/base.md)
+[接口目录](../../../README_cn.md) · [设计](../../../../core/eos/hardware/base_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/hardware/base.md)
 
 底盘节点代表一个模拟移动底盘。**原生机器人**预设提供速度控制及平面状态；**RoboCasa 机器人**预设提供归一化控制轴及世界坐标位姿。操作员在 IsOS 选择预设和服务配置；健康检查和 Dispatcher 准入通过后，代理只看到 EOS 公布的能力。
 

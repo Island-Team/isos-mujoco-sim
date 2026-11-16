@@ -1,6 +1,6 @@
 # EOS 夹爪节点
 
-[接口目录](../../../README_cn.md) · [设计](../../../../design/eos/hardware/gripper_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/hardware/gripper.md)
+[接口目录](../../../README_cn.md) · [设计](../../../../core/eos/hardware/gripper_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/hardware/gripper.md)
 
 `eos.hardware.gripper.binary@v0.2` 开闭一个模拟夹爪。两种预设使用相同二值命令类型，但观察代表不同物理量。
 

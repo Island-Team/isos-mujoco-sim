@@ -2,7 +2,7 @@
 
 本仓库提供面向 IsOS 和 EOS 的 MuJoCo 模拟器包，以及本地 RoboCasa 基准流程。
 
-[English](README.md) · [开始使用](docs_cn/mujoco/start/README_cn.md) · [接口](docs_cn/mujoco/interfaces/README_cn.md) · [设计](docs_cn/mujoco/design/README_cn.md)
+[English](README.md) · [开始使用](docs_cn/mujoco/start/README_cn.md) · [接口](docs_cn/mujoco/interfaces/README_cn.md) · [设计](docs_cn/mujoco/core/README_cn.md)
 
 | 路径 | 运行内容 | 当前范围 |
 | --- | --- | --- |
@@ -36,7 +36,7 @@ ctest --test-dir build --output-on-failure
 ./kill.sh
 ```
 
-`config.toml` 选择 `config/benchmarks/robocasa.toml`；`.env` 覆盖相同配置，命令参数再次覆盖。原生包装层在后台启动并打印仅所有者可访问的套接字和日志路径。`./kill.sh` 停止启动器记录的进程。详见[任务选择](docs_cn/mujoco/benchmarks/Robocasa/README_cn.md)和[原生运行指南](docs_cn/mujoco/start/dev_cn.md)。
+`config.toml` 选择 `config/benchmarks/robocasa.toml`；`.env` 覆盖相同配置，命令参数再次覆盖。原生包装层在后台启动并打印仅所有者可访问的套接字和日志路径。`./kill.sh` 停止启动器记录的进程。详见[任务选择](docs_cn/mujoco/core/benchmark_cn.md)和[原生运行指南](docs_cn/mujoco/start/dev_cn.md)。
 
 ## 记录硬件控制
 
