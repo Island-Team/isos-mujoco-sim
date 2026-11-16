@@ -2,7 +2,7 @@
 
 [MuJoCo documentation](../README.md) · [Build and run](README.md) · [RoboCasa benchmark](../core/benchmark.md) · [中文](../../../docs_cn/mujoco/start/dev_cn.md)
 
-This guide has two local workflows. `./launch.sh` runs the active upstream RoboCasa `CloseFridge` smoke episode in the foreground. `./build.sh` builds this repository's C++ MuJoCo core and IsOS/EOS package wrapper, then prepares RoboCasa after asking before any needed download; `./launch.sh --scene ...` starts that compatibility simulator in the background. The RoboCasa environment does not yet connect to EOS. Use the [managed backend guide](isos-pkg.md) to install the C++ wrapper in IsOS.
+This guide has two local workflows. `./launch.sh` runs the active upstream RoboCasa `CloseFridge` smoke episode in the foreground. `./build.sh` builds this repository's C++ MuJoCo core and IsOS/EOS package wrapper, then prepares RoboCasa after asking before any needed download; `./launch.sh --scene ...` starts that compatibility simulator in the background. The local RoboCasa smoke runner calls Gym directly; the packaged RoboCasa worker exposes the separate `robocasa_core.Hardware` API to EOS. Use the [managed backend guide](isos-pkg.md) for the package path.
 
 ## Prerequisites
 
