@@ -57,6 +57,9 @@ cp .env.example .env
 
 受管理源码包构建时，环境变量 `MUJOCO_ROOT` 优先于 `[host].mujoco_root`。两者都为空时，构建会使用本仓库现有的 `.local/mujoco-3.3.1`，因此 IsOS 可重建干净的源码检出，而无需在受版本控制的配置中写入本机路径。
 
+软件包模式复用被 Git 忽略的 `.local/package-build/` CMake 构建树。2026-11-18 的缓存回放记录在忽略目录 `data/test/20261118-package-build-cache/`，两次运行 `./build.sh --output <空目录> --version 0.2.6` 分别耗时 20.25 秒和 4.13 秒；两个归档的 SHA-256 相同。`python3 tests/archive.py` 通过，且无效的 `MUJOCO_ROOT` 被拒绝。
+`ctest --test-dir .local/package-build --output-on-failure -j4` 的 35 项测试全部通过。软件包模式现在仅构建可执行文件与适配器目标；需要重新构建测试目标时使用开发构建与 CTest。
+
 表中的 `BENCHMARK_*` 值来自所选基准 TOML 文件的 `[task]`、`[camera]`、`[gui]` 和 `[record]`。根目录的 `BENCHMARK_CONFIG` 指定该文件；可在 `config/dev.toml` 修改路径以使用另一份纳入版本控制的预设。`.env` 赋值覆盖基准文件中的值，单次命令参数再覆盖 `.env`。
 
 ## 构建和运行原生模拟器

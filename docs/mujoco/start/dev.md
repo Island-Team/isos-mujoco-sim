@@ -57,6 +57,9 @@ Package deployment uses the separate [`config/package.toml`](../../../config/pac
 
 For a managed source package build, `MUJOCO_ROOT` in the environment takes precedence over `[host].mujoco_root`. When both are empty, the build uses an existing `.local/mujoco-3.3.1` in this checkout. This lets IsOS rebuild a clean source checkout without storing a machine-specific path in tracked configuration.
 
+Package mode reuses the ignored `.local/package-build/` CMake tree. The 2026-11-18 cache replay under ignored `data/test/20261118-package-build-cache/` ran `./build.sh --output <empty-directory> --version 0.2.6` twice: 20.25 seconds for the first build and 4.13 seconds for the second. Both archives had the same SHA-256. `python3 tests/archive.py` passed, and an invalid `MUJOCO_ROOT` was rejected.
+`ctest --test-dir .local/package-build --output-on-failure -j4` passed all 35 tests. Package mode now builds only the executable and adapter targets; use the development build and CTest when test targets must be rebuilt.
+
 The `BENCHMARK_*` rows come from `[task]`, `[camera]`, `[gui]`, and `[record]` in the selected benchmark TOML file. The root `BENCHMARK_CONFIG` path selects that file; edit it in `config/dev.toml` to use a different checked-in benchmark preset. `.env` assignments override the loaded benchmark values, and one-run flags override `.env`.
 
 ## Build and run the native simulator
