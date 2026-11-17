@@ -60,7 +60,9 @@ def run_case(api, host, emitted, width, height, binary, expected, announced_size
             if expected:
                 assert emitted[-1]["payload"]["width_px"] == width
                 assert emitted[-1]["payload"]["height_px"] == height
-                assert base64.b64decode(emitted[-1]["payload"]["data"]) == binary
+                jpeg = base64.b64decode(emitted[-1]["payload"]["data"])
+                assert emitted[-1]["payload"]["encoding"] == "jpeg"
+                assert jpeg.startswith(b"\xff\xd8") and jpeg.endswith(b"\xff\xd9")
             assert api.stop(handle) == 0
             api.destroy(handle)
             worker.join(3)

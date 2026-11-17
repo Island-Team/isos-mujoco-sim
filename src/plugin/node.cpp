@@ -4,6 +4,7 @@
 #include <google/protobuf/struct.pb.h>
 #include <google/protobuf/util/json_util.h>
 #include <google/protobuf/stubs/strutil.h>
+#include <jpeglib.h>
 #include <poll.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -16,6 +17,7 @@
 #include <cmath>
 #include <memory>
 #include <mutex>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -38,6 +40,32 @@ struct isos_node_handle {
 };
 
 namespace {
+std::vector<unsigned char> encode_jpeg(const std::vector<unsigned char>& rgb, int width, int height) {
+  jpeg_compress_struct jpeg{};
+  jpeg_error_mgr error{};
+  jpeg.err = jpeg_std_error(&error);
+  jpeg_create_compress(&jpeg);
+  unsigned char* output = nullptr;
+  unsigned long output_size = 0;
+  jpeg_mem_dest(&jpeg, &output, &output_size);
+  jpeg.image_width = width;
+  jpeg.image_height = height;
+  jpeg.input_components = 3;
+  jpeg.in_color_space = JCS_RGB;
+  jpeg_set_defaults(&jpeg);
+  jpeg_set_quality(&jpeg, 80, TRUE);
+  jpeg_start_compress(&jpeg, TRUE);
+  while (jpeg.next_scanline < jpeg.image_height) {
+    JSAMPROW row = const_cast<JSAMPROW>(rgb.data() +
+        static_cast<std::size_t>(jpeg.next_scanline) * width * 3);
+    jpeg_write_scanlines(&jpeg, &row, 1);
+  }
+  jpeg_finish_compress(&jpeg);
+  std::vector<unsigned char> encoded(output, output + output_size);
+  jpeg_destroy_compress(&jpeg);
+  std::free(output);
+  return encoded;
+}
 const Value* field(const Struct& object, const char* name) {
   auto it = object.fields().find(name);
   return it == object.fields().end() ? nullptr : &it->second;
@@ -277,11 +305,13 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
       const int width = static_cast<int>(width_number);
       const int height = static_cast<int>(height_number);
       if (binary.size() != static_cast<std::size_t>(width) * height * 3) return -1;
+      const auto jpeg = encode_jpeg(binary, width, height);
+      if (jpeg.empty() || jpeg.size() > 8 * 1024 * 1024) return -1;
       std::string encoded;
       google::protobuf::Base64Escape(
-          std::string(reinterpret_cast<const char*>(binary.data()), binary.size()), &encoded);
+          std::string(reinterpret_cast<const char*>(jpeg.data()), jpeg.size()), &encoded);
       set(data, "width_px", width); set(data, "height_px", height);
-      set(data, "encoding", "rgb8"); set(data, "data", encoded);
+      set(data, "encoding", "jpeg"); set(data, "data", encoded);
     } else return -1;
     std::string json;
     if (!google::protobuf::util::MessageToJsonString(envelope, &json).ok() || json.size() > 20 * 1024 * 1024)
