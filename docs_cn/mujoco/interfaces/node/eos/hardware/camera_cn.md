@@ -21,6 +21,8 @@
 
 注册的 `frame` 输出声明图像数据类别和 30 Hz 预期源频率。每个预设相机将 `node.adapter.settings.frequency_hz` 设为 30 Hz，使 EOS 把采集帧送入来源池。服务或渲染较慢时，实际帧率可以低于该值。
 
+对原生相机，`python3 tests/vision_rate.py <build>/eos-mujoco-sim <absolute-scene.xml>` 通过严格服务套接字测量 31 个不同的 1280 × 720 JPEG 捕获帧，并报告墙钟吞吐量与请求延迟。此隔离源测试不测量 EOS、IsOS 或浏览器的传输速率。RoboCasa 工作进程在场景推进前返回缓存观测；重复读取不能证明新鲜帧吞吐量。
+
 典型输出画面，图像字节已缩短：
 
 ```json

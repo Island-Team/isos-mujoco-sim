@@ -21,6 +21,8 @@ In package 0.2.5 and later, each camera node sets `settings.camera_width` and `s
 
 The registered `frame` output declares image data class and a 30 Hz expected source rate. Each preset camera sets `node.adapter.settings.frequency_hz` to 30 Hz so EOS schedules capture into the source pool. The actual frame rate can be lower when the service or rendering is slow.
 
+For the native camera, `python3 tests/vision_rate.py <build>/eos-mujoco-sim <absolute-scene.xml>` measures 31 distinct 1280 × 720 JPEG captures through the strict service socket and reports wall-clock throughput and request latency. This isolated source probe does not measure EOS, IsOS, or browser delivery. The RoboCasa worker returns its cached observation until the scene advances; repeated reads do not establish fresh-frame throughput.
+
 A representative emitted frame (shortened image bytes) is:
 
 ```json
