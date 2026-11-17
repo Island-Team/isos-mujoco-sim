@@ -55,6 +55,8 @@ cp .env.example .env
 
 Package deployment uses the separate [`config/package.toml`](../../../config/package.toml); its host paths and service selectors do not inherit this file or `.env`. Paths in the table other than `MUJOCO_ROOT` can be relative to the repository root. To place the RoboCasa checkout elsewhere, set `ROBOCASA_ROOT` in `config/dev.toml` or add `export ROBOCASA_ROOT=/absolute/path/to/robocasa` to `.env`. The Python environment and robosuite checkout still live under this repository's ignored `.local/` directory.
 
+For a managed source package build, `MUJOCO_ROOT` in the environment takes precedence over `[host].mujoco_root`. When both are empty, the build uses an existing `.local/mujoco-3.3.1` in this checkout. This lets IsOS rebuild a clean source checkout without storing a machine-specific path in tracked configuration.
+
 The `BENCHMARK_*` rows come from `[task]`, `[camera]`, `[gui]`, and `[record]` in the selected benchmark TOML file. The root `BENCHMARK_CONFIG` path selects that file; edit it in `config/dev.toml` to use a different checked-in benchmark preset. `.env` assignments override the loaded benchmark values, and one-run flags override `.env`.
 
 ## Build and run the native simulator

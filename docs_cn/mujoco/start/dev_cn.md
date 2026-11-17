@@ -55,6 +55,8 @@ cp .env.example .env
 
 包部署使用独立的 [`config/package.toml`](../../../config/package.toml)；其中的主机路径和服务选择不继承开发配置或 `.env`。表中除 `MUJOCO_ROOT` 外的路径均可相对于仓库根目录。若要把 RoboCasa 源码放到别处，在 `config/dev.toml` 设置 `ROBOCASA_ROOT`，或在 `.env` 添加 `export ROBOCASA_ROOT=/absolute/path/to/robocasa`。Python 环境和 robosuite 源码仍位于本仓库忽略的 `.local/` 目录。
 
+受管理源码包构建时，环境变量 `MUJOCO_ROOT` 优先于 `[host].mujoco_root`。两者都为空时，构建会使用本仓库现有的 `.local/mujoco-3.3.1`，因此 IsOS 可重建干净的源码检出，而无需在受版本控制的配置中写入本机路径。
+
 表中的 `BENCHMARK_*` 值来自所选基准 TOML 文件的 `[task]`、`[camera]`、`[gui]` 和 `[record]`。根目录的 `BENCHMARK_CONFIG` 指定该文件；可在 `config/dev.toml` 修改路径以使用另一份纳入版本控制的预设。`.env` 赋值覆盖基准文件中的值，单次命令参数再覆盖 `.env`。
 
 ## 构建和运行原生模拟器

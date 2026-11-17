@@ -38,6 +38,9 @@ with open(sys.argv[1], "rb") as source:
 PYCONFIG
 )
   fi
+  if [[ -z $MUJOCO_ROOT && -d $root/.local/mujoco-3.3.1 ]]; then
+    MUJOCO_ROOT=$root/.local/mujoco-3.3.1
+  fi
   : "${MUJOCO_ROOT:?Set MUJOCO_ROOT or [host].mujoco_root in config/package.toml to a MuJoCo 3.3.1 installation}"
 fi
 if [[ $# -eq 0 ]]; then
