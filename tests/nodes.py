@@ -175,6 +175,8 @@ class NodeContributionTests(unittest.TestCase):
       if adapter:
         self.assertEqual(adapter["package"],
                          {"id": "island/mujoco-sim", "version": "0.2.7"})
+      if node["profile"]["node_type"] == "eos.hardware.camera.device@v0.2":
+        self.assertEqual(node["profile"]["capabilities"], ["jpeg"])
 
   def test_current_hardware_types_are_package_declared(self) -> None:
     contract = contributions("0.2.7")

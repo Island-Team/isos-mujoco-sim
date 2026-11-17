@@ -9,6 +9,10 @@ def per_camera_size(version: str) -> bool:
   return tuple(int(part) for part in version.split(".")) >= (0, 2, 5)
 
 
+def robocasa_jpeg(version: str) -> bool:
+  return tuple(int(part) for part in version.split(".")) >= (0, 2, 7)
+
+
 def node_type(id: str, layer: str, kind: str, lifecycle: str,
               capabilities: list[str], inputs: list[dict], outputs: list[dict],
               settings: list[dict] | None = None,
@@ -193,9 +197,9 @@ def full_hardware_contributions(version: str) -> dict:
     ("gripper", "gripper", "eos.hardware.gripper.binary@v0.2", "gripper-0", ["binary"], 50.0, 65536),
   )
   robocasa = (
-    ("left", "camera", CAMERA, "robocasa/camera/agentview-left", ["rgb8"], 30.0, 20 * 1024 * 1024),
-    ("right", "camera", CAMERA, "robocasa/camera/agentview-right", ["rgb8"], 30.0, 20 * 1024 * 1024),
-    ("wrist", "camera", CAMERA, "robocasa/camera/eye-in-hand", ["rgb8"], 30.0, 20 * 1024 * 1024),
+    ("left", "camera", CAMERA, "robocasa/camera/agentview-left", ["jpeg"] if robocasa_jpeg(version) else ["rgb8"], 30.0, 20 * 1024 * 1024),
+    ("right", "camera", CAMERA, "robocasa/camera/agentview-right", ["jpeg"] if robocasa_jpeg(version) else ["rgb8"], 30.0, 20 * 1024 * 1024),
+    ("wrist", "camera", CAMERA, "robocasa/camera/eye-in-hand", ["jpeg"] if robocasa_jpeg(version) else ["rgb8"], 30.0, 20 * 1024 * 1024),
     ("mobile", "base", "eos.hardware.base.normalized_axes@v0.2", "robocasa/base/mobile-base", ["normalized_axes"], 50.0, 65536),
     ("right-arm", "manipulator", "eos.hardware.manipulator.normalized_cartesian@v0.2", "robocasa/arm/right-arm", ["normalized_cartesian"], 50.0, 65536),
     ("hand", "gripper", "eos.hardware.gripper.binary@v0.2", "robocasa/gripper/right-gripper", ["binary"], 50.0, 65536),

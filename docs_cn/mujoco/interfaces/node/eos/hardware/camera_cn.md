@@ -2,24 +2,26 @@
 
 [接口目录](../../../README_cn.md) · [设计](../../../../core/eos/hardware/camera_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/hardware/camera.md)
 
-`eos.hardware.camera.device@v0.2` 是只读相机节点。原生预设提供一个 MuJoCo 场景 JPEG 画面；RoboCasa 预设提供三个 PandaOmron RGB8 画面。预设决定具体设备。类型声明 `jpeg` 和 `rgb8`，每个实例只声明实际提供的编码。
+`eos.hardware.camera.device@v0.2` 是只读相机节点。原生预设提供一个 MuJoCo 场景 JPEG 画面；RoboCasa 0.2.7 候选预设提供三个 PandaOmron JPEG 画面。预设决定具体设备。类型声明 `jpeg` 和 `rgb8`，每个实例只声明实际提供的编码。
 
 | 预设 / 节点引用 | 设备 ID | 画面 |
 | --- | --- | --- |
 | `native/front` | `cam-0` | 所选 `pick-place` 或 `navigation` 场景的 JPEG |
-| `robocasa/left` | `robocasa/camera/agentview-left` | RGB8 代理视角 |
-| `robocasa/right` | `robocasa/camera/agentview-right` | RGB8 代理视角 |
-| `robocasa/wrist` | `robocasa/camera/eye-in-hand` | RGB8 眼在手上视角 |
+| `robocasa/left` | `robocasa/camera/agentview-left` | JPEG 代理视角 |
+| `robocasa/right` | `robocasa/camera/agentview-right` | JPEG 代理视角 |
+| `robocasa/wrist` | `robocasa/camera/eye-in-hand` | JPEG 眼在手上视角 |
 
 ## 端口和画面
 
 `cam-0` 是两个原生场景共用渲染器的稳定设备 ID，并非从 RoboCasa 相机名称推断而来。原生 MuJoCo 捕获画面并编码为 JPEG；独立的 RoboCasa Gym worker 从三台具名相机提供原始 RGB8 数组。适配器在解码帧前按服务和准确设备绑定，因此原生场景或相机故障不会暗中改选 RoboCasa 相机，也不会改变其他节点的编码。
 
-没有命令输入。EOS 请求观察，适配器通过进程内事件端口 `frame: image_frame@v0.2` 发出结果。负载含 `width_px`、`height_px`、`encoding`、base64 `data`，以及包含 `source_time_ns`、`sequence`、`clock`、`frame_id` 的 `sample`。原生 `encoding:"jpeg"` 使用模拟时钟；RoboCasa `encoding:"rgb8"` 使用主机单调时钟。RoboCasa 数据解码后恰好为 `width_px × height_px × 3` 字节，按行排列 RGB。配置宽高各为 64–2048 px。原生尺寸来自所选相机渲染。画面不含任务文本、奖励或成功真值。
+没有命令输入。EOS 请求观察，适配器通过进程内事件端口 `frame: image_frame@v0.2` 发出结果。负载含 `width_px`、`height_px`、`encoding`、base64 `data`，以及包含 `source_time_ns`、`sequence`、`clock`、`frame_id` 的 `sample`。原生 `encoding:"jpeg"` 使用模拟时钟；RoboCasa `encoding:"jpeg"` 使用主机单调时钟。独立 worker 将 RGB8 数据交给适配器，适配器在发出节点帧前编码 JPEG。配置宽高各为 64–2048 px。原生尺寸来自所选相机渲染。画面不含任务文本、奖励或成功真值。
 
 在 0.2.5 及之后的软件包中，每个相机节点通过 `settings.camera_width` 和 `settings.camera_height` 设置 64 到 2048 的整数像素数。两套预设均为 1280 × 720。IsOS 在 Run 时将原生 `cam-0` 的已选设置传给模拟器；EGL 视口和 JPEG 编码器使用该准确尺寸。三个 RoboCasa 相机可分别选择输出尺寸，其设置传给独立的 Gym 工作进程。没有 IsOS 设置的直接模拟器运行使用场景的离屏尺寸。
 
 注册的 `frame` 输出声明图像数据类别和 30 Hz 预期源频率。每个预设相机将 `node.adapter.settings.frequency_hz` 设为 30 Hz，使 EOS 把采集帧送入来源池。服务或渲染较慢时，实际帧率可以低于该值。
+
+对原生相机，`python3 tests/vision_rate.py <build>/eos-mujoco-sim <absolute-scene.xml>` 通过严格服务套接字测量 31 个不同的 1280 × 720 JPEG 捕获帧，并报告墙钟吞吐量与请求延迟。此隔离源测试不测量 EOS、IsOS 或浏览器的传输速率。RoboCasa 工作进程在场景推进前返回缓存观测；重复读取不能证明新鲜帧吞吐量。
 
 典型输出画面，图像字节已缩短：
 
