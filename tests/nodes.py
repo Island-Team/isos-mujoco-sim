@@ -24,6 +24,17 @@ def strings(value: object) -> list[str]:
 
 
 class NodeContributionTests(unittest.TestCase):
+  def test_robocasa_setup_is_declared_and_packaged(self) -> None:
+    root = Path(__file__).resolve().parents[1]
+    descriptor = json.loads((root / "config/package-config.json").read_text())
+    setup = descriptor["setup"]
+    self.assertEqual(setup["service"], "robocasa")
+    self.assertEqual(set(setup["outputs"]), {"robocasa_assets", "python_interpreter"})
+    fields = {field["name"]: field["type"] for section in descriptor["sections"]
+              if section["id"] == "host" for field in section["fields"]}
+    self.assertEqual([fields[name] for name in setup["outputs"]], ["directory", "file"])
+    self.assertTrue((root / "tools/package_robocasa_setup.sh").is_file())
+
   def test_package_selectors_match_verified_resources_and_defaults(self) -> None:
     root = Path(__file__).resolve().parents[1]
     descriptor = json.loads((root / "config/package-config.json").read_text())
