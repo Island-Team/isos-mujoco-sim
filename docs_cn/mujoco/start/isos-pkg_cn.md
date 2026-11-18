@@ -1,9 +1,11 @@
 # IsOS 管理的 MuJoCo 后端
 
 
-## 当前 0.2.5 硬件候选
+## 当前 0.2.7 硬件候选
 
-使用 `./build.sh --output <绝对路径空目录> --version 0.2.5` 构建尚未发布的 `0.2.5` 源码候选。schema `0.2.1` 清单贡献七个软件包自有的 EOS 硬件类型、原生和 RoboCasa 节点集，以及两个由 IsOS 监督的运行时服务。硬件实例固定软件包版本，通过 `isos_node_v2` 选择 `mujoco-v2`；EOS 经 Dispatcher 准入执行器命令。每个相机声明 30 Hz 的图像类别 `frame` 输出，并在适配器设置中选择 30 Hz 采集频率。参见[当前软件包契约](../interfaces/package_cn.md)和[相机接口](../interfaces/node/eos/hardware/camera_cn.md)。源码构建或本地资格检查不等于发布版本。
+使用 `./build.sh --output <绝对路径空目录> --version 0.2.7` 构建尚未发布的 `0.2.7` 源码候选。schema `0.2.1` 清单贡献七个软件包自有的 EOS 硬件类型、原生和 RoboCasa 节点集，以及两个由 IsOS 监督的运行时服务。硬件实例固定软件包版本，通过 `isos_node_v2` 选择 `mujoco-v2`；EOS 经 Dispatcher 准入执行器命令。每个相机声明 30 Hz 的图像类别 `frame` 输出，并在适配器设置中选择 30 Hz 采集频率。参见[当前软件包契约](../interfaces/package_cn.md)和[相机接口](../interfaces/node/eos/hardware/camera_cn.md)。源码构建或本地资格检查不等于发布版本。
+
+安装精确软件包后，RoboCasa 使用 `isos pkg configure island/mujoco-sim@0.2.7 --service robocasa`。若 Python 解释器或资源路径缺失，IsOS 会先询问，再下载固定版本的源码、运行环境和首个任务资源；在编辑器中检查填入的 TOML 并保存，然后再 Apply。使用 `--service native` 可编辑原生配置而不触发 RoboCasa 下载提示。Web 软件包表单接受手动准备的路径。
 
 ## 历史 0.2.0 进程候选
 

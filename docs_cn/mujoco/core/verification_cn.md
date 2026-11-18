@@ -31,3 +31,7 @@ python3 tests/package_logs.py <check-output-directory>
 ## 本地验证，2026-11-16
 
 原生自定义场景 GUI 回放通过并自动退出。使用 256 × 192 相机设置的原生和 RoboCasa 完整图在候选版本 `0.2.6` 上通过 IsOS `pkg check`；`tests/package_logs.py` 找到服务输出与 EOS 运行 ID 的对应记录。三厨房 GUI 记录和无窗口重放在 `1:1`、`2:2`、`3:3` 全部完成，每个厨房执行三个动作且摘要一致。这些有界动作没有完成 `CloseFridge` 任务；此回放验证启动、动作传递、确定性重放、GUI 自动退出及清理。完整本地输出位于忽略目录 `data/test/20261116-full-interfaces/`，其中包含 `robocasa-three-final/summary.json`。
+
+## 本地验证，2026-11-18
+
+包含软件包自带 RoboCasa 安装辅助程序的 0.2.7 源码候选版通过了 15 项节点测试、归档摘要检查和全部 35 项 CTest。支持安装辅助程序描述符的 IsOS 专题构建对原生及 RoboCasa 完整图通过了 `pkg check`，覆盖托管 Apply、就绪、接口、日志和停止。检查报告记录了精确源码提交；IsOS 专题提交为 `182403ab0`。隔离的 CLI 安装验证了 RoboCasa 提示、拒绝后保留配置，以及使用已准备的本地运行环境接受后保存路径。本次未重放全新网络下载。完整软件包和 CLI 输出位于忽略目录 `data/test/20261118-release-027-audit/`，尤其是 `pkg-check-027-setup-3/`、`setup-decline.log` 和 `setup-accept.log`。这些只是候选证据；发布 0.2.7 软件包前，IsOS 变更必须先完成审查和发布。

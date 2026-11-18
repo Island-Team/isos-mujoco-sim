@@ -184,6 +184,12 @@ def main() -> None:
         wrapper.chmod(0o755)
         shutil.copy2(ROOT / "config/package-config.json", bundle / "config/package-config.json")
         shutil.copy2(ROOT / "config/package.toml", bundle / "config/package.toml")
+        if tuple(map(int, args.version.split("."))) >= (0, 2, 7):
+            for name in ("robocasasource.py", "robocasaassets.py"):
+                shutil.copy2(ROOT / "tools" / name, bundle / "bin" / name)
+            setup = bundle / "bin/robocasa-package-setup"
+            shutil.copy2(ROOT / "tools/package_robocasa_setup.sh", setup)
+            setup.chmod(0o755)
     descriptor = descriptor_for_bundle(bundle, include_gripper=args.version != "0.2.0")
     (bundle / "backend-v2.json").write_text(json.dumps(descriptor, indent=2) + "\n")
     resources = {

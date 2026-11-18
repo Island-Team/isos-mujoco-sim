@@ -1,6 +1,13 @@
 {
   "contract": "isos.package-config@v1",
   "schema_version": "0.1.0",
+  "setup": {
+    "service": "robocasa",
+    "entrypoint": "bin/robocasa-package-setup",
+    "prompt": {"en": "RoboCasa runtime or assets are missing. Download and prepare them now? [y/N] ",
+               "cn": "缺少 RoboCasa 运行环境或资源。现在下载并准备吗？[y/N] "},
+    "outputs": ["robocasa_assets", "python_interpreter"]
+  },
   "sections": [
     {"id": "package", "label": {"en": "Package", "cn": "软件包"},
      "description": {"en": "Exact package identity for this local configuration.", "cn": "此本地配置对应的精确软件包标识。"}, "fields": [
