@@ -38,6 +38,9 @@ with open(sys.argv[1], "rb") as source:
 PYCONFIG
 )
   fi
+  if [[ -z $MUJOCO_ROOT && -d $root/.local/mujoco-3.3.1 ]]; then
+    MUJOCO_ROOT=$root/.local/mujoco-3.3.1
+  fi
   : "${MUJOCO_ROOT:?Set MUJOCO_ROOT or [host].mujoco_root in config/package.toml to a MuJoCo 3.3.1 installation}"
 fi
 if [[ $# -eq 0 ]]; then
@@ -81,10 +84,14 @@ if [[ $# -eq 0 ]]; then
 fi
 scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT
-cmake -S "$root" -B "$scratch/build" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release
-cmake --build "$scratch/build" --parallel "${BUILD_JOBS:-4}"
+cache="$root/.local/package-build"
+mkdir -p -- "$root/.local"
+exec {build_lock}>"$root/.local/package-build.lock"
+flock "$build_lock"
+cmake -S "$root" -B "$cache" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release
+cmake --build "$cache" --target eos-mujoco-sim mujoco-eos-node --parallel "${BUILD_JOBS:-4}"
 python3 "$root/tools/bundle.py" \
-  --build-dir "$scratch/build" --mujoco-root "$MUJOCO_ROOT" \
+  --build-dir "$cache" --mujoco-root "$MUJOCO_ROOT" \
   --output "$scratch/bundle" --version "$4"
 archive=$(find "$scratch" -maxdepth 1 -type f -name '*.tar.gz' -print -quit)
 if [[ -z $archive ]]; then
