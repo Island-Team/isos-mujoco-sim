@@ -54,6 +54,26 @@ def host_requirements() -> tuple[str, str]:
     return libc_version, values["VERSION_ID"]
 
 
+def ubuntu22_profile(build_dir: Path) -> bool:
+    """Enable target-specific checks only for an explicitly configured build."""
+    cache = build_dir / "CMakeCache.txt"
+    return cache.is_file() and "MUJOCO_BUILD_PROFILE:STRING=ubuntu22" in cache.read_text().splitlines()
+
+
+def inspect_glibc_symbols(binary: Path, baseline: str) -> None:
+    """Reject copied ELF files requiring a newer glibc than the declared host."""
+    result = subprocess.run(["readelf", "--version-info", str(binary)], check=True,
+                            capture_output=True, text=True)
+    versions = [tuple(map(int, value.split("."))) for value in
+                re.findall(r"\bGLIBC_(\d+(?:\.\d+)+)\b", result.stdout)]
+    if not versions:
+        raise ValueError(f"cannot determine glibc requirements: {binary}")
+    required = max(versions)
+    if required > tuple(map(int, baseline.split("."))):
+        version = ".".join(map(str, required))
+        raise ValueError(f"{binary.name} requires glibc {version}, above declared {baseline}")
+
+
 def inspect_installed_binary(binary: Path, mujoco_root: Path) -> list[str]:
     dynamic = subprocess.run(["readelf", "-d", str(binary)], check=True,
                              capture_output=True, text=True).stdout
@@ -146,6 +166,10 @@ def main() -> None:
         if not installed.is_file() or not os.access(installed, os.X_OK):
             parser.error("CMake installation did not produce bin/eos-mujoco-sim")
         try:
+            if ubuntu22_profile(args.build_dir):
+                if (libc_version, ubuntu_version) != ("2.35", "22.04"):
+                    parser.error("ubuntu22 package requires Ubuntu 22.04 with glibc 2.35")
+                inspect_glibc_symbols(installed, "2.35")
             libraries = inspect_installed_binary(installed, mujoco_root)
         except ValueError as error:
             parser.error(str(error))
@@ -154,6 +178,8 @@ def main() -> None:
         if not installed_plugin.is_file():
             parser.error("CMake installation did not produce lib/libmujoco-eos-node.so")
         try:
+            if ubuntu22_profile(args.build_dir):
+                inspect_glibc_symbols(installed_plugin, "2.35")
             plugin_libraries = inspect_installed_plugin(installed_plugin)
         except ValueError as error:
             parser.error(str(error))

@@ -1,6 +1,20 @@
 # IsOS 管理的 MuJoCo 后端
 
 
+## Ubuntu 22.04 构建
+
+默认原生构建保持不变。在 Ubuntu 22.04、glibc 2.35 和 Python 3.11 或更新版本的环境中，选择可选的 `ubuntu22` CMake 预设。仅此配置检查主机构建基线及打包 ELF 的 glibc 需求，并拒绝交叉编译。该配置的开发和打包构建使用独立的 `.local/package-build-ubuntu22` 目录，默认构建保留原有目录。
+
+```sh
+export MUJOCO_ROOT="$HOME/.local/opt/mujoco-3.3.1"
+cmake --preset ubuntu22 -DPython3_EXECUTABLE="$(python3 -c 'import sys; print(sys.executable)')"
+cmake --build --preset ubuntu22 --parallel 4
+ctest --preset ubuntu22
+MUJOCO_BUILD_PROFILE=ubuntu22 ./build.sh --output "$PWD/data/test/ubuntu22-package/profile-asset" --version 0.2.8
+```
+
+请使用实际 MuJoCo 路径及空输出目录，测试通过后再打包。0.2.8 仍为候选版本，正式发布遵循[包契约](../interfaces/package_cn.md)。
+
 ## 当前 0.2.8 硬件候选
 
 使用 `./build.sh --output <绝对路径空目录> --version 0.2.8` 构建尚未发布的 `0.2.8` 源码候选。schema `0.2.1` 清单贡献七个软件包自有的 EOS 硬件类型、原生和 RoboCasa 节点集，以及两个由 IsOS 监督的运行时服务。硬件实例固定软件包版本，通过 `isos_node_v2` 选择 `mujoco-v2`；EOS 经 Dispatcher 准入执行器命令。每个相机声明 30 Hz 的图像类别 `frame` 输出，并在适配器设置中选择 30 Hz 采集频率。参见[当前软件包契约](../interfaces/package_cn.md)和[相机接口](../interfaces/node/eos/hardware/camera_cn.md)。源码构建或本地资格检查不等于发布版本。

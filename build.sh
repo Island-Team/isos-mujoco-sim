@@ -23,6 +23,16 @@ if [[ $# -eq 4 ]]; then
 fi
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 source "$root/tools/launcher.sh"
+profile=${MUJOCO_BUILD_PROFILE:-native}
+profile_args=(-DMUJOCO_BUILD_PROFILE=native)
+case "$profile" in
+  native) ;;
+  ubuntu22)
+    python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3, 11) else "ubuntu22 requires Python 3.11 or newer")'
+    profile_args=(-DMUJOCO_BUILD_PROFILE=ubuntu22 "-DPython3_EXECUTABLE=$(python3 -c 'import sys; print(sys.executable)')")
+    ;;
+  *) echo "Unknown MUJOCO_BUILD_PROFILE: $profile" >&2; exit 2 ;;
+esac
 if [[ $# -eq 0 ]]; then
   explicit_mujoco_root=${MUJOCO_ROOT-}
   load_launch_config
@@ -44,9 +54,11 @@ PYCONFIG
   : "${MUJOCO_ROOT:?Set MUJOCO_ROOT or [host].mujoco_root in config/package.toml to a MuJoCo 3.3.1 installation}"
 fi
 if [[ $# -eq 0 ]]; then
-  cmake -S "$root" -B "$root/build" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release
-  cmake --build "$root/build" --parallel "${BUILD_JOBS:-4}"
-  echo "Built $root/build/eos-mujoco-sim and $root/build/mujoco-core (development)"
+  development_build="$root/build"
+  if [[ $profile == ubuntu22 ]]; then development_build="$root/.local/package-build-ubuntu22"; fi
+  cmake -S "$root" -B "$development_build" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release "${profile_args[@]}"
+  cmake --build "$development_build" --parallel "${BUILD_JOBS:-4}"
+  echo "Built $development_build/eos-mujoco-sim and $development_build/mujoco-core (development)"
   source_dir=$(resolve_launch_path "${ROBOCASA_ROOT:-.local/robocasa}")
   venv="$root/.local/robocasa-venv"
   if [[ -x "$venv/bin/python" ]] &&
@@ -85,10 +97,11 @@ fi
 scratch=$(mktemp -d)
 trap 'rm -rf -- "$scratch"' EXIT
 cache="$root/.local/package-build"
+if [[ $profile == ubuntu22 ]]; then cache="$root/.local/package-build-ubuntu22"; fi
 mkdir -p -- "$root/.local"
 exec {build_lock}>"$root/.local/package-build.lock"
 flock "$build_lock"
-cmake -S "$root" -B "$cache" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release
+cmake -S "$root" -B "$cache" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release "${profile_args[@]}"
 cmake --build "$cache" --target eos-mujoco-sim mujoco-eos-node --parallel "${BUILD_JOBS:-4}"
 python3 "$root/tools/bundle.py" \
   --build-dir "$cache" --mujoco-root "$MUJOCO_ROOT" \
