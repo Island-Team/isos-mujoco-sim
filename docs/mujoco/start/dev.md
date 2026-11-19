@@ -128,7 +128,7 @@ The command prints RoboCasa startup messages followed by a JSON result such as:
 | Native socket or startup failure | Read `logs/dev/native/latest.log`; use `./kill.sh` for a process started by this launcher. |
 | `--gui` fails on a headless host | Run with `--no-gui`; the benchmark and C++ tests do not require a desktop window. |
 
-The benchmark runs in the foreground and writes its result to the terminal and `logs/dev/robocasa/latest.log`. Native output is under `logs/dev/native/latest.log`; timestamped files preserve earlier runs. The viewer has a corresponding `*-viewer.log`. Local logs are ignored by Git. For a managed deployment, find the current IsOS run and its first ready or failure event before changing the graph; see [build and run](README.md#isos-and-eos-deployment).
+The benchmark runs in the foreground and writes its result to the terminal and `logs/dev/robocasa/latest.log`. Native output is under `logs/dev/native/latest.log`; timestamped files preserve earlier runs. The viewer has a corresponding `*-viewer.log`. Local logs are ignored by Git. For a managed deployment, find the current IsOS run and its first ready or failure event before changing the graph; see [build and run](README.md).
 
 ## Development GUI and local logs
 

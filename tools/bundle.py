@@ -14,13 +14,12 @@ import subprocess
 import tarfile
 import tempfile
 
-from nodes import contributions
+from nodes import PACKAGE_VERSION, contributions
 from catalog import descriptor_for_bundle
 
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_ID = "island/mujoco-sim"
-PACKAGE_VERSION = "0.2.0"
 SOURCE = "https://github.com/Island-Team/isos-mujoco-sim"
 MUJOCO_SONAME = "libmujoco.so.3.3.1"
 

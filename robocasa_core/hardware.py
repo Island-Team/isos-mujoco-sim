@@ -1,6 +1,7 @@
 """Typed robot endpoints for the pinned RoboCasa PandaOmron Gym wrapper."""
 
 from dataclasses import dataclass
+import math
 from typing import Any, Mapping
 
 import numpy as np
@@ -115,6 +116,20 @@ class Hardware:
   @property
   def catalog(self) -> tuple[Node, ...]:
     return CATALOG
+
+  @property
+  def command_step_ms(self) -> float:
+    """Simulation time advanced by one command, from the selected environment."""
+    try:
+      seconds = self._env.unwrapped.control_timestep
+    except AttributeError as error:
+      raise HardwareError("environment command timestep is unavailable") from error
+    if isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or not math.isfinite(seconds) or seconds <= 0:
+      raise HardwareError("environment command timestep must be finite and positive")
+    milliseconds = seconds * 1000
+    if not math.isfinite(milliseconds):
+      raise HardwareError("environment command timestep exceeds bound")
+    return milliseconds
 
   def _ready(self) -> None:
     if self._closed or self._faulted or self._done or self._observation is None:

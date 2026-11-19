@@ -3,6 +3,11 @@
 
 BACKEND = "eos.process.mujoco.simulator@v0.2"
 CAMERA = "eos.hardware.camera.device@v0.2"
+PACKAGE_VERSION = "0.2.8"
+
+
+def standard_hardware(version: str) -> bool:
+  return tuple(int(part) for part in version.split(".")) >= (0, 2, 8)
 
 
 def per_camera_size(version: str) -> bool:
@@ -68,7 +73,7 @@ def hardware_profile(id: str, type_id: str, label: str, description: str,
   }
 
 
-def contributions(version: str = "0.2.0") -> dict:
+def contributions(version: str = PACKAGE_VERSION) -> dict:
   if version != "0.2.0":
     return full_hardware_contributions(version)
   camera = hardware_profile(
@@ -145,29 +150,32 @@ def full_hardware_contributions(version: str) -> dict:
     return {"name": name, "data_type": data_type, "required": False,
             "description": f"MuJoCo {name} {data_class}", "transport": "in_process",
             "delivery_mode": "event", "data_class": data_class,
-            "contract": {"owner": "eos", "id": data_type, "version": "0.2"}}
+            "contract": {"owner": "isos" if standard_hardware(version) and data_class == "command" else "eos",
+                         "id": data_type,
+                         "version": "1.0" if standard_hardware(version) and data_class == "command" else "0.2"}}
 
+  observation = "observation" if standard_hardware(version) else "state"
   hardware_types = (
     (CAMERA, "camera", "camera", ["jpeg", "rgb8"], None, [],
      [live_port("frame", "image_frame@v0.2", "image")]),
     ("eos.hardware.base.device@v0.2", "base", "base", ["body_velocity"],
      "base_velocity", [live_port("command", "base_twist_command@v0.2", "command")],
-     [live_port("state", "base_state@v0.2", "observation")]),
+     [live_port(observation, "base_state@v0.2", "observation")]),
     ("eos.hardware.manipulator.device@v0.2", "manipulator", "manipulator",
      ["joint_positions"], "manipulator_joint_position",
      [live_port("command", "joint_position_command@v0.2", "command")],
-     [live_port("state", "joint_state@v0.2", "observation")]),
+     [live_port(observation, "joint_state@v0.2", "observation")]),
     ("eos.hardware.base.normalized_axes@v0.2", "base", "base", ["normalized_axes"],
      "base_normalized_axes", [live_port("command", "normalized_axes_command@v0.2", "command")],
-     [live_port("state", "pose_state@v0.2", "observation")]),
+     [live_port(observation, "pose_state@v0.2", "observation")]),
     ("eos.hardware.manipulator.normalized_cartesian@v0.2", "manipulator", "manipulator",
      ["normalized_cartesian"], "manipulator_normalized_cartesian",
      [live_port("command", "normalized_axes_command@v0.2", "command"),
       live_port("mode", "control_mode_command@v0.2", "command")],
-     [live_port("state", "pose_state@v0.2", "observation")]),
+     [live_port(observation, "pose_state@v0.2", "observation")]),
     ("eos.hardware.gripper.binary@v0.2", "gripper", "gripper", ["binary"],
      "gripper_binary", [live_port("command", "gripper_binary_command@v0.2", "command")],
-     [live_port("state", "gripper_state@v0.2", "observation")]),
+     [live_port(observation, "gripper_state@v0.2", "observation")]),
     ("eos.hardware.torso.normalized_axes@v0.2", "torso", "torso", ["normalized_axes"],
      "torso_normalized_axes", [live_port("command", "normalized_axes_command@v0.2", "command")], []),
   )
@@ -220,6 +228,11 @@ def full_hardware_contributions(version: str) -> dict:
     if service == "native" and kind == "manipulator":
       item["joint_names"] = ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint",
                              "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"]
+    if standard_hardware(version):
+      if kind == "base":
+        item["frame_id"] = "base_link" if service == "native" else "world"
+      elif kind == "manipulator":
+        item["frame_id"] = "robot_base"
     if kind == "torso":
       item.pop("observation", None)
     if kind != "camera":
@@ -232,6 +245,8 @@ def full_hardware_contributions(version: str) -> dict:
         "normalized_cartesian": {"max_velocity_lease_ms": 1000},
         "binary": {},
       }[mode]
+      if standard_hardware(version) and mode == "joint_positions":
+        limits.pop("max_joint_speed_rad_s")
       item["movement"] = {"modes": [mode], "limits": limits}
     return item
 

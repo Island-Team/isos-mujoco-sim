@@ -1,11 +1,19 @@
 # IsOS managed MuJoCo backend
 
 
-## Current 0.2.7 hardware candidate
+## Current 0.2.8 hardware candidate
 
-Build the unpublished `0.2.7` source candidate with `./build.sh --output <absolute-empty-directory> --version 0.2.7`. The schema `0.2.1` manifest contributes seven package-owned EOS hardware types, Native and RoboCasa node sets, and two IsOS-supervised runtime services. Hardware instances pin the package and select `mujoco-v2` through `isos_node_v2`; EOS admits actuator commands through Dispatcher. Each camera declares an image-class `frame` output at 30 Hz and selects a 30 Hz capture cadence in its adapter settings. See the [current package contract](../interfaces/package.md) and [camera interface](../interfaces/node/eos/hardware/camera.md). A source build or local qualification is not a published release.
+Build the unpublished `0.2.8` source candidate with `./build.sh --output <absolute-empty-directory> --version 0.2.8`. The schema `0.2.1` manifest contributes seven package-owned EOS hardware types, Native and RoboCasa node sets, and two IsOS-supervised runtime services. Hardware instances pin the package and select `mujoco-v2` through `isos_node_v2`; EOS admits actuator commands through Dispatcher. Each camera declares an image-class `frame` output at 30 Hz and selects a 30 Hz capture cadence in its adapter settings. See the [current package contract](../interfaces/package.md) and [camera interface](../interfaces/node/eos/hardware/camera.md). A source build or local qualification is not a published release.
 
-For RoboCasa, run `isos pkg configure island/mujoco-sim@0.2.7 --service robocasa` after installing the exact package. If its Python interpreter or assets path is missing, IsOS asks before downloading the pinned source, runtime, and first-task assets; review the populated TOML in the editor and save it before Apply. Use `--service native` to edit native configuration without a RoboCasa download prompt. The Web package form accepts manually prepared paths.
+For RoboCasa, run `isos pkg configure island/mujoco-sim@0.2.8 --service robocasa` after installing the exact package. If its Python interpreter or assets path is missing, IsOS asks before downloading the pinned source, runtime, and first-task assets; review the populated TOML in the editor and save it before Apply. Use `--service native` to edit native configuration without a RoboCasa download prompt. The Web package form accepts manually prepared paths.
+
+## Standard hardware contract verification (2026-11-19)
+
+The `0.2.8` source candidate registers all seven hardware types against the current EOS catalog. Its standard command contracts are inherited by the parts Dispatcher. Native and RoboCasa command graphs and a separate RoboCasa mode binding validate; unassigned hardware and direct skill-to-hardware bypasses reject. The plugin accepts standard payloads, checks required fields, frames, joint order, limits, and leases, and performs private wire translation. The owner selects unchanged standard forwarding from the registered input contract while retaining legacy package translation.
+
+Reproduce with `cmake --build build -j4`, `ctest --test-dir build --output-on-failure -j4`, `python3 tests/nodes.py`, and `python3 tests/eos_contracts.py --eos-profile <current-IsOS-checkout>/target/debug/aether-profile --plugin build/libmujoco-eos-node.so`. The interop script requires Python `jsonschema`. Build the candidate with `python3 tools/bundle.py --build-dir build --mujoco-root <local-3.3.1-root> --output <empty-directory>`; its default version is `0.2.8`. Check the resulting manifest and archive with `isos pkg verify <release.json> <archive>`. Complete commands and output are under ignored `data/test/20261119-standard-hardware/`.
+
+The checks passed: 35 CTest cases, 17 node declaration tests, nine graph admission cases, nine standard payload schemas, 12 RoboCasa worker tests, and 13 hardware tests. A real EOS owner → parts Dispatcher → plugin → native service replay completed base, arm, and gripper commands and observations, rejected a wrong Dispatcher identity, and confirmed Stop. RoboCasa adapter calls use a stub service in these boundary tests; this does not qualify a new full Gym deployment or publish the candidate. Old exact package pins retain their declarations and payload handling.
 
 ## Historical 0.2.0 process candidate
 

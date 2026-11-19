@@ -26,7 +26,7 @@ def main() -> None:
         output = Path(temporary) / "bundle"
         subprocess.run([sys.executable, str(ROOT / "tools/bundle.py"),
                         "--build-dir", str(binary.parent), "--output", str(output),
-                        "--mujoco-root", str(mujoco_root)],
+                        "--mujoco-root", str(mujoco_root), "--version", "0.2.0"],
                        check=True, capture_output=True, text=True)
         descriptor = json.loads((output / "backend-v2.json").read_text())
         assert descriptor == EXPECTED

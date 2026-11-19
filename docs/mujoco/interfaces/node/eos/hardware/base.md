@@ -2,39 +2,37 @@
 
 [Interface index](../../../README.md) · [Design](../../../../core/eos/hardware/base.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/hardware/base_cn.md)
 
-A base node represents one simulated mobile base. The **Native robot** preset offers velocity control and a planar state; the **RoboCasa robot** preset offers normalized controller axes and a world-frame pose. An operator selects the preset and service configuration in IsOS; an agent sees only the capabilities EOS publishes after health and Dispatcher admission.
-
-| Preset / node ref | Type and bound device | What it can do | What it reports |
-| --- | --- | --- | --- |
-| `native/drive` | `eos.hardware.base.device@v0.2` → `base-0` | `body_velocity`: bounded planar velocity with a lease | `base_state@v0.2`: x/y in m, yaw in rad, x/y velocity in m/s, yaw rate in rad/s |
-| `robocasa/mobile` | `eos.hardware.base.normalized_axes@v0.2` → `robocasa/base/mobile-base` | `normalized_axes`: x, y, yaw controller inputs | `pose_state@v0.2`: world position in m and `xyzw` quaternion |
+The `0.2.8` candidate registers the native `eos.hardware.base.device@v0.2` and RoboCasa `eos.hardware.base.normalized_axes@v0.2` types in `eos/hardware/base`. The native preset binds `drive` to `base-0`; the RoboCasa preset binds `mobile` to `robocasa/base/mobile-base`.
 
 ## Ports and values
 
-Both types have an optional in-process event input named `command` and an optional event output named `state`. The native input is `base_twist_command@v0.2`; its `payload` supplies finite `linear_x_m_s` and `linear_y_m_s` in `[-1,1]`, `angular_z_rad_s` in `[-1.5,1.5]`, and a positive `valid_for_ms` no greater than the engine's 5000 ms bound. The preset advertises `max_velocity_lease_ms:1000`, so EOS admission uses the tighter limit. The simulator stops the base when the lease expires. The native state is a snapshot from the selected MuJoCo scene, with `sample.clock:"simulation"`.
+Both nodes have an optional in-process `command` input and an `observation` output. The native input uses `base_twist_command@v0.2`; the RoboCasa input uses `normalized_axes_command@v0.2`. Command ports use `{owner:"isos",id:<data_type>,version:"1.0"}`. Their named Dispatcher ports inherit the complete input contract.
 
-The RoboCasa input is `normalized_axes_command@v0.2`; `payload.axes` has exactly `x`, `y`, and `yaw`, each a finite number in `[-1,1]`. They are controller inputs, not m/s or rad/s. Each admitted command makes the worker take one Gym step. Its pose uses `sample.clock:"monotonic"`, `sample.frame_id:"world"`, `position_m:[x,y,z]`, and `orientation_xyzw:[x,y,z,w]`. It does not claim a measured base velocity. Both presets cap advertised observation rate at 50 Hz and state payload size at 65,536 bytes.
+| Native field | Type / unit | Meaning and validation |
+| --- | --- | --- |
+| `frame_id` | string / — | Required `base_link`, matching the selected profile's body command frame. |
+| `vx_m_s`, `vy_m_s` | finite number / m/s | Required body-frame velocities; vector magnitude must fit `max_linear_m_s` (1.0 in the preset). |
+| `yaw_rate_rad_s` | finite number / rad/s | Required yaw rate; absolute value ≤1.5 in the preset. |
+| `lease_ms` | integer / ms | Required 1–1000, bounded by the selected movement limit. The native service expires motion in simulation time. |
 
-For example, after EOS has admitted a RoboCasa command, its adapter receives this envelope:
+RoboCasa requires exactly `axes:{x,y,yaw}` with finite values in `[-1,1]` and integer `lease_ms` from 1 to the selected limit (at most 1000). These are dimensionless controller inputs. A command advances one synchronous Gym step. The lease must cover the selected environment’s actual control timestep; a shorter lease rejects before motion. This is a simulation-time bound, without an autonomous motion loop or wall-clock watchdog.
+
+The native observation uses `base_state@v0.2`: world-frame planar pose, body-frame linear velocities, and yaw rate. The RoboCasa observation uses `pose_state@v0.2` with a world-frame position and unit `xyzw` quaternion. The sample identifies source time, clock, sequence, and frame; native time is `simulation`, RoboCasa time is `monotonic`. Neither node fabricates a velocity from the other representation.
+
+## Command payload example
 
 ```json
 {
-  "run_id": "run-7",
-  "revision": "rev-2",
-  "command_id": "move-18",
-  "port": "command",
-  "payload": {
-    "axes": {
-      "x": 0.2,
-      "y": 0.0,
-      "yaw": -0.1
-    }
-  }
+  "frame_id": "base_link",
+  "vx_m_s": 0.2,
+  "vy_m_s": 0.0,
+  "yaw_rate_rad_s": 0.05,
+  "lease_ms": 100
 }
 ```
 
-EOS supplies the run/revision fence and command identity; agents do not call the plugin or service socket directly. The adapter emits a `command_result` event with the service acknowledgment and emits observations on `state` when EOS requests them. The [runtime control contract](../../../control.md) owns the exact service wire and error codes.
+## Admission, lifecycle, and compatibility
 
-## Admission, lifecycle, and failure
+EOS validates the run, exact package and selected part before its Dispatcher releases a typed command. The plugin validates the standard payload again and maps it to the private service wire; it forwards no extra fields. Wrong frame, joint order, mode, payload, or unavailable service produces no successful acknowledgment. Commands carry owner-supplied run/revision and durable identity outside the payload. Stop closes admission and requires whole-robot proof; timeout or a missing proof remains unknown.
 
-The adapter binds `service_instance` (`native` or `robocasa`) and the exact `device_id` from the verified preset; neither has a fallback. IsOS configures the service, EOS checks health and admits movement through its Dispatcher, then the adapter sends the command. The native service requires the current generation and stop epoch. A duplicate command ID cannot release movement twice within one service generation. On Stop, EOS closes admission and requires whole-robot proof including base, arm, and gripper; RoboCasa also requires torso proof. A missing or failed proof remains `unknown`. A stale run, wrong device, malformed payload, unavailable service, or failed step produces no fabricated state; EOS keeps the node unavailable or reports the command failure. A new Run creates a new service generation.
+Exact pins through `0.2.7` retain their legacy plugin field names, contract metadata, and `state` outputs. The `0.2.8` candidate is a new package pin; saved graphs must select its `observation` outputs explicitly. The runtime owner keeps legacy translation for old metadata. Building or verifying the candidate does not publish or install a release.

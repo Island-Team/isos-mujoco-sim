@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 from pathlib import Path
 import select
@@ -167,6 +168,19 @@ class Service:
                 else:
                     raise ValueError("unknown command device")
                 fingerprint = {"node": node, "control_mode": mode, "payload": payload}
+                if "lease_ms" in request:
+                    lease = request["lease_ms"]
+                    if type(lease) is not int or not 1 <= lease <= 1000:
+                        raise ValueError("invalid normalized command lease")
+                    if node not in ("robocasa/base/mobile-base", "robocasa/torso/torso", "robocasa/arm/right-arm") or mode != "command":
+                        raise ValueError("lease requires normalized movement")
+                    try:
+                        step_ms = self.hardware.command_step_ms
+                    except AttributeError as error:
+                        raise ValueError("command timestep is unavailable") from error
+                    if isinstance(step_ms, bool) or not isinstance(step_ms, (int, float)) or not math.isfinite(step_ms) or step_ms <= 0 or step_ms > lease:
+                        raise ValueError("lease is shorter than the simulation command step")
+                    fingerprint["lease_ms"] = lease
                 prior = self.commands.get(command_id)
                 if prior is not None:
                     if prior["fingerprint"] != fingerprint:

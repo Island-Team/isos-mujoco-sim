@@ -25,6 +25,8 @@ class Environment:
     self.observation_space.spaces.update({key: Space((8, 8, 3)) for key in CAMERA_KEYS.values()})
     self.actions = []
     self.closed = False
+    self.unwrapped = self
+    self.control_timestep = 0.05
 
   def observation(self):
     values = {key: np.zeros(STATE_SHAPES[name], dtype=np.float32)
@@ -51,6 +53,18 @@ class HardwareTests(unittest.TestCase):
     self.env = Environment()
     self.hardware = Hardware(self.env)
     self.hardware.reset(42)
+
+  def test_command_step_uses_selected_environment_timestep(self):
+    self.assertEqual(self.hardware.command_step_ms, 50)
+    self.env.control_timestep = 0.025
+    self.assertEqual(self.hardware.command_step_ms, 25)
+    for value in (None, True, 0, -1, float("inf"), float("nan")):
+      self.env.control_timestep = value
+      with self.subTest(value=value), self.assertRaises(HardwareError):
+        _ = self.hardware.command_step_ms
+    del self.env.control_timestep
+    with self.assertRaises(HardwareError):
+      _ = self.hardware.command_step_ms
 
   def test_catalog_rejects_missing_endpoint(self):
     del self.env.action_space.spaces["action.base_motion"]

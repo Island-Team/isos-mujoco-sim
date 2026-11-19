@@ -75,6 +75,34 @@ def main():
                 if process.poll() is not None:
                     raise RuntimeError(process.stderr.read().decode())
                 time.sleep(0.025)
+            for kind, device, declared_frame, sample_frame in (
+                    ("base", "base-0", "base_link", "world"),
+                    ("manipulator", "arm-0", "robot_base", "robot_base")):
+                config, size = argument({"run_id": "run-test", "revision": "revision-test",
+                    "instance": {"node": {"node_type": f"eos.hardware.{kind}.device@v0.2",
+                        "frame_id": declared_frame, "package": {"version": "0.2.8"},
+                        "adapter": {"settings": {"socket_path": str(socket_path),
+                            "service_instance": "native", "device_id": device}}}}})
+                observer = ctypes.c_void_p()
+                assert api.create(config, size, ctypes.byref(host), ctypes.byref(observer)) == 0
+                try:
+                    assert api.start(observer) == 0
+                    observe, size = argument({"op": "observe"})
+                    assert api.observe(observer, observe, size) == 0
+                    sample = emitted[-1]
+                    assert sample["port"] == "observation"
+                    assert sample["payload"]["sample"]["frame_id"] == sample_frame
+                    if kind == "base":
+                        assert set(sample["payload"]) == {"sample", "x_m", "y_m", "yaw_rad",
+                            "vx_m_s", "vy_m_s", "yaw_rate_rad_s"}
+                    else:
+                        assert set(sample["payload"]) == {"sample", "joint_names", "position_rad",
+                            "velocity_rad_s"}
+                        assert len(sample["payload"]["joint_names"]) == 6
+                        assert len(sample["payload"]["position_rad"]) == 6
+                        assert len(sample["payload"]["velocity_rad_s"]) == 6
+                finally:
+                    api.destroy(observer)
             config, size = argument({"run_id": "run-test", "revision": "revision-test",
                                      "instance": {"node": {"node_type": "eos.hardware.gripper.binary@v0.2",
                                                            "adapter": {"settings": {"socket_path": str(socket_path),
@@ -84,20 +112,27 @@ def main():
             assert api.start(handle) == 0 and api.health(handle) == 1
             observe, size = argument({"op": "observe"})
             assert api.observe(handle, observe, size) == 0
-            assert emitted[-1]["port"] == "state"
+            assert emitted[-1]["port"] == "observation"
             command, size = argument({"run_id": "run-test", "revision": "revision-test",
                                       "command_id": "command-1", "stop_epoch": "0",
-                                      "payload": {"close": True, "unrelated": {"mode": "ignore"}}})
+                                      "payload": {"action": "close"}})
             assert api.command(handle, command, size) == 0
             assert emitted[-1]["port"] == "command_result"
             unsupported, size = argument({"run_id": "run-test", "revision": "revision-test",
                                           "command_id": "command-2", "stop_epoch": "0",
                                           "payload": {"unrelated": True}})
             assert api.command(handle, unsupported, size) == -1
+            for payload in ({"close": True}, {"action": "close", "extra": 1},
+                            {"action": "invalid"}, {"action": True}):
+                invalid, size = argument({"run_id": "run-test", "revision": "revision-test",
+                                          "command_id": "invalid", "stop_epoch": "0",
+                                          "payload": payload})
+                assert api.command(handle, invalid, size) == -1
             stop, size = argument({"run_id": "run-test", "revision": "revision-test",
                                    "stop_epoch": 1})
             assert api.stop(handle, stop, size) == 0
             assert proofs[-1]["outcome"] == "stopped"
+            assert api.command(handle, command, len(command)) == -1
             assert proofs[-1]["actuators"] == {"base": "stopped", "manipulator": "stopped",
                                                 "gripper": "stopped"}
         finally:

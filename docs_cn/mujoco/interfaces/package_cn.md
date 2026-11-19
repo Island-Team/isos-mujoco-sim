@@ -4,9 +4,11 @@
 
 ## 完整机器人硬件软件包
 
-0.2.7 的发布依赖 IsOS 软件包安装辅助程序描述符支持先完成审查和发布；随后才可对精确软件包做资格检查并发布。
+默认源码构建为尚未发布的 `0.2.8` 候选。执行器输入使用当前标准载荷模式和 `{owner:"isos",id:<data_type>,version:"1.0"}` 端口契约。EOS 经选定部件 Dispatcher 原样转发已验证载荷，软件包插件将其转换为原生或 RoboCasa 私有线路字段。非相机观测使用 `observation`，相机输出仍为 `frame`，躯干不伪造输出。截至 `0.2.7` 的版本保留旧声明与适配器转换。标准原生机械臂省略未执行的速度保证。每个软件包预设仍仅包含硬件；组合部件 Dispatcher，并为每个执行器选择一个命令输入。
 
-`0.2.7` 源码候选版声明七种 EOS 硬件类型，并提供“原生机器人”和“RoboCasa 机器人”两套设备预设。每个实例以精确软件包版本同时锁定类型所有者和适配器所有者。这些类型位于 EOS 硬件层的 camera、base、manipulator、gripper 和 torso 分组；其他软件包可选择不同的层和分组。预设没有进程节点。IsOS 只启动已选节点引用的软件包服务，并管理子进程及日志，再把私有服务端点交给 EOS。EOS 通过 `isos_node_v2` 加载已验证的 `libmujoco-eos-node.so`，所有执行器命令均由 Dispatcher 准入。
+0.2.8 的发布依赖 IsOS 软件包安装辅助程序描述符支持先完成审查和发布；随后才可对精确软件包做资格检查并发布。
+
+`0.2.8` 源码候选版声明七种 EOS 硬件类型，并提供“原生机器人”和“RoboCasa 机器人”两套设备预设。每个实例以精确软件包版本同时锁定类型所有者和适配器所有者。这些类型位于 EOS 硬件层的 camera、base、manipulator、gripper 和 torso 分组；其他软件包可选择不同的层和分组。预设没有进程节点。IsOS 只启动已选节点引用的软件包服务，并管理子进程及日志，再把私有服务端点交给 EOS。EOS 通过 `isos_node_v2` 加载已验证的 `libmujoco-eos-node.so`，所有执行器命令均由 Dispatcher 准入。
 
 准确节点类型见[EOS 硬件节点接口](README_cn.md)。以下字段遵循当前通用 IsOS 软件包发布及运行服务声明；IsOS 校验归档字节，并在 Apply 和 Run 解析主机配置。
 
@@ -28,15 +30,15 @@
 
 每个相机硬件节点都有整数 `settings.camera_width` 和 `settings.camera_height`，允许范围为 64–2048 像素。两套预设均提供 1280 × 720。两个服务都要求已选相机节点提供这两个字段。IsOS 通过 `${selected_nodes.settings_json}` 传递已选设置：原生 `cam-0` 使用 `ISOS_NATIVE_CAMERA_SIZES`，RoboCasa 使用 `ISOS_ROBOCASA_CAMERA_SIZES`。原生模拟器按已选尺寸渲染并编码 JPEG；没有这些设置的直接模拟器运行仍使用场景尺寸。工作进程在创建 Gym 前校验已选相机 ID 和尺寸。当前 Gym 包装器让全部相机使用同一渲染尺寸，因此工作进程按已选最大宽高渲染，再将每路 RGB8 观测缩放到该节点的尺寸。图修改在 Apply 后的下次 Run 生效。软件包配置保留共享的本机路径、场景、任务和种子。先前精确版本的软件包仍按其原有相机配置行为运行。
 
-`0.2.7` 候选版在原生适配器中把 RoboCasa RGB8 观测编码为 JPEG，再发出 `image_frame@v0.2`。其 RoboCasa 相机实例声明 `jpeg` 能力；工作进程套接字仍传输有界 RGB8。将锁定 `0.2.7` 的图用于发行版部署前，仍须完成软件包鉴定与发布。
+`0.2.8` 候选版在原生适配器中把 RoboCasa RGB8 观测编码为 JPEG，再发出 `image_frame@v0.2`。其 RoboCasa 相机实例声明 `jpeg` 能力；工作进程套接字仍传输有界 RGB8。将锁定 `0.2.8` 的图用于发行版部署前，仍须完成软件包鉴定与发布。
 
-对于 0.2.7，软件包描述符还声明了已验证的 RoboCasa 安装辅助程序。在交互式 IsOS CLI 中，若任一 RoboCasa 本机路径缺失，`isos pkg configure island/mujoco-sim@0.2.7 --service robocasa` 会先询问，再下载固定版本的 RoboCasa 源码、Python 3.11 环境和首个任务的资源，并将所得路径写入配置草稿供操作员检查。拒绝下载后仍可手动配置路径。Web 表单仍需手动填写路径。安装数据保存在 IsOS 部署专用目录，不进入已验证的软件包。
+对于 0.2.8，软件包描述符还声明了已验证的 RoboCasa 安装辅助程序。在交互式 IsOS CLI 中，若任一 RoboCasa 本机路径缺失，`isos pkg configure island/mujoco-sim@0.2.8 --service robocasa` 会先询问，再下载固定版本的 RoboCasa 源码、Python 3.11 环境和首个任务的资源，并将所得路径写入配置草稿供操作员检查。拒绝下载后仍可手动配置路径。Web 表单仍需手动填写路径。安装数据保存在 IsOS 部署专用目录，不进入已验证的软件包。
 
 `config/package-config.json` 为通用 IsOS 软件包配置界面声明中英文标签和说明。`services.native.scene` 枚举提供已验证的 `pick-place` 和 `navigation` 场景 ID，默认选择 `pick-place`。`services.robocasa.task` 枚举目前仅提供已通过本地冒烟回放验证的 `CloseFridge`，并默认选择该任务；固定版本的上游任务注册表中还有其他任务，但尚未逐项完成本包选择器的验证。IsOS 根据描述符选项校验所选值。`config/package.toml` 提供 `[package]`、`[host]`、`[services.native]` 和 `[services.robocasa]`。已选原生服务需要本地 MuJoCo 3.3.1 目录；已选 RoboCasa 服务需要本地资源及明确选定的 Python 解释器。这些大型主机资源不随软件包下载。路径属于本地部署配置，不属于图节点设置。每个硬件适配器通过 `service_instance` 选择服务；IsOS 在 Apply 与 Run 时解析它。
 
 选择器检查于 2026-11-15 通过：`python3 tests/nodes.py`（14 项测试）、`python3 -m json.tool config/package-config.json` 和 `git diff --check`。节点测试检查选项与场景目录、已验证任务及样例默认值的一致性。完整命令输出保存在被忽略的 `data/test/20261115-package-selectors/`。
 
-使用 `./build.sh --output 绝对路径的空目录 --version 0.2.7` 或更高的未使用版本构建候选版。截至 v0.2.6 的已发布标签保持不变。只有两套预设都通过 IsOS `pkg check` 回放，包括拒绝、崩溃、日志和停止场景，候选版才可发布。
+使用 `./build.sh --output 绝对路径的空目录 --version 0.2.8` 或更高的未使用版本构建候选版。截至 v0.2.6 的已发布标签保持不变。只有两套预设都通过 IsOS `pkg check` 回放，包括拒绝、崩溃、日志和停止场景，候选版才可发布。
 
 原生相机尺寸修改通过 `cmake --build build -j4`、`ctest --test-dir build --output-on-failure -j4`（35/35）、`python3 tests/nodes.py`（13/13）和 `git diff --check`。完整输出保存在被 Git 忽略的 `data/test/20261115-native-camera-source-dimensions/`。已选原生预设现在声明 1280 × 720，严格服务测试确认 JPEG 元数据及字节；拒绝用例覆盖缺失、小数和零尺寸。
 

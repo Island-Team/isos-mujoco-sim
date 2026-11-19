@@ -2,42 +2,41 @@
 
 [Interface index](../../../README.md) · [Design](../../../../core/eos/hardware/manipulator.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/hardware/manipulator_cn.md)
 
-These nodes control the robot arm. The native preset uses six MuJoCo joint targets. The RoboCasa preset uses six normalized end-effector controller axes and a separate control-mode input. Their commands and observations have different units and must not be interchanged.
-
-| Preset / node ref | Type and bound device | Commands | Observation |
-| --- | --- | --- | --- |
-| `native/arm` | `eos.hardware.manipulator.device@v0.2` → `arm-0` | `joint_positions`: six joint positions in rad | `joint_state@v0.2`: six names, positions in rad, velocities in rad/s |
-| `robocasa/right-arm` | `eos.hardware.manipulator.normalized_cartesian@v0.2` → `robocasa/arm/right-arm` | `normalized_cartesian`: translation and rotation axes; `mode`: control mode | `pose_state@v0.2`: end-effector pose relative to `robot_base` |
+The `0.2.8` candidate registers native joint-position and RoboCasa normalized Cartesian manipulators under `eos/hardware/manipulator`. Native `arm` binds `eos.hardware.manipulator.device@v0.2` to `arm-0`; RoboCasa `right-arm` binds `eos.hardware.manipulator.normalized_cartesian@v0.2` to `robocasa/arm/right-arm`.
 
 ## Ports and values
 
-The native type has `command: joint_position_command@v0.2` and `state: joint_state@v0.2`. The command carries six finite `joint_positions_rad` targets within the selected model's joint ranges. The preset advertises `max_joint_position_rad:3.14` and `max_joint_speed_rad_s:1.0`; EOS applies its admission policy before the simulator validates scene limits. The state names are `shoulder_pan_joint`, `shoulder_lift_joint`, `elbow_joint`, `wrist_1_joint`, `wrist_2_joint`, and `wrist_3_joint`, in that order. Its sample clock is `simulation`.
+The native node has `command: joint_position_command@v0.2` and `observation: joint_state@v0.2`. A command requires exactly `joint_names` and `position_rad`: six unique names in the selected profile's order and six finite absolute positions in radians. The adapter checks the profile's absolute position limit (3.14 rad) and the service checks scene limits. The candidate does not advertise `max_joint_speed_rad_s`; its position controller has no qualified speed guarantee. State includes the same joint names, positions, velocities, and a simulation-clock sample in `robot_base`.
 
-The RoboCasa type has `command: normalized_axes_command@v0.2`, `mode: control_mode_command@v0.2`, and `state: pose_state@v0.2`. The `command` payload has exactly six finite `axes` values named `dx`, `dy`, `dz`, `droll`, `dpitch`, and `dyaw`, each in `[-1,1]`. These are upstream controller inputs, not metres or radians. The `mode` payload has `mode:0` or `mode:1`; it selects the pinned RoboCasa controller mode. Each accepted input advances one Gym step. State carries `position_m:[x,y,z]` and a unit `orientation_xyzw:[x,y,z,w]`, with `sample.frame_id:"robot_base"` and `sample.clock:"monotonic"`. There is no joint-state output from this RoboCasa type. Observation is capped at 50 Hz and 65,536 bytes.
+The RoboCasa node has `command: normalized_axes_command@v0.2`, `mode: control_mode_command@v0.2`, and `observation: pose_state@v0.2`. Its command requires exactly six `axes` names (`dx`, `dy`, `dz`, `droll`, `dpitch`, `dyaw`), finite values in `[-1,1]`, and integer `lease_ms` in 1–1000 bounded by the selected limit. These are dimensionless controller inputs. Its mode payload is exactly `{"mode":"0"}` or `{"mode":"1"}`. Each command executes one synchronous Gym step. A normalized command’s lease must cover the actual control timestep or it rejects before motion; this bounds simulation time and does not promise a wall-clock watchdog. Observation reports end-effector position and a unit `xyzw` quaternion in `robot_base` with a monotonic sample; no joint state is fabricated.
 
-An admitted RoboCasa arm command looks like:
+Command ports use `{owner:"isos",id:<data_type>,version:"1.0"}`. A parts Dispatcher selects one hardware input per part. Choose `command` or `mode` for this arm; binding the same hardware twice does not create two supported routes.
+
+## Command payload example
 
 ```json
 {
-  "run_id": "run-7",
-  "revision": "rev-2",
-  "command_id": "arm-18",
-  "port": "command",
-  "payload": {
-    "axes": {
-      "dx": 0.1,
-      "dy": 0.0,
-      "dz": 0.0,
-      "droll": 0.0,
-      "dpitch": 0.0,
-      "dyaw": 0.0
-    }
-  }
+  "joint_names": [
+    "shoulder_pan_joint",
+    "shoulder_lift_joint",
+    "elbow_joint",
+    "wrist_1_joint",
+    "wrist_2_joint",
+    "wrist_3_joint"
+  ],
+  "position_rad": [
+    0.1,
+    -0.2,
+    0.1,
+    0.0,
+    0.0,
+    0.0
+  ]
 }
 ```
 
-EOS constructs the run fence and command identity. The adapter emits an acknowledgment on `command_result` and requested state on `state`; agents cannot address the private worker socket.
+## Admission, lifecycle, and compatibility
 
-## Admission, lifecycle, and failure
+EOS validates the run, exact package and selected part before its Dispatcher releases a typed command. The plugin validates the standard payload again and maps it to the private service wire; it forwards no extra fields. Wrong frame, joint order, mode, payload, or unavailable service produces no successful acknowledgment. Commands carry owner-supplied run/revision and durable identity outside the payload. Stop closes admission and requires whole-robot proof; timeout or a missing proof remains unknown.
 
-The exact `service_instance` and `device_id` settings bind the node to the verified preset. EOS checks health and Dispatcher admission before calling the adapter. The native service checks the current generation and stop epoch; both services deduplicate command IDs in one generation. Invalid shape, nonfinite axes, out-of-range targets, wrong mode, stale run/revision, or service failure rejects control. On Stop, EOS closes admission and requires whole-robot proof; an unproved arm stop is `unknown` even if the process exits. The RoboCasa worker faults after a failed Gym step and requires a new run rather than silently continuing. See [runtime control](../../../control.md) for wire errors and deadlines.
+Exact pins through `0.2.7` retain their legacy plugin field names, contract metadata, and `state` outputs. The `0.2.8` candidate is a new package pin; saved graphs must select its `observation` outputs explicitly. The runtime owner keeps legacy translation for old metadata. Building or verifying the candidate does not publish or install a release.

@@ -92,6 +92,7 @@ Startup fails for a missing or invalid scene, missing required scene elements, o
 
 **Related:** [Usage](../start/README.md) · [Simulator RPC](../interfaces/simulator.md) · [Benchmark RPC](../interfaces/benchmark.md)
 
+<a id="legacy-caller-audit"></a>
 ## Legacy caller audit (2026-11-04)
 
 [中文](../../../docs_cn/mujoco/core/architecture_cn.md#旧实现调用者核查)
