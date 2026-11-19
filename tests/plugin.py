@@ -135,7 +135,7 @@ def main():
             listener.bind(path)
             listener.listen(4)
             worker = threading.Thread(target=serve,
-                                      args=(listener, ["health", operation], device),
+                                      args=(listener, ["health", operation, operation] if kind == "camera" else ["health", operation], device),
                                       daemon=True)
             worker.start()
             config, length = buffer({"instance": {"node": {
@@ -153,6 +153,9 @@ def main():
             if kind == "camera":
                 assert emitted[0]["payload"]["data"] == "anBlZw=="
                 assert emitted[0]["payload"]["encoding"] == "jpeg"
+                assert emitted[0]["payload"]["sample"]["sequence"] == 1
+                assert api.input(handle, request, size) == 0
+                assert emitted[-1]["payload"]["sample"]["sequence"] == 2
             else:
                 assert emitted[0]["payload"]["joint_names"] == [
                     "shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint",

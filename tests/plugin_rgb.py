@@ -22,7 +22,7 @@ def run_case(api, host, emitted, width, height, binary, expected, announced_size
             listener.bind(path)
             listener.listen(2)
             def serve():
-                for operation in ("health", "observe"):
+                for operation in (("health", "observe", "observe") if expected else ("health", "observe")):
                     connection, _ = listener.accept()
                     with connection:
                         size, payload_size = struct.unpack("<II", read_exact(connection, 8))
@@ -63,7 +63,12 @@ def run_case(api, host, emitted, width, height, binary, expected, announced_size
                 jpeg = base64.b64decode(emitted[-1]["payload"]["data"])
                 assert emitted[-1]["payload"]["encoding"] == "jpeg"
                 assert jpeg.startswith(b"\xff\xd8") and jpeg.endswith(b"\xff\xd9")
+                assert emitted[-1]["payload"]["sample"]["sequence"] == 1
+                # A cached simulator state still produces a distinct graph delivery.
+                assert api.input(handle, request, size) == 0
+                assert emitted[-1]["payload"]["sample"]["sequence"] == 2
             assert api.stop(handle) == 0
+            assert api.input(handle, request, size) != 0
             api.destroy(handle)
             worker.join(3)
             assert not worker.is_alive()

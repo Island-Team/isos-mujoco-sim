@@ -39,6 +39,7 @@ struct isos_node_handle {
   bool started = false;
   bool stopped = false;
   std::uint64_t request = 0;
+  std::uint64_t frame_sequence = 0;
 };
 
 namespace {
@@ -264,6 +265,8 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
   if (!node) return -1;
   std::lock_guard lock(node->mutex);
   if (!node->started || node->stopped) return -1;
+  // Protobuf Struct numbers must preserve the stream counter exactly as JSON integers.
+  if (node->kind == "camera" && node->frame_sequence >= 9007199254740991ULL) return -1;
   Struct request;
   if (!parse(bytes, length, &request) || string_field(request, "op") != "observe") return -1;
   if (node->service_instance == "robocasa") {
@@ -289,7 +292,9 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
         !std::isfinite(sequence->number_value()) || sequence->number_value() < 0)
       return -1;
     set(sample, "source_time_ns", std::round(timestamp->number_value()));
-    set(sample, "sequence", std::round(sequence->number_value()));
+    set(sample, "sequence",
+        node->kind == "camera" ? static_cast<double>(node->frame_sequence + 1)
+                               : std::round(sequence->number_value()));
     set(sample, "clock", "monotonic");
     set(sample, "frame_id",
         node->kind == "base"          ? "world"
@@ -362,8 +367,10 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
     if (!google::protobuf::util::MessageToJsonString(envelope, &json).ok() ||
         json.size() > 20 * 1024 * 1024)
       return -1;
-    return node->host->emit(node->host->context, reinterpret_cast<const std::uint8_t*>(json.data()),
-                            json.size());
+    const auto emitted = node->host->emit(
+        node->host->context, reinterpret_cast<const std::uint8_t*>(json.data()), json.size());
+    if (emitted == 0 && node->kind == "camera") ++node->frame_sequence;
+    return emitted;
   }
   const char* op = node->kind == "camera"    ? "camera_capture"
                    : node->kind == "base"    ? "base_observe"
@@ -389,7 +396,9 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
       !std::isfinite(sequence->number_value()) || sequence->number_value() < 0)
     return -1;
   set(sample, "source_time_ns", std::round(time->number_value()));
-  set(sample, "sequence", std::round(sequence->number_value()));
+  set(sample, "sequence",
+      node->kind == "camera" ? static_cast<double>(node->frame_sequence + 1)
+                             : std::round(sequence->number_value()));
   set(sample, "clock", "simulation");
   set(sample, "frame_id",
       node->legacy_contract         ? node->device
@@ -467,8 +476,10 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
   if (!google::protobuf::util::MessageToJsonString(envelope, &json).ok() ||
       json.size() > 20 * 1024 * 1024)
     return -1;
-  return node->host->emit(node->host->context, reinterpret_cast<const std::uint8_t*>(json.data()),
-                          json.size());
+  const auto emitted = node->host->emit(
+      node->host->context, reinterpret_cast<const std::uint8_t*>(json.data()), json.size());
+  if (emitted == 0 && node->kind == "camera") ++node->frame_sequence;
+  return emitted;
 }
 int32_t stop_impl(isos_node_handle* node) {
   if (!node) return -1;
