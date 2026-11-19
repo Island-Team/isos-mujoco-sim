@@ -2,28 +2,27 @@
 
 [Interface index](../../../README.md) · [Design](../../../../core/eos/hardware/torso.md) · [Runtime control](../../../control.md) · [中文](../../../../../../docs_cn/mujoco/interfaces/node/eos/hardware/torso_cn.md)
 
-`eos.hardware.torso.normalized_axes@v0.2` exists in the **RoboCasa robot** preset as `robocasa/lift`, bound to `robocasa/torso/torso`. The native robot preset has no torso node. This node commands the PandaOmron torso lift through a normalized controller input; it does not publish a measured torso position.
+The `0.2.8` candidate registers `eos.hardware.torso.normalized_axes@v0.2` in `eos/hardware/torso`. Only RoboCasa contributes this device: `lift` binds `robocasa/torso/torso`.
 
 ## Port and command
 
-The optional in-process event input is `command: normalized_axes_command@v0.2`. Its `payload.axes` object has exactly one finite number, `lift`, in `[-1,1]`. This is a dimensionless controller input, not metres or m/s. An accepted command advances one Gym step. The preset advertises `max_velocity_lease_ms:1000` for admission. There is no `state` or other observation output, and the worker does not fabricate one.
+The optional `command` input uses `normalized_axes_command@v0.2`. The payload requires exactly `axes` and `lease_ms`. The axes object contains exactly one finite `lift` in `[-1,1]`; the lease is an integer from 1 to the selected limit (at most 1000 ms). There is no default, and unknown fields reject. These are dimensionless controller inputs. One accepted command executes one synchronous Gym step. Its lease must cover the actual control timestep or it rejects before motion; this bounds simulation time without advertising autonomous motion or a wall-clock watchdog. The port contract is `{owner:"isos",id:"normalized_axes_command@v0.2",version:"1.0"}`.
+
+This node has no observation port and does not fabricate a torso position. Its private `command_result` acknowledgment is returned to the owner, outside graph routing.
+
+## Command payload example
 
 ```json
 {
-  "run_id": "run-7",
-  "revision": "rev-2",
-  "command_id": "lift-18",
-  "port": "command",
-  "payload": {
-    "axes": {
-      "lift": 0.25
-    }
-  }
+  "axes": {
+    "lift": 0.25
+  },
+  "lease_ms": 100
 }
 ```
 
-EOS supplies the run/revision fence and command ID; the adapter emits a `command_result` acknowledgment. An agent can request torso movement only through EOS's admitted capability. It cannot read torso position from this node. Other RoboCasa nodes can still provide their own observations.
+## Admission, lifecycle, and compatibility
 
-## Admission, Stop, and failure
+EOS validates the run, exact package and selected part before its Dispatcher releases a typed command. The plugin validates the standard payload again and maps it to the private service wire; it forwards no extra fields. Wrong frame, joint order, mode, payload, or unavailable service produces no successful acknowledgment. Commands carry owner-supplied run/revision and durable identity outside the payload. Stop closes admission and requires whole-robot proof; timeout or a missing proof remains unknown.
 
-`service_instance:"robocasa"` and `device_id:"robocasa/torso/torso"` bind the exact service and device. IsOS verifies the package and service configuration; EOS checks health and Dispatcher admission. Invalid axes, a stale run, unavailable service, or failed Gym step rejects control. The worker deduplicates command IDs within one generation and faults after a failed step. Stop fences later commands and requires `torso_stop:"stopped"` as part of the whole-robot proof; missing proof is unknown. See [runtime control](../../../control.md) for the private service contract.
+Exact pins through `0.2.7` retain their legacy plugin field names, contract metadata, and `state` outputs. The `0.2.8` candidate is a new package pin; saved graphs must select its `observation` outputs explicitly. The runtime owner keeps legacy translation for old metadata. Building or verifying the candidate does not publish or install a release.

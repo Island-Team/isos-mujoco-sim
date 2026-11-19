@@ -103,6 +103,7 @@ def main():
         config, length = buffer({"run_id": "test", "revision": "a" * 64,
                                  "instance": {"node": {
                                      "node_type": "eos.hardware.base.device@v0.2",
+                                     "package": {"version": "0.2.7"},
                                      "adapter": {"settings": {"socket_path": path,
                                                                "simulator_node": "base-0"}}}}})
         handle = ctypes.c_void_p()
@@ -139,6 +140,7 @@ def main():
             worker.start()
             config, length = buffer({"instance": {"node": {
                 "node_type": f"eos.hardware.{kind}.device@v0.2",
+                "package": {"version": "0.2.7"},
                 "adapter": {"settings": {"socket_path": path,
                                           "simulator_node": device}}}}})
             handle = ctypes.c_void_p()

@@ -19,6 +19,8 @@ from robocasa_worker import Service, camera_dimension, camera_sizes_from_environ
 
 
 class FakeHardware:
+    command_step_ms = 50.0
+
     def __init__(self):
         self.steps = 0
         self.fail = False
@@ -76,6 +78,44 @@ class FakeHardware:
 
 
 class WorkerTests(unittest.TestCase):
+    def test_normalized_lease_bounds_one_simulation_step(self):
+        for node, values in (("robocasa/base/mobile-base", [0.1, 0, 0]),
+                             ("robocasa/torso/torso", [0.1]),
+                             ("robocasa/arm/right-arm", {"position": [0.1, 0, 0], "rotation": [0, 0, 0]})):
+            with self.subTest(node=node):
+                hardware = FakeHardware()
+                service = Service(hardware)
+                command = {"op": "command", "node": node, "command_id": "leased", "values": values}
+                for lease in (1, 49, True, 50.0, 0, 1001, None):
+                    with self.subTest(lease=lease), self.assertRaises(ValueError):
+                        service.dispatch(command | {"lease_ms": lease})
+                    self.assertEqual((hardware.commands, hardware.steps), ([], 0))
+                first = service.dispatch(command | {"lease_ms": 50})
+                self.assertEqual(first, service.dispatch(command | {"lease_ms": 50}))
+                self.assertEqual(hardware.steps, 1)
+                for changed in ({"lease_ms": 100}, {}):
+                    with self.assertRaises(ValueError):
+                        service.dispatch(command | changed)
+                self.assertEqual(hardware.steps, 1)
+
+    def test_standard_lease_rejects_unavailable_or_invalid_timestep(self):
+        for timestep in (None, 0, -1, float("nan"), float("inf"), True, "50"):
+            hardware = FakeHardware()
+            hardware.command_step_ms = timestep
+            with self.subTest(timestep=timestep), self.assertRaises(ValueError):
+                Service(hardware).dispatch({"op": "command", "node": "robocasa/base/mobile-base",
+                                           "command_id": "leased", "values": [0.1, 0, 0], "lease_ms": 50})
+            self.assertEqual((hardware.commands, hardware.steps), ([], 0))
+        class UnavailableHardware(FakeHardware):
+            @property
+            def command_step_ms(self):
+                raise AttributeError("unavailable")
+        hardware = UnavailableHardware()
+        with self.assertRaises(ValueError):
+            Service(hardware).dispatch({"op": "command", "node": "robocasa/base/mobile-base",
+                                       "command_id": "leased", "values": [0.1, 0, 0], "lease_ms": 50})
+        self.assertEqual((hardware.commands, hardware.steps), ([], 0))
+
     def test_camera_dimensions_are_bounded(self):
         self.assertEqual(camera_dimension("64"), 64)
         self.assertEqual(camera_dimension("2048"), 2048)

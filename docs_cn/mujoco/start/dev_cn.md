@@ -128,7 +128,7 @@ build/mujoco-core --scene "$PWD/assets/scene.xml" --seed 42 --steps 20
 | 原生套接字或启动失败 | 读取 `logs/dev/native/latest.log`；对该启动器启动的进程使用 `./kill.sh`。 |
 | 无图形界面的主机上 `--gui` 失败 | 使用 `--no-gui`；基准和 C++ 测试均不要求桌面窗口。 |
 
-RoboCasa 基准在前台运行，结果输出到终端。原生启动器将日志写到选定的运行目录。对于受管理部署，修改图之前先找到当前 IsOS 运行及其首条就绪或失败事件；参见[构建与运行](README_cn.md#isos-与-eos-部署)。
+RoboCasa 基准在前台运行，结果输出到终端。原生启动器将日志写到选定的运行目录。对于受管理部署，修改图之前先找到当前 IsOS 运行及其首条就绪或失败事件；参见[构建与运行](README_cn.md)。
 
 ## 开发界面和本地日志
 

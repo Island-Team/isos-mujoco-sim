@@ -88,6 +88,7 @@ MuJoCo 以固定的 2 毫秒物理步长推进。重置将场景置于确定性�
 
 缺少或无效的场景、必要元素缺失或套接字不可用都会导致启动失败。不可用设备与命令通过 EOS 面向机器人的接口报错。benchmark 服务在 `StateResponse.ok` 和 `error` 中报告重置或步进错误。与当前场景无关的真实状态字段不能用作代理输入，也不能推断为目标。
 
+<a id="旧实现调用者核查"></a>
 ## 旧实现调用者核查（2026-11-04）
 
 [English](../../../docs/mujoco/core/architecture.md#legacy-caller-audit)

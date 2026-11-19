@@ -2,34 +2,24 @@
 
 [接口目录](../../../README_cn.md) · [设计](../../../../core/eos/hardware/gripper_cn.md) · [运行控制](../../../control_cn.md) · [English](../../../../../../docs/mujoco/interfaces/node/eos/hardware/gripper.md)
 
-`eos.hardware.gripper.binary@v0.2` 开闭一个模拟夹爪。两种预设使用相同二值命令类型，但观察代表不同物理量。
+`0.2.8` 候选在 `eos/hardware/gripper` 注册 `eos.hardware.gripper.binary@v0.2`。原生 `gripper` 绑定 `gripper-0`；RoboCasa `hand` 绑定 `robocasa/gripper/right-gripper`。
 
-| 预设 / 节点引用 | 设备 ID | 命令 | 状态 |
-| --- | --- | --- | --- |
-| `native/gripper` | `gripper-0` | 开闭原生场景夹爪 | `opening` 通道，0–100% |
-| `robocasa/hand` | `robocasa/gripper/right-gripper` | 开闭 Panda 夹爪 | `left_finger`、`right_finger` 滑动关节通道，m |
+## 端口与数值
 
-## 端口和值
+可选 `command` 输入使用 `gripper_binary_command@v0.2`，恰好一个必需字段 `action`，值为字符串 `open` 或 `close`。标准适配器边界拒绝布尔值及旧 `close` 字段。端口契约为 `{owner:"isos",id:"gripper_binary_command@v0.2",version:"1.0"}`。
 
-输入为 `command: gripper_binary_command@v0.2`，`payload.close` 是必需布尔值：`false` 打开，`true` 关闭。输出为 `state: gripper_state@v0.2`；`channels` 数组逐项给出 `name`、数值 `value` 和 `unit`。原生状态使用 `sample.clock:"simulation"`。RoboCasa 使用 `sample.clock:"monotonic"`，报告固定版本 Gym 包装层的两个关节位置。预设声明最大 50 Hz 观察频率和 65,536 字节负载。状态不表示抓取成功，也不识别所持物体。
+`observation` 输出使用 `gripper_state@v0.2`：采样及具有有限数值和明确单位的具名通道。原生使用仿真时钟，报告以百分比计的 `opening`；RoboCasa 使用单调时钟，报告以米计的 `left_finger` 和 `right_finger` 滑动关节位置。回执或开度均不能证明抓取成功。观测上限为 50 Hz 和 65,536 字节。
 
-EOS 发给适配器的准入命令：
+## 命令载荷示例
 
 ```json
 {
-  "run_id": "run-7",
-  "revision": "rev-2",
-  "command_id": "grip-18",
-  "stop_epoch": "0",
-  "port": "command",
-  "payload": {
-    "close": true
-  }
+  "action": "close"
 }
 ```
 
-对于原生节点，`stop_epoch` 是健康检查或先前停止证明的当前令牌。EOS 提供运行屏障及命令 ID，代理不能直接调用私有服务。适配器通过 `command_result` 发出服务确认，并在请求观察时通过 `state` 发出状态。
+## 准入、生命周期与兼容性
 
-## 准入、停止及失败
+EOS 校验运行、精确软件包及所选部件，再由 Dispatcher 放行类型化命令。插件再次验证标准载荷并映射到私有服务线路，不转发额外字段。坐标系、关节顺序、模式或载荷错误，以及服务不可用，都不会产生成功回执。命令在载荷之外携带所有者提供的运行／修订与持久身份。Stop 关闭准入并要求整机证明；超时或缺失证明仍为未知。
 
-已验证的 `service_instance` 和准确 `device_id` 选择夹爪，均无回退值。EOS 经 Dispatcher 准入动作。原生控制检查代际和停止 epoch；两种服务在单个代际内去重命令 ID。`close` 非布尔、设备错误、运行过期或步进失败时拒绝动作。停止时 EOS 除底盘和机械臂证明外，还要求独立的 `gripper_stop:"stopped"`；RoboCasa 也要求躯干证明。夹爪证明缺失时结果为未知。此节点不能从命令确认推断物理抓取。线协议错误和期限见[运行控制](../../../control_cn.md)。
+截至 `0.2.7` 的精确版本保留旧插件字段、契约元数据及 `state` 输出。`0.2.8` 候选使用新的软件包固定版本；保存图必须明确选择其 `observation` 输出。运行时所有者为旧元数据保留旧转换。构建或验证候选不等于发布或安装发行版。

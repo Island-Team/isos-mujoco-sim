@@ -1,11 +1,19 @@
 # IsOS 管理的 MuJoCo 后端
 
 
-## 当前 0.2.7 硬件候选
+## 当前 0.2.8 硬件候选
 
-使用 `./build.sh --output <绝对路径空目录> --version 0.2.7` 构建尚未发布的 `0.2.7` 源码候选。schema `0.2.1` 清单贡献七个软件包自有的 EOS 硬件类型、原生和 RoboCasa 节点集，以及两个由 IsOS 监督的运行时服务。硬件实例固定软件包版本，通过 `isos_node_v2` 选择 `mujoco-v2`；EOS 经 Dispatcher 准入执行器命令。每个相机声明 30 Hz 的图像类别 `frame` 输出，并在适配器设置中选择 30 Hz 采集频率。参见[当前软件包契约](../interfaces/package_cn.md)和[相机接口](../interfaces/node/eos/hardware/camera_cn.md)。源码构建或本地资格检查不等于发布版本。
+使用 `./build.sh --output <绝对路径空目录> --version 0.2.8` 构建尚未发布的 `0.2.8` 源码候选。schema `0.2.1` 清单贡献七个软件包自有的 EOS 硬件类型、原生和 RoboCasa 节点集，以及两个由 IsOS 监督的运行时服务。硬件实例固定软件包版本，通过 `isos_node_v2` 选择 `mujoco-v2`；EOS 经 Dispatcher 准入执行器命令。每个相机声明 30 Hz 的图像类别 `frame` 输出，并在适配器设置中选择 30 Hz 采集频率。参见[当前软件包契约](../interfaces/package_cn.md)和[相机接口](../interfaces/node/eos/hardware/camera_cn.md)。源码构建或本地资格检查不等于发布版本。
 
-安装精确软件包后，RoboCasa 使用 `isos pkg configure island/mujoco-sim@0.2.7 --service robocasa`。若 Python 解释器或资源路径缺失，IsOS 会先询问，再下载固定版本的源码、运行环境和首个任务资源；在编辑器中检查填入的 TOML 并保存，然后再 Apply。使用 `--service native` 可编辑原生配置而不触发 RoboCasa 下载提示。Web 软件包表单接受手动准备的路径。
+安装精确软件包后，RoboCasa 使用 `isos pkg configure island/mujoco-sim@0.2.8 --service robocasa`。若 Python 解释器或资源路径缺失，IsOS 会先询问，再下载固定版本的源码、运行环境和首个任务资源；在编辑器中检查填入的 TOML 并保存，然后再 Apply。使用 `--service native` 可编辑原生配置而不触发 RoboCasa 下载提示。Web 软件包表单接受手动准备的路径。
+
+## 标准硬件契约验证（2026-11-19）
+
+`0.2.8` 源码候选依据当前 EOS 目录注册七个硬件类型。部件 Dispatcher 继承其标准命令契约。原生及 RoboCasa 命令图和单独的 RoboCasa 模式绑定通过验证，未分配硬件及技能直达硬件的绕过路线被拒绝。插件接受标准载荷，检查必需字段、坐标系、关节顺序、限制及租期，并执行私有线路转换。所有者依据已注册输入契约选择标准载荷原样转发，同时保留旧软件包转换。
+
+复现命令为 `cmake --build build -j4`、`ctest --test-dir build --output-on-failure -j4`、`python3 tests/nodes.py` 及 `python3 tests/eos_contracts.py --eos-profile <当前-IsOS-检出目录>/target/debug/aether-profile --plugin build/libmujoco-eos-node.so`。互操作脚本需要 Python `jsonschema`。使用 `python3 tools/bundle.py --build-dir build --mujoco-root <本地-3.3.1-目录> --output <空目录>` 构建候选，默认版本为 `0.2.8`。通过 `isos pkg verify <release.json> <归档>` 检查生成清单和归档。完整命令及输出保存在被忽略的 `data/test/20261119-standard-hardware/`。
+
+检查通过：35 项 CTest、17 项节点声明测试、九项图准入案例、九项标准载荷模式、12 项 RoboCasa 工作进程测试及 13 项硬件测试。真实 EOS 所有者 → 部件 Dispatcher → 插件 → 原生服务回放完成底盘、机械臂与夹爪命令和观测，拒绝错误 Dispatcher 身份，并确认 Stop。这些边界测试中的 RoboCasa 适配器调用使用桩服务，不构成新完整 Gym 部署资格或候选发布。旧精确软件包版本保留其声明及载荷处理。
 
 ## 历史 0.2.0 进程候选
 

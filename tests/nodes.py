@@ -130,7 +130,7 @@ class NodeContributionTests(unittest.TestCase):
           self.assertEqual(node["profile"]["adapter"]["settings"]["frequency_hz"], 30.0)
 
   def test_node_set_has_resolvable_symbols_and_parameters(self) -> None:
-    contract = contributions()
+    contract = contributions("0.2.0")
     node_set = contract["node_sets"][0]
     refs = {node["ref"] for node in node_set["nodes"]}
     self.assertEqual(refs, {"simulator", "front"})
@@ -154,7 +154,7 @@ class NodeContributionTests(unittest.TestCase):
           self.assertIn(parameter, declared)
 
   def test_each_device_uses_one_package_pinned_observation_adapter(self) -> None:
-    contract = contributions()
+    contract = contributions("0.2.0")
     nodes = {node["ref"]: node for node in contract["node_sets"][0]["nodes"]}
     family = contract["adapter_families"][0]
     self.assertEqual(set(family["device_kinds"]), {"camera", "base", "manipulator"})
@@ -205,13 +205,48 @@ class NodeContributionTests(unittest.TestCase):
                          {"kind": "native_plugin", "abi": "isos_node_v2",
                           "library": "lib/libmujoco-eos-node.so"})
 
+  def test_default_candidate_uses_standard_hardware_contracts(self) -> None:
+    contract = contributions()
+    definitions = {item["id"]: item for item in contract["node_types"]}
+    self.assertEqual(len(definitions), 7)
+    self.assertEqual(contract["processes"], [])
+    for definition in definitions.values():
+      self.assertEqual(definition["layer"], "hardware")
+      for port in definition["inputs"]:
+        self.assertEqual(port["data_class"], "command")
+        self.assertEqual(port["contract"],
+                         {"owner": "isos", "id": port["data_type"], "version": "1.0"})
+      self.assertEqual([port["name"] for port in definition["outputs"]],
+                       ["frame"] if definition["kind"] == "camera" else
+                       [] if definition["kind"] == "torso" else ["observation"])
+    for node_set in contract["node_sets"]:
+      for node in node_set["nodes"]:
+        profile = node["profile"]
+        self.assertEqual(profile["package"]["version"], "0.2.8")
+        if profile["node_type"] == "eos.hardware.manipulator.device@v0.2":
+          self.assertNotIn("max_joint_speed_rad_s", profile["movement"]["limits"])
+        if node["group"] == "base":
+          self.assertEqual(profile["frame_id"],
+                           "base_link" if node_set["id"] == "native" else "world")
+        if node["group"] == "manipulator":
+          self.assertEqual(profile["frame_id"], "robot_base")
+
+  def test_published_candidate_keeps_legacy_port_contracts(self) -> None:
+    contract = contributions("0.2.7")
+    for definition in contract["node_types"]:
+      for port in definition["inputs"]:
+        self.assertEqual(port["contract"],
+                         {"owner": "eos", "id": port["data_type"], "version": "0.2"})
+      if definition["kind"] not in ("camera", "torso"):
+        self.assertEqual(definition["outputs"][0]["name"], "state")
+
   def test_managed_process_declares_verified_inputs(self) -> None:
-    process = contributions()["processes"][0]
+    process = contributions("0.2.0")["processes"][0]
     self.assertEqual(process["args"], ["--managed-strict-socket", "--v2-socket",
                                        "${socket}", "--scene", "${resource.scene.path}"])
 
   def test_ports_describe_frequency_transport_and_data_class(self) -> None:
-    contract = contributions()
+    contract = contributions("0.2.0")
     for node_type in contract["node_types"]:
       for port in node_type["inputs"] + node_type["outputs"]:
         self.assertTrue(port["description"])
@@ -223,7 +258,7 @@ class NodeContributionTests(unittest.TestCase):
   def test_target_contribution_matches_frozen_projection(self) -> None:
     expected = json.loads((Path(__file__).resolve().parent /
                            "fixtures/scene_catalog/expected-contribution.json").read_text())
-    contract = contributions()
+    contract = contributions("0.2.0")
     types = {entry["id"]: entry for entry in contract["node_types"]}
     current = types[expected["process_type"]["id"]]
     self.assertEqual((current["core"], current["layer"], current["group"]),
