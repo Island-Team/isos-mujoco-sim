@@ -15,7 +15,7 @@
 
 `cam-0` 是两个原生场景共用渲染器的稳定设备 ID，并非从 RoboCasa 相机名称推断而来。原生 MuJoCo 捕获画面并编码为 JPEG；独立的 RoboCasa Gym worker 从三台具名相机提供原始 RGB8 数组。适配器在解码帧前按服务和准确设备绑定，因此原生场景或相机故障不会暗中改选 RoboCasa 相机，也不会改变其他节点的编码。
 
-没有命令输入。EOS 请求观察，适配器通过进程内事件端口 `frame: image_frame@v0.2` 发出结果。负载含 `width_px`、`height_px`、`encoding`、base64 `data`，以及包含 `source_time_ns`、`sequence`、`clock`、`frame_id` 的 `sample`。原生 `encoding:"jpeg"` 使用模拟时钟；RoboCasa `encoding:"jpeg"` 使用主机单调时钟。独立 worker 将 RGB8 数据交给适配器，适配器在发出节点帧前编码 JPEG。配置宽高各为 64–2048 px。原生尺寸来自所选相机渲染。画面不含任务文本、奖励或成功真值。
+没有命令输入。EOS 请求观察，适配器通过进程内事件端口 `frame: image_frame@v0.2` 发出结果。负载含 `width_px`、`height_px`、`encoding`、base64 `data`，以及包含 `source_time_ns`、`sequence`、`clock`、`frame_id` 的 `sample`。适配器按相机实例生成 `sample.sequence`，从 1 开始，每次帧发布被接受后递增。它独立于模拟器命令或状态序号，因此重复捕获缓存的场景像素也有不同的交付序号；新的节点实例重新开始计数。该计数不证明场景内容发生变化。原生 `encoding:"jpeg"` 使用模拟时钟；RoboCasa `encoding:"jpeg"` 使用主机单调时钟。独立 worker 将 RGB8 数据交给适配器，适配器在发出节点帧前编码 JPEG。配置宽高各为 64–2048 px。原生尺寸来自所选相机渲染。画面不含任务文本、奖励或成功真值。
 
 在 0.2.5 及之后的软件包中，每个相机节点通过 `settings.camera_width` 和 `settings.camera_height` 设置 64 到 2048 的整数像素数。两套预设均为 1280 × 720。IsOS 在 Run 时将原生 `cam-0` 的已选设置传给模拟器；EGL 视口和 JPEG 编码器使用该准确尺寸。三个 RoboCasa 相机可分别选择输出尺寸，其设置传给独立的 Gym 工作进程。没有 IsOS 设置的直接模拟器运行使用场景的离屏尺寸。
 

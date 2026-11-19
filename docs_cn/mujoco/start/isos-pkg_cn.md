@@ -7,6 +7,11 @@
 
 安装精确软件包后，RoboCasa 使用 `isos pkg configure island/mujoco-sim@0.2.8 --service robocasa`。若 Python 解释器或资源路径缺失，IsOS 会先询问，再下载固定版本的源码、运行环境和首个任务资源；在编辑器中检查填入的 TOML 并保存，然后再 Apply。使用 `--service native` 可编辑原生配置而不触发 RoboCasa 下载提示。Web 软件包表单接受手动准备的路径。
 
+
+相机适配器为每个相机实例生成独立的发布序号。因此，即使 RoboCasa 图像来自缓存，重复观测也能交付给拒绝重放来源序号的推理节点；模拟器命令和状态序号保留在私有边界内。同一个尚未发布的 `0.2.8` 版本安装修改后的源码后，应重新 Apply 图，使其验证的库摘要与重新构建的软件包一致。相机[接口](../interfaces/node/eos/hardware/camera_cn.md)定义了计数器和缓存图像限制。
+
+2026-11-19，`cmake --build .local/package-build --target mujoco-eos-node -j2`、`ctest --test-dir .local/package-build -R '^eos-node-plugin' --output-on-failure` 和 `clang-format --dry-run --Werror src/plugin/node.cpp` 通过。四项插件边界测试覆盖在桩服务模拟器状态序号固定时，原生与 RoboCasa 相机分别发布两帧，以及 RGB 负载无效时拒绝、命令、服务故障和 Stop。完整输出位于忽略目录 `data/test/20261119-camera-sample-sequence/`。这些源码检查不发布软件包版本。
+
 ## 标准硬件契约验证（2026-11-19）
 
 `0.2.8` 源码候选依据当前 EOS 目录注册七个硬件类型。部件 Dispatcher 继承其标准命令契约。原生及 RoboCasa 命令图和单独的 RoboCasa 模式绑定通过验证，未分配硬件及技能直达硬件的绕过路线被拒绝。插件接受标准载荷，检查必需字段、坐标系、关节顺序、限制及租期，并执行私有线路转换。所有者依据已注册输入契约选择标准载荷原样转发，同时保留旧软件包转换。
