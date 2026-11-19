@@ -2,6 +2,8 @@
 
 This page owns the current hardware package declaration and the historical process node declaration. Runtime control fields for the RoboCasa and native presets are in the [control contract](control.md).
 
+The optional `ubuntu22` CMake build profile uses a separate `.local/package-build-ubuntu22` directory and requires an Ubuntu 22.04/glibc 2.35 host and Python 3.11 or newer. Both development and package builds use this directory, and cross-compilation is rejected. `MUJOCO_BUILD_PROFILE=ubuntu22` selects it through the existing package build entrypoint. Only this profile checks the installed simulator and adapter ELF glibc versions against 2.35. Unset the variable to retain the existing native build and package checks. The profile does not grant release qualification.
+
 ## Full robot hardware package
 
 The default source build is the unpublished `0.2.8` candidate. Its actuator inputs use the current standard payload schemas and `{owner:"isos",id:<data_type>,version:"1.0"}` port contracts. EOS forwards these validated payloads unchanged through the selected parts Dispatcher; the package plugin translates them to native or RoboCasa private wire fields. Noncamera observations use `observation`; camera output remains `frame`, and torso has no fabricated output. Versions through `0.2.7` retain their legacy declarations and adapter translation. The standard native arm omits an unenforced speed claim. Each package preset remains hardware-only; compose a parts Dispatcher with one selected command input for each actuator.

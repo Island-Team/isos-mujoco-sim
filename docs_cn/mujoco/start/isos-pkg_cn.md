@@ -3,19 +3,17 @@
 
 ## Ubuntu 22.04 构建
 
-在 Ubuntu 22.04 上构建，以 glibc 2.35 为基线；修改清单不能让较新系统的二进制兼容旧系统。打包器检查模拟器和适配器的 ELF 需求是否超过实测主机 glibc 版本。
+默认原生构建保持不变。在 Ubuntu 22.04、glibc 2.35 和 Python 3.11 或更新版本的环境中，选择可选的 `ubuntu22` CMake 预设。仅此配置检查主机构建基线及打包 ELF 的 glibc 需求，并拒绝交叉编译。该配置的开发和打包构建使用独立的 `.local/package-build-ubuntu22` 目录，默认构建保留原有目录。
 
 ```sh
 export MUJOCO_ROOT="$HOME/.local/opt/mujoco-3.3.1"
-cmake -S . -B build -DMUJOCO_ROOT="$MUJOCO_ROOT" \
-  -DPython3_EXECUTABLE="$(python3 -c 'import sys; print(sys.executable)')" \
-  -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel 4
-ctest --test-dir build --output-on-failure
-./build.sh --output "$PWD/data/test/ubuntu22-package/asset" --version 0.2.8
+cmake --preset ubuntu22 -DPython3_EXECUTABLE="$(python3 -c 'import sys; print(sys.executable)')"
+cmake --build --preset ubuntu22 --parallel 4
+ctest --preset ubuntu22
+MUJOCO_BUILD_PROFILE=ubuntu22 ./build.sh --output "$PWD/data/test/ubuntu22-package/profile-asset" --version 0.2.8
 ```
 
-请先激活 `python3` 为 3.11 或更新版本的环境，使用实际 MuJoCo 路径和空输出目录；所有测试通过后再打包。0.2.8 仍为候选版本；正式发布须通过[包契约](../interfaces/package_cn.md)要求的资格验证。
+请使用实际 MuJoCo 路径及空输出目录，测试通过后再打包。0.2.8 仍为候选版本，正式发布遵循[包契约](../interfaces/package_cn.md)。
 
 ## 当前 0.2.8 硬件候选
 

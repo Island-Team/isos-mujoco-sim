@@ -1,0 +1,21 @@
+{
+  "version": 3,
+  "cmakeMinimumRequired": {"major": 3, "minor": 22, "patch": 0},
+  "configurePresets": [
+    {
+      "name": "ubuntu22",
+      "displayName": "Ubuntu 22.04 package build",
+      "generator": "Unix Makefiles",
+      "binaryDir": "${sourceDir}/.local/package-build-ubuntu22",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "MUJOCO_BUILD_PROFILE": "ubuntu22",
+        "MUJOCO_ROOT": "$env{MUJOCO_ROOT}"
+      }
+    }
+  ],
+  "buildPresets": [{"name": "ubuntu22", "configurePreset": "ubuntu22"}],
+  "testPresets": [
+    {"name": "ubuntu22", "configurePreset": "ubuntu22", "output": {"outputOnFailure": true}}
+  ]
+}

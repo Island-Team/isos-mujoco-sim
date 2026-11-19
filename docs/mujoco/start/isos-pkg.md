@@ -3,19 +3,17 @@
 
 ## Ubuntu 22.04 builds
 
-Build on Ubuntu 22.04 for the glibc 2.35 baseline; editing the manifest cannot make a newer binary compatible. The builder checks the simulator and adapter ELF requirements against the measured host glibc version.
+The default native build is unchanged. Select the optional `ubuntu22` CMake preset on an Ubuntu 22.04 host with glibc 2.35 and Python 3.11 or newer. Only this profile checks the host baseline and validates the packaged ELF glibc requirements. Cross-compilation is rejected. Its development and package builds share an isolated `.local/package-build-ubuntu22` directory; default builds retain their original directories.
 
 ```sh
 export MUJOCO_ROOT="$HOME/.local/opt/mujoco-3.3.1"
-cmake -S . -B build -DMUJOCO_ROOT="$MUJOCO_ROOT" \
-  -DPython3_EXECUTABLE="$(python3 -c 'import sys; print(sys.executable)')" \
-  -DCMAKE_BUILD_TYPE=Release
-cmake --build build --parallel 4
-ctest --test-dir build --output-on-failure
-./build.sh --output "$PWD/data/test/ubuntu22-package/asset" --version 0.2.8
+cmake --preset ubuntu22 -DPython3_EXECUTABLE="$(python3 -c 'import sys; print(sys.executable)')"
+cmake --build --preset ubuntu22 --parallel 4
+ctest --preset ubuntu22
+MUJOCO_BUILD_PROFILE=ubuntu22 ./build.sh --output "$PWD/data/test/ubuntu22-package/profile-asset" --version 0.2.8
 ```
 
-Activate an environment where `python3` is 3.11 or newer. Use your actual MuJoCo path and an empty output directory; package only after all tests pass. Version 0.2.8 remains a candidate; publication requires the package qualification described in the [package contract](../interfaces/package.md).
+Use the actual MuJoCo path and an empty output directory; package only after tests pass. Version 0.2.8 remains a candidate. Publication follows the [package contract](../interfaces/package.md).
 
 ## Current 0.2.8 hardware candidate
 
