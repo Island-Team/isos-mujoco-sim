@@ -7,13 +7,15 @@ Build on Ubuntu 22.04 for the glibc 2.35 baseline; editing the manifest cannot m
 
 ```sh
 export MUJOCO_ROOT="$HOME/.local/opt/mujoco-3.3.1"
-cmake -S . -B build -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build -DMUJOCO_ROOT="$MUJOCO_ROOT" \
+  -DPython3_EXECUTABLE="$(python3 -c 'import sys; print(sys.executable)')" \
+  -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel 4
 ctest --test-dir build --output-on-failure
 ./build.sh --output "$PWD/data/test/ubuntu22-package/asset" --version 0.2.8
 ```
 
-Use your actual MuJoCo path and an empty output directory. Version 0.2.8 remains a candidate; publication requires the package qualification described in the [package contract](../interfaces/package.md).
+Activate an environment where `python3` is 3.11 or newer. Use your actual MuJoCo path and an empty output directory; package only after all tests pass. Version 0.2.8 remains a candidate; publication requires the package qualification described in the [package contract](../interfaces/package.md).
 
 ## Current 0.2.8 hardware candidate
 

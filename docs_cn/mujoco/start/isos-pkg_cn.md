@@ -7,13 +7,15 @@
 
 ```sh
 export MUJOCO_ROOT="$HOME/.local/opt/mujoco-3.3.1"
-cmake -S . -B build -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build -DMUJOCO_ROOT="$MUJOCO_ROOT" \
+  -DPython3_EXECUTABLE="$(python3 -c 'import sys; print(sys.executable)')" \
+  -DCMAKE_BUILD_TYPE=Release
 cmake --build build --parallel 4
 ctest --test-dir build --output-on-failure
 ./build.sh --output "$PWD/data/test/ubuntu22-package/asset" --version 0.2.8
 ```
 
-请使用实际 MuJoCo 路径及空输出目录。0.2.8 仍为候选版本；正式发布须通过[包契约](../interfaces/package_cn.md)要求的资格验证。
+请先激活 `python3` 为 3.11 或更新版本的环境，使用实际 MuJoCo 路径和空输出目录；所有测试通过后再打包。0.2.8 仍为候选版本；正式发布须通过[包契约](../interfaces/package_cn.md)要求的资格验证。
 
 ## 当前 0.2.8 硬件候选
 
