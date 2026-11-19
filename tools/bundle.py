@@ -54,6 +54,20 @@ def host_requirements() -> tuple[str, str]:
     return libc_version, values["VERSION_ID"]
 
 
+def inspect_glibc_symbols(binary: Path, baseline: str) -> None:
+    """Reject copied ELF files requiring a newer glibc than the declared host."""
+    result = subprocess.run(["readelf", "--version-info", str(binary)], check=True,
+                            capture_output=True, text=True)
+    versions = [tuple(map(int, value.split("."))) for value in
+                re.findall(r"\bGLIBC_(\d+(?:\.\d+)+)\b", result.stdout)]
+    if not versions:
+        raise ValueError(f"cannot determine glibc requirements: {binary}")
+    required = max(versions)
+    if required > tuple(map(int, baseline.split("."))):
+        version = ".".join(map(str, required))
+        raise ValueError(f"{binary.name} requires glibc {version}, above declared {baseline}")
+
+
 def inspect_installed_binary(binary: Path, mujoco_root: Path) -> list[str]:
     dynamic = subprocess.run(["readelf", "-d", str(binary)], check=True,
                              capture_output=True, text=True).stdout
@@ -146,6 +160,7 @@ def main() -> None:
         if not installed.is_file() or not os.access(installed, os.X_OK):
             parser.error("CMake installation did not produce bin/eos-mujoco-sim")
         try:
+            inspect_glibc_symbols(installed, libc_version)
             libraries = inspect_installed_binary(installed, mujoco_root)
         except ValueError as error:
             parser.error(str(error))
@@ -154,6 +169,7 @@ def main() -> None:
         if not installed_plugin.is_file():
             parser.error("CMake installation did not produce lib/libmujoco-eos-node.so")
         try:
+            inspect_glibc_symbols(installed_plugin, libc_version)
             plugin_libraries = inspect_installed_plugin(installed_plugin)
         except ValueError as error:
             parser.error(str(error))

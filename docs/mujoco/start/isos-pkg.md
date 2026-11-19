@@ -1,6 +1,20 @@
 # IsOS managed MuJoCo backend
 
 
+## Ubuntu 22.04 builds
+
+Build on Ubuntu 22.04 for the glibc 2.35 baseline; editing the manifest cannot make a newer binary compatible. The builder checks the simulator and adapter ELF requirements against the measured host glibc version.
+
+```sh
+export MUJOCO_ROOT="$HOME/.local/opt/mujoco-3.3.1"
+cmake -S . -B build -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel 4
+ctest --test-dir build --output-on-failure
+./build.sh --output "$PWD/data/test/ubuntu22-package/asset" --version 0.2.8
+```
+
+Use your actual MuJoCo path and an empty output directory. Version 0.2.8 remains a candidate; publication requires the package qualification described in the [package contract](../interfaces/package.md).
+
 ## Current 0.2.8 hardware candidate
 
 Build the unpublished `0.2.8` source candidate with `./build.sh --output <absolute-empty-directory> --version 0.2.8`. The schema `0.2.1` manifest contributes seven package-owned EOS hardware types, Native and RoboCasa node sets, and two IsOS-supervised runtime services. Hardware instances pin the package and select `mujoco-v2` through `isos_node_v2`; EOS admits actuator commands through Dispatcher. Each camera declares an image-class `frame` output at 30 Hz and selects a 30 Hz capture cadence in its adapter settings. See the [current package contract](../interfaces/package.md) and [camera interface](../interfaces/node/eos/hardware/camera.md). A source build or local qualification is not a published release.
