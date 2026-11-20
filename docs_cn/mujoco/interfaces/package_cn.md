@@ -198,7 +198,7 @@ IsOS 保留 P01 诊断结构 `{code,path,message,id,version,stage}` 和 HTTP 422
 
 当前相机宽高设置是 64–2048 px 的必填整数；预设显式提供 1280 × 720。由于服务交接要求已保存节点设置中存在实际值，类型不声明默认值。RoboCasa 任务和种子是软件包配置的必填字段。种子为无符号 32 位整数（0–4294967295），表单和 TOML 模板均使用 42；worker 在创建 Gym 前也拒绝越界种子。表单默认值不替代缺失的 TOML 值。
 
-`./build.sh --output ABSOLUTE_EMPTY_DIRECTORY` 选择当前源码候选版本；`--version 0.2.x` 可选择规范格式的后续未发布候选版本。两个构建入口均拒绝低于当前候选版本的历史版本以及已有本地发行标签的版本。已发布版本通过原始精确版本安装，不使用当前源码重新生成。远端标签和目录可用性仍以 IsOS 发布检查为准。
+`./build.sh --output ABSOLUTE_EMPTY_DIRECTORY` 选择当前源码候选版本；`--version 0.2.x` 可选择规范格式的后续未发布候选版本。两个构建入口均拒绝低于当前候选版本的历史版本，因为当前配置与接口不能重建这些历史发行包。本地发行标签不阻止显式选择的源码构建，包括干净 HEAD 变化后重新构建已登记的源码版本。这些构建仍是本地源码候选；IsOS 资格验证和发布检查负责未占用目录版本、已发布标签及发行工件的不可变性。
 
 运行 `python3 tests/nodes.py`、`python3 tests/build_env.py`、`python3 tests/config_modes.py`、`python3 tests/robocasaworker.py` 和 `python3 tests/bundle.py BUILD/eos-mujoco-sim MUJOCO_ROOT`，检查声明、调用方式、配置隔离、worker 失败与 Stop，以及当前归档迁移。归档检查验证配置和资源摘要、设置助手与可执行服务入口，随后检查原生采集、拒绝、Stop 和缺失 RoboCasa 解释器。完整资格验证仍需在干净源码上运行 `isos pkg check`，提供两个服务的图和部署本地软件包配置。
 

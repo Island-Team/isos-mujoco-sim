@@ -1,9 +1,7 @@
 """Declarative EOS node types and graph set shipped with the MuJoCo package."""
 
 import argparse
-from pathlib import Path
 import re
-import subprocess
 
 
 BACKEND = "eos.process.mujoco.simulator@v0.2"
@@ -12,18 +10,12 @@ PACKAGE_VERSION = "0.2.8"
 
 
 def candidate_version(value: str = "") -> str:
-  """Keep candidate builds separate from immutable historical package releases."""
+  """Validate source candidate versions; IsOS owns publication tag admission."""
   version = value or PACKAGE_VERSION
   if not re.fullmatch(r"0\.2\.(?:0|[1-9][0-9]*)", version):
     raise ValueError("version must be canonical 0.2.x")
   if tuple(map(int, version.split("."))) < tuple(map(int, PACKAGE_VERSION.split("."))):
-    raise ValueError(f"historical releases are immutable; choose {PACKAGE_VERSION} or later")
-  tag = subprocess.run(["git", "rev-parse", "--verify", "--quiet", f"refs/tags/v{version}"],
-                       cwd=Path(__file__).resolve().parents[1], capture_output=True, check=False)
-  if tag.returncode == 0:
-    raise ValueError(f"v{version} is already tagged; choose an unpublished version")
-  if tag.returncode != 1:
-    raise ValueError("cannot check package release tags")
+    raise ValueError(f"this source supports current interfaces; choose {PACKAGE_VERSION} or later")
   return version
 
 
