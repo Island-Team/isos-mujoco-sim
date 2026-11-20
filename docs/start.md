@@ -227,4 +227,3 @@ Each local run has a timestamped log in Git-ignored `logs/dev/`. `logs/dev/roboc
 | `--gui` fails on a headless host | Run with `--no-gui`; the benchmark and C++ tests do not require a desktop window. |
 
 The benchmark runs in the foreground and writes its result to the terminal and `logs/dev/robocasa/latest.log`. Native output is under `logs/dev/native/latest.log`; timestamped files preserve earlier runs. The viewer has a corresponding `*-viewer.log`. Local logs are ignored by Git. For a managed deployment, find the current IsOS run and its first ready or failure event before changing the graph; see [build and run](start.md).
-
