@@ -15,7 +15,16 @@ from types import ModuleType
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from robocasa_worker import Service, camera_dimension, camera_sizes_from_environment, create_hardware, response, serve  # noqa: E402
+from robocasa_worker import reset_seed, Service, camera_dimension, camera_sizes_from_environment, create_hardware, response, serve  # noqa: E402
+
+
+class ResetSeedTests(unittest.TestCase):
+    def test_unsigned_seed_boundaries(self):
+        for value in ("0", "42", "4294967295"):
+            self.assertEqual(reset_seed(value), int(value))
+        for value in ("-1", "4294967296", "1.5", "bad"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                reset_seed(value)
 
 
 class FakeHardware:

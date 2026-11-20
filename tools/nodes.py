@@ -1,9 +1,22 @@
 """Declarative EOS node types and graph set shipped with the MuJoCo package."""
 
+import argparse
+import re
+
 
 BACKEND = "eos.process.mujoco.simulator@v0.2"
 CAMERA = "eos.hardware.camera.device@v0.2"
 PACKAGE_VERSION = "0.2.8"
+
+
+def candidate_version(value: str = "") -> str:
+  """Validate source candidate versions; IsOS owns publication tag admission."""
+  version = value or PACKAGE_VERSION
+  if not re.fullmatch(r"0\.2\.(?:0|[1-9][0-9]*)", version):
+    raise ValueError("version must be canonical 0.2.x")
+  if tuple(map(int, version.split("."))) < tuple(map(int, PACKAGE_VERSION.split("."))):
+    raise ValueError(f"this source supports current interfaces; choose {PACKAGE_VERSION} or later")
+  return version
 
 
 def standard_hardware(version: str) -> bool:
@@ -193,9 +206,9 @@ def full_hardware_contributions(version: str) -> dict:
       definition["safety_adapter_type"] = safety
     if type_id == CAMERA and per_camera_size(version):
       definition["settings"] = [
-        {"name": name, "data_type": "positive_integer", "required": False,
+        {"name": name, "data_type": "positive_integer", "required": standard_hardware(version),
          "min": 64, "max": 2048, "unit": "px",
-         "description": f"RoboCasa camera {axis} in pixels; takes effect on the next Run"}
+         "description": f"Camera {axis} in pixels; takes effect on the next Run"}
         for name, axis in (("camera_width", "width"), ("camera_height", "height"))]
     definitions.append(definition)
   native = (
@@ -309,3 +322,13 @@ def full_hardware_contributions(version: str) -> dict:
     ],
     "node_sets": [preset("native", native), preset("robocasa", robocasa)],
   }
+
+
+if __name__ == "__main__":
+  parser = argparse.ArgumentParser(description="Select an unpublished package candidate version")
+  parser.add_argument("version", nargs="?", default="")
+  args = parser.parse_args()
+  try:
+    print(candidate_version(args.version))
+  except ValueError as error:
+    parser.error(str(error))

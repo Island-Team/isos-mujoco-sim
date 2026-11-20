@@ -14,7 +14,7 @@ import subprocess
 import tarfile
 import tempfile
 
-from nodes import PACKAGE_VERSION, contributions
+from nodes import PACKAGE_VERSION, candidate_version, contributions
 from catalog import descriptor_for_bundle
 
 
@@ -135,10 +135,10 @@ def main() -> None:
                         default=Path(os.environ["MUJOCO_ROOT"]) if os.environ.get("MUJOCO_ROOT") else None,
                         help="installed MuJoCo 3.3.1 root; defaults to MUJOCO_ROOT")
     args = parser.parse_args()
-    if args.version == "0.2.1":
-        parser.error("v0.2.1 is published; choose a new package version")
-    if not re.fullmatch(r"0\.2\.[0-9]+", args.version):
-        parser.error("version must be 0.2.x")
+    try:
+        args.version = candidate_version(args.version)
+    except ValueError as error:
+        parser.error(str(error))
     binary = args.build_dir / "eos-mujoco-sim"
     plugin = args.build_dir / "libmujoco-eos-node.so"
     if not plugin.is_file():
@@ -247,7 +247,7 @@ def main() -> None:
     ).stdout.strip()
     release = {
         "contract": "isos.package@v1",
-        "schema_version": "0.2.0" if args.version == "0.2.0" else "0.2.1",
+        "schema_version": "0.2.2",
         "id": PACKAGE_ID,
         "kind": "backend",
         "version": args.version,

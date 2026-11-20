@@ -48,3 +48,5 @@ The `data` value above is illustrative. The native preset advertises at most 30 
 ## Readiness and failure
 
 The verified instance binds `service_instance` and `device_id`; neither defaults to another camera. EOS checks service health before publishing `frame`. Native strict health includes a real camera render probe. Invalid dimensions, wrong encoding, a byte-count mismatch, unavailable EGL/JPEG, a missing RoboCasa image, or a service exit makes observation fail; the adapter does not emit a fabricated frame. A camera Stop quiesces callbacks and has no actuator stop request. See [runtime control](../../../control.md) for framing and service errors.
+
+The current 0.2.8 candidate explicitly requires both size settings, with no type defaults; presets provide both values. Missing settings reject before service launch.

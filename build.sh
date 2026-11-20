@@ -2,26 +2,29 @@
 set -euo pipefail
 
 usage() {
-  echo 'Usage: ./build.sh [--output <empty-absolute-directory> --version 0.2.x]' >&2
+  echo 'Usage: ./build.sh [--output <empty-absolute-directory> [--version 0.2.x]]' >&2
   exit 2
 }
 
-if [[ $# -ne 0 && ( $# -ne 4 || $1 != --output || $2 != /* || $3 != --version || ! $4 =~ ^0\.2\.[0-9]+$ ) ]]; then
-  usage
-fi
-if [[ $# -eq 4 && $4 == 0.2.1 ]]; then
-  echo 'v0.2.1 is published; choose a new package version' >&2
-  exit 2
-fi
-if [[ $# -eq 4 ]]; then
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+packaging=false
+version=
+if [[ $# -ne 0 ]]; then
+  packaging=true
+  [[ $# -eq 2 || $# -eq 4 ]] || usage
+  [[ $1 == --output && $2 == /* ]] || usage
   output=$2
+  if [[ $# -eq 4 ]]; then
+    [[ $3 == --version ]] || usage
+    version=$4
+  fi
+  version=$(python3 "$root/tools/nodes.py" "$version")
   if [[ -e $output && ! -d $output ]]; then usage; fi
   if [[ -d $output && -n $(find "$output" -mindepth 1 -maxdepth 1 -print -quit) ]]; then
     echo 'Output directory must be empty' >&2
     exit 2
   fi
 fi
-root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
 source "$root/tools/launcher.sh"
 profile=${MUJOCO_BUILD_PROFILE:-native}
 profile_args=(-DMUJOCO_BUILD_PROFILE=native)
@@ -33,7 +36,7 @@ case "$profile" in
     ;;
   *) echo "Unknown MUJOCO_BUILD_PROFILE: $profile" >&2; exit 2 ;;
 esac
-if [[ $# -eq 0 ]]; then
+if [[ $packaging == false ]]; then
   explicit_mujoco_root=${MUJOCO_ROOT-}
   load_launch_config
   if [[ -n $explicit_mujoco_root ]]; then MUJOCO_ROOT=$explicit_mujoco_root; fi
@@ -53,7 +56,7 @@ PYCONFIG
   fi
   : "${MUJOCO_ROOT:?Set MUJOCO_ROOT or [host].mujoco_root in config/package.toml to a MuJoCo 3.3.1 installation}"
 fi
-if [[ $# -eq 0 ]]; then
+if [[ $packaging == false ]]; then
   development_build="$root/build"
   if [[ $profile == ubuntu22 ]]; then development_build="$root/.local/package-build-ubuntu22"; fi
   cmake -S "$root" -B "$development_build" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Release "${profile_args[@]}"
@@ -105,7 +108,7 @@ cmake -S "$root" -B "$cache" -DMUJOCO_ROOT="$MUJOCO_ROOT" -DCMAKE_BUILD_TYPE=Rel
 cmake --build "$cache" --target eos-mujoco-sim mujoco-eos-node --parallel "${BUILD_JOBS:-4}"
 python3 "$root/tools/bundle.py" \
   --build-dir "$cache" --mujoco-root "$MUJOCO_ROOT" \
-  --output "$scratch/bundle" --version "$4"
+  --output "$scratch/bundle" --version "$version"
 archive=$(find "$scratch" -maxdepth 1 -type f -name '*.tar.gz' -print -quit)
 if [[ -z $archive ]]; then
   echo 'Bundle builder produced no archive' >&2
