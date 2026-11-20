@@ -10,7 +10,7 @@ import unittest
 
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
-from nodes import contributions  # noqa: E402
+from nodes import contributions, candidate_version, PACKAGE_VERSION  # noqa: E402
 
 
 def strings(value: object) -> list[str]:
@@ -24,6 +24,28 @@ def strings(value: object) -> list[str]:
 
 
 class NodeContributionTests(unittest.TestCase):
+  def test_candidate_version_rejects_historical_and_noncanonical_versions(self) -> None:
+    self.assertEqual(candidate_version(), PACKAGE_VERSION)
+    for value in ("0.2.0", "0.2.1", "0.2.7", "0.2.08", "0.3.0", "bad"):
+      with self.subTest(value=value), self.assertRaises(ValueError):
+        candidate_version(value)
+
+  def test_current_camera_sizes_are_explicitly_required(self) -> None:
+    contract = contributions()
+    camera = next(item for item in contract["node_types"] if item["id"] ==
+                  "eos.hardware.camera.device@v0.2")
+    self.assertTrue(all(field["required"] for field in camera["settings"]))
+    self.assertFalse(any(item.get("extensions") for item in contract["node_types"]))
+
+  def test_robocasa_config_requires_runtime_values_with_bounded_seed(self) -> None:
+    root = Path(__file__).resolve().parents[1]
+    descriptor = json.loads((root / "config/package-config.json").read_text())
+    section = next(item for item in descriptor["sections"] if item["id"] == "services.robocasa")
+    fields = {item["name"]: item for item in section["fields"]}
+    self.assertTrue(all(field["required"] for field in fields.values()))
+    self.assertEqual((fields["seed"]["min"], fields["seed"]["max"], fields["seed"]["default"]),
+                     (0, 4294967295, 42))
+
   def test_robocasa_setup_is_declared_and_packaged(self) -> None:
     root = Path(__file__).resolve().parents[1]
     descriptor = json.loads((root / "config/package-config.json").read_text())

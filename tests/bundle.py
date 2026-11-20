@@ -1,121 +1,83 @@
 #!/usr/bin/env python3
-"""Build a real candidate and check its descriptor, sidecar and archive pin."""
+"""Build and relocate the current hardware candidate through the real packager."""
 
 import hashlib
 import json
 import os
 from pathlib import Path
-import platform
 import subprocess
 import sys
 import tarfile
 import tempfile
+import tomllib
 import xml.etree.ElementTree as ET
 
-
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED = json.loads((ROOT / "tests/fixtures/scene_catalog/target-descriptor.json").read_text())
+sys.path.insert(0, str(ROOT / "tools"))
+from nodes import PACKAGE_VERSION, contributions  # noqa: E402
+
+
+def sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def main() -> None:
     binary = Path(sys.argv[1]).resolve()
     mujoco_root = Path(sys.argv[2]).resolve()
-    if binary.name != "eos-mujoco-sim" or not binary.is_file():
-        raise SystemExit("expected built eos-mujoco-sim executable")
-    with tempfile.TemporaryDirectory(prefix="mujoco-p02-bundle-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="mujoco-current-bundle-") as temporary:
         output = Path(temporary) / "bundle"
         subprocess.run([sys.executable, str(ROOT / "tools/bundle.py"),
                         "--build-dir", str(binary.parent), "--output", str(output),
-                        "--mujoco-root", str(mujoco_root), "--version", "0.2.0"],
-                       check=True, capture_output=True, text=True)
-        descriptor = json.loads((output / "backend-v2.json").read_text())
-        assert descriptor == EXPECTED
+                        "--mujoco-root", str(mujoco_root)], check=True)
         release = json.loads((output / "release.json").read_text())
-        assert (release["contract"], release["id"], release["version"],
-                release["schema_version"]) == (
-            "isos.package@v1", "island/mujoco-sim", "0.2.0", "0.2.0")
-        assert release["compatibility"] == {
-            "isos_min_inclusive": "0.2.3", "isos_max_exclusive": "0.3.0",
-            "required_owner_capabilities": [
-                {"owner": "isos", "capability": "package-process-v1"},
-                {"owner": "eos", "capability": "native-plugin-v1"}],
-        }
-        contributions = release["node_contributions"]
-        plugin = output / "lib/libmujoco-eos-node.so"
-        assert plugin.is_file()
-        plugin_digest = hashlib.sha256(plugin.read_bytes()).hexdigest()
-        assert release["adapters"] == [{"family": "mujoco-v2",
-                                       "library": "lib/libmujoco-eos-node.so",
-                                       "sha256": plugin_digest}]
-        assert contributions["libraries"] == [{"path": "lib/libmujoco-eos-node.so",
-                                               "sha256": plugin_digest}]
-        for node in contributions["node_sets"][0]["nodes"]:
-            adapter = node["profile"].get("adapter")
-            if adapter:
-                assert adapter["package"]["version"] == release["version"]
-        assert contributions["processes"] == [{
-            "node_type": "eos.process.mujoco.simulator@v0.2",
-            "entrypoint": "bin/eos-mujoco-sim",
-            "args": ["--managed-strict-socket", "--v2-socket", "${socket}",
-                     "--scene", "${resource.scene.path}"],
-            "lifecycle_adapter": "mujoco-v2",
-            "resources": [{"setting": "scene", "kind": "scene",
-                           "descriptor": "package-resources.json"}],
-            "host_inputs": [{"name": "MUJOCO_ROOT", "kind": "directory",
-                             "required": True}],
-        }]
-        assert {node["id"] for node in contributions["node_types"]} == {
-            "eos.process.mujoco.simulator@v0.2"}
-        assert [node["ref"] for node in contributions["node_sets"][0]["nodes"]] == ["simulator", "front"]
+        assert (release["contract"], release["schema_version"], release["id"], release["version"]) == (
+            "isos.package@v1", "0.2.2", "island/mujoco-sim", PACKAGE_VERSION)
+        expected = contributions()
+        expected["libraries"] = [{"path": "lib/libmujoco-eos-node.so",
+                                  "sha256": sha256(output / "lib/libmujoco-eos-node.so")}]
+        assert release["node_contributions"] == expected
         asset = release["assets"][0]
-        assert asset["libc"] == f"glibc>={platform.libc_ver()[1]}", asset
-        ubuntu = next(line.split("=", 1)[1].strip('"') for line in
-                      Path("/etc/os-release").read_text().splitlines()
-                      if line.startswith("VERSION_ID="))
-        assert asset["tested_ubuntu"] == [ubuntu], asset
-        assert "libmujoco.so.3.3.1" in asset["required_libraries"], asset
-        archive = output.parent / asset["name"]
+        archive = output.parent / Path(asset["url"]).name
         assert archive.stat().st_size == asset["size_bytes"]
-        assert hashlib.sha256(archive.read_bytes()).hexdigest() == asset["sha256"]
+        assert sha256(archive) == asset["sha256"]
+        for field in ("descriptor", "template"):
+            assert sha256(output / release["package_config"][field]) == release["package_config"][field + "_sha256"]
+        relocated = Path(temporary) / "relocated"
         with tarfile.open(archive, "r:gz") as tar:
-            members = {member.name for member in tar.getmembers()}
-            assert {"backend-v2.json", "package-resources.json", "bin/eos-mujoco-sim", "lib/libmujoco-eos-node.so", "assets/scene.xml",
-                    "assets/scenes/navigation/scene.xml"} <= members
-            assert "release.json" not in members
+            assert "release.json" not in tar.getnames()
             assert all(not member.name.startswith("/") and ".." not in Path(member.name).parts
                        and (member.isfile() or member.isdir()) for member in tar.getmembers())
-            resources = json.load(tar.extractfile("package-resources.json"))
-            assert (resources["contract"], resources["schema_version"]) == (
-                "isos.package-resources@v1", "0.1.0")
-            assert {entry["id"] for entry in resources["resources"]} == {
-                "pick-place", "navigation", "cam-0", "base-0", "arm-0"}
-            assert {entry["metadata"]["device_kind"] for entry in resources["resources"]
-                    if entry["kind"] == "device"} == {"camera", "base", "manipulator"}
-            for scene in descriptor["scenes"]:
-                scene_file = output / scene["path"]
-                references = [element.get("file") for element in ET.parse(scene_file).iter()
-                              if element.get("file")]
-                assert references, f"{scene['id']} has no referenced assets"
-                for reference in references:
-                    asset = (scene_file.parent / reference).resolve()
-                    assert asset.is_relative_to(output.resolve()), (scene["id"], reference)
-                    assert asset.is_file(), (scene["id"], reference)
-                    assert asset.relative_to(output).as_posix() in members, (scene["id"], reference)
-            relocated = Path(temporary) / "relocated"
             tar.extractall(relocated, filter="data")
-        environment = os.environ.copy()
-        environment["LD_LIBRARY_PATH"] = str(mujoco_root / "lib") + (
-            ":" + environment["LD_LIBRARY_PATH"] if environment.get("LD_LIBRARY_PATH") else ""
-        )
-        environment["MUJOCO_ROOT"] = str(mujoco_root)
-        dynamic = subprocess.run(["readelf", "-d", str(relocated / "bin/eos-mujoco-sim")],
-                                 check=True, capture_output=True, text=True).stdout
-        assert "RUNPATH" not in dynamic and "RPATH" not in dynamic, dynamic
-        subprocess.run([sys.executable, str(ROOT / "tests/strictsocket.py"),
-                        str(relocated / "bin/eos-mujoco-sim"),
-                        str(relocated / "assets/scene.xml")],
-                       check=True, env=environment, timeout=90)
-        print("P02 built bundle descriptor, contributions and archive pin: PASS")
+        for service in expected["runtime_services"]:
+            executable = relocated / service["entrypoint"]
+            assert executable.is_file() and os.access(executable, os.X_OK)
+        descriptor = json.loads((relocated / "config/package-config.json").read_text())
+        assert os.access(relocated / descriptor["setup"]["entrypoint"], os.X_OK)
+        for helper in ("robocasasource.py", "robocasaassets.py", "robocasa_worker.py"):
+            assert (relocated / "bin" / helper).is_file()
+        assert (relocated / "robocasa_core/hardware.py").is_file()
+        template = tomllib.loads((relocated / "config/package.toml").read_text())
+        assert template["package"]["id"] == release["id"]
+        resources = json.loads((relocated / "package-resources.json").read_text())
+        for resource in resources["resources"]:
+            if resource.get("path"):
+                scene = relocated / resource["path"]
+                assert sha256(scene) == resource["sha256"]
+                for element in ET.parse(scene).iter():
+                    if reference := element.get("file"):
+                        target = (scene.parent / reference).resolve()
+                        assert target.is_relative_to(relocated) and target.is_file()
+        environment = os.environ | {"LD_LIBRARY_PATH": str(mujoco_root / "lib")}
+        for scenario in ("strictsocket.py", "native_camera.py"):
+            subprocess.run([sys.executable, str(ROOT / "tests" / scenario),
+                            str(relocated / "bin/eos-mujoco-sim"), str(relocated / "assets/scene.xml")],
+                           check=True, env=environment, timeout=90)
+        # A missing interpreter must fail before importing any host Python modules.
+        result = subprocess.run([str(relocated / "bin/robocasa-worker"), "--socket", str(relocated / "worker.sock")],
+                                env=environment | {"ISOS_PACKAGE_PYTHON": "/missing/package-python"},
+                                capture_output=True, text=True)
+        assert result.returncode != 0 and "not executable" in result.stderr
+        print("current schema 0.2.2 archive, resources, config, helpers and relocated service: PASS")
 
 
 if __name__ == "__main__":

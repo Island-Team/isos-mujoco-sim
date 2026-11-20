@@ -39,13 +39,14 @@
     ]},
     {"id": "services.robocasa", "label": {"en": "RoboCasa service", "cn": "RoboCasa 服务"},
      "description": {"en": "Task and seed for RoboCasa robot nodes.", "cn": "RoboCasa 机器人节点使用的任务和种子。"}, "fields": [
-      {"name": "task", "type": "enum", "required": false, "default": "CloseFridge",
+      {"name": "task", "type": "enum", "required": true, "default": "CloseFridge",
        "label": {"en": "Task", "cn": "任务"},
        "description": {"en": "Locally verified RoboCasa Gym task.", "cn": "已在本地验证的 RoboCasa Gym 任务。"},
        "options": [
          {"value": "CloseFridge", "label": {"en": "Close fridge", "cn": "关闭冰箱"}}
        ]},
-      {"name": "seed", "type": "integer", "required": false,
+      {"name": "seed", "type": "integer", "required": true,
+       "min": 0, "max": 4294967295, "default": 42,
        "label": {"en": "Reset seed", "cn": "重置种子"},
        "description": {"en": "Deterministic episode seed.", "cn": "确定性回合种子。"}}
     ]}

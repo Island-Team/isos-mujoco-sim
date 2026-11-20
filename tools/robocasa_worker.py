@@ -74,6 +74,14 @@ def camera_sizes_from_environment() -> dict[str, tuple[int, int]]:
     return sizes
 
 
+def reset_seed(value: str) -> int:
+    """Gym's package seed is an unsigned 32-bit integer."""
+    seed = int(value)
+    if not 0 <= seed <= 4294967295:
+        raise ValueError("reset seed must be from 0 to 4294967295")
+    return seed
+
+
 def create_hardware(task: str, seed: int, assets: str, width: int, height: int):
     if not assets or not Path(assets).is_dir():
         raise ValueError("configured RoboCasa assets are unavailable")
@@ -290,7 +298,7 @@ def main() -> None:
     parser.add_argument("--socket", type=Path, required=True)
     args = parser.parse_args()
     task = os.environ.get("ISOS_ROBOCASA_TASK", "CloseFridge")
-    seed = int(os.environ.get("ISOS_ROBOCASA_SEED", "42"))
+    seed = reset_seed(os.environ.get("ISOS_ROBOCASA_SEED", "42"))
     assets = os.environ.get("ISOS_ROBOCASA_ASSETS", "")
     sizes = camera_sizes_from_environment()
     width = max((size[0] for size in sizes.values()), default=64)

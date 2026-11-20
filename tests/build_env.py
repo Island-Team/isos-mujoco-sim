@@ -21,7 +21,7 @@ with tempfile.TemporaryDirectory() as temporary:
         "MUJOCO_ROOT": str(selected),
         "CAPTURE": str(capture),
     }
-    for packaging in (False, True):
+    for packaging in (False, True, "default-version"):
         # Switch back from ubuntu22 to native and then an unset profile.
         for profile in ("ubuntu22", "native", None):
             env = environment.copy()
@@ -30,7 +30,9 @@ with tempfile.TemporaryDirectory() as temporary:
                 env["MUJOCO_BUILD_PROFILE"] = profile
             command = [str(ROOT / "build.sh")]
             if packaging:
-                command += ["--output", str(directory / "bundle"), "--version", "0.2.7"]
+                command += ["--output", str(directory / "bundle")]
+                if packaging is True:
+                    command += ["--version", "0.2.8"]
             result = subprocess.run(command, cwd=ROOT, env=env,
                                     capture_output=True, text=True, check=False)
             assert result.returncode == 9, result.stderr
@@ -43,4 +45,15 @@ with tempfile.TemporaryDirectory() as temporary:
                 ".local/package-build-ubuntu22" if profile == "ubuntu22" else
                 ".local/package-build" if packaging else "build")
             assert arguments[arguments.index("-B") + 1] == str(expected_build)
+    occupied = directory / "occupied"
+    occupied.mkdir()
+    (occupied / "keep").write_text("preserve")
+    for args in (["--output", "relative"], ["--output"],
+                 ["--output", str(occupied)],
+                 ["--output", str(directory / "old"), "--version", "0.2.7"],
+                 ["--output", str(directory / "bad"), "--version", "0.2.08"]):
+        result = subprocess.run([str(ROOT / "build.sh"), *args], cwd=ROOT,
+                                env=environment, capture_output=True, text=True)
+        assert result.returncode == 2, (args, result.stderr)
+    assert (occupied / "keep").read_text() == "preserve"
 print("MuJoCo root precedence, profile switching, and build directory isolation: PASS")

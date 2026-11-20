@@ -191,3 +191,15 @@ IsOS 保留 P01 诊断结构 `{code,path,message,id,version,stage}` 和 HTTP 422
 ## 当前 v0.2.x 二进制适配器
 
 发布 schema `0.2.0` 声明 `adapters:[{"family":"mujoco-v2","library":"lib/libmujoco-eos-node.so","sha256":"<64 位小写十六进制>"}]`，且 `node_contributions.libraries` 使用相同路径和摘要。此动态库实现带版本的 `isos_node_v1` C ABI，不是第二个模拟器进程。EOS 将已准入的图实例传给 `create`，管理回调生命周期和模拟器子进程，并在卸载前调用 `stop`。插件 Stop 成功意味着观测回调已静止；EOS 仍须在终止子进程前通过严格 companion 套接字另行证明执行器停止。首个 `sim-hardware` 节点集只含模拟器进程与 JPEG 相机。底盘和机械臂仍作为目录资源列出，但在 EOS 证明执行器 Stop 前不得用于托管执行。
+
+### 当前包装器准入（schema 0.2.2）
+
+尚未发布的 0.2.8 候选包使用清单 schema `0.2.2`。软件包保持仅硬件范围：七种 EOS 硬件类型、两组设备预设和两个由 IsOS 监督的服务。图 `0.3.1`、端口载荷与 `isos_node_v2` 独立且不变。软件包没有需要文本编辑器或 Unicode 长度约束的节点字符串设置，因此不声明节点扩展，也不要求 `node-extensions-v1`。场景、任务和种子仍是共享服务配置。
+
+当前相机宽高设置是 64–2048 px 的必填整数；预设显式提供 1280 × 720。由于服务交接要求已保存节点设置中存在实际值，类型不声明默认值。RoboCasa 任务和种子是软件包配置的必填字段。种子为无符号 32 位整数（0–4294967295），表单和 TOML 模板均使用 42；worker 在创建 Gym 前也拒绝越界种子。表单默认值不替代缺失的 TOML 值。
+
+`./build.sh --output ABSOLUTE_EMPTY_DIRECTORY` 选择当前源码候选版本；`--version 0.2.x` 可选择规范格式的后续未发布候选版本。两个构建入口均拒绝低于当前候选版本的历史版本以及已有本地发行标签的版本。已发布版本通过原始精确版本安装，不使用当前源码重新生成。远端标签和目录可用性仍以 IsOS 发布检查为准。
+
+运行 `python3 tests/nodes.py`、`python3 tests/build_env.py`、`python3 tests/config_modes.py`、`python3 tests/robocasaworker.py` 和 `python3 tests/bundle.py BUILD/eos-mujoco-sim MUJOCO_ROOT`，检查声明、调用方式、配置隔离、worker 失败与 Stop，以及当前归档迁移。归档检查验证配置和资源摘要、设置助手与可执行服务入口，随后检查原生采集、拒绝、Stop 和缺失 RoboCasa 解释器。完整资格验证仍需在干净源码上运行 `isos pkg check`，提供两个服务的图和部署本地软件包配置。
+
+2026-11-20，`./build.sh --output <empty-directory>` 成功构建 schema 0.2.2 候选包；使用 `cmake --build .local/package-build --parallel 4` 和 `ctest --test-dir .local/package-build --output-on-failure -j4`，全部 35 项 CTest 通过。上述专项检查通过，`python3 tests/eos_contracts.py --eos-profile <isos-p>/target/debug/aether-profile --plugin .local/package-build/libmujoco-eos-node.so --output <evidence>/eos-contracts` 通过 21 项 EOS 图准入和九项载荷 schema 检查。EOS 检查使用所有者本地图投影。完整日志位于忽略目录 `data/test/20261120-package-contract/`。这些结果不构成图 0.3.1 软件包发行资格证明。

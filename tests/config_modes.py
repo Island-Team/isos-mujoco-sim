@@ -15,6 +15,7 @@ FILES = (
     "build.sh",
     "tools/launcher.sh",
     "tools/config.py",
+    "tools/nodes.py",
     "config/dev.toml",
     "config/package.toml",
     "config/benchmarks/robocasa.toml",
@@ -26,6 +27,7 @@ class ConfigModeTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
+        subprocess.run(["git", "init", "--quiet", str(self.root)], check=True)
         for name in FILES:
             target = self.root / name
             target.parent.mkdir(parents=True, exist_ok=True)
@@ -68,7 +70,7 @@ class ConfigModeTests(unittest.TestCase):
         environment.pop("MUJOCO_ROOT", None)
         environment.update(PATH=f"{fake_bin}{os.pathsep}{environment['PATH']}", CAPTURE=str(capture))
         result = subprocess.run(
-            [str(self.root / "build.sh"), "--output", str(self.root / "bundle"), "--version", "0.2.7"],
+            [str(self.root / "build.sh"), "--output", str(self.root / "bundle"), "--version", "0.2.8"],
             cwd=self.root,
             env=environment,
             capture_output=True,

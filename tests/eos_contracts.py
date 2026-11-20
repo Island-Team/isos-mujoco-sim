@@ -112,6 +112,18 @@ def main():
                 write_json(path, graph)
                 invoke(name, ["validate", "--file", str(path)])
                 count += 1
+                for value in (None, 63, 2049, "1280"):
+                    invalid = copy.deepcopy(graph)
+                    cameras = invalid["cores"]["eos"]["layers"]["hardware"]["groups"]["camera"]["nodes"]
+                    settings = next(iter(cameras.values()))["settings"]
+                    if value is None:
+                        settings.pop("camera_width")
+                    else:
+                        settings["camera_width"] = value
+                    invalid_path = output / f"{name}-camera-{value}.json"
+                    write_json(invalid_path, invalid)
+                    invoke(f"{name}-camera-{value}", ["validate", "--file", str(invalid_path)], False)
+                    count += 1
                 bad = copy.deepcopy(graph)
                 dispatcher = bad["cores"]["eos"]["layers"]["dispatcher"]["groups"]["parts"]["nodes"]["control"]
                 dispatcher["settings"]["parts"].pop()
