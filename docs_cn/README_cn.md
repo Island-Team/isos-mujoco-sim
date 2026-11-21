@@ -13,4 +13,4 @@
 | [核心实现](core/README_cn.md) | Native、RoboCasa、适配器和评测 |
 | [开发](development_cn.md) | 扩展、验证与贡献 |
 | [变更记录](changelog_cn.md) | 历史发布与验收证据 |
-| [共享规范](conventions.v1.4.0_cn.md) | 团队编码与文档规范 |
+| [共享规范](conventions.v2.0.0_cn.md) | 团队编码与文档规范 |

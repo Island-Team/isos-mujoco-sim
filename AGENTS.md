@@ -1,6 +1,6 @@
 # Repository agent guide
 
-Follow the [IslandTeam conventions](docs/conventions.v1.4.0.md) and the [MuJoCo documentation index](docs/README.md). This file is a short map of the current repository, not a second source for product contracts. Before changing behavior, read `docs/start.md`, `docs/package.md`, the owning `docs/node/<core>/<layer>/<group>.md`, and relevant `docs/core/` pages. The owning interface defines public behavior. Keep English `docs/` and Chinese `docs_cn/` pages, examples, and links aligned.
+Follow the [IslandTeam conventions](docs/conventions.v2.0.0.md) and the [MuJoCo documentation index](docs/README.md). This file is a short map of the current repository, not a second source for product contracts. Before changing behavior, read `docs/start.md`, `docs/package.md`, the owning `docs/node/<core>/<layer>/<group>.md`, and relevant `docs/core/` pages. The owning interface defines public behavior. Keep English `docs/` and Chinese `docs_cn/` pages, examples, and links aligned.
 
 ## Current source map
 
@@ -14,7 +14,7 @@ Create a focused `<change-type>/<topic>` branch from the confirmed integration t
 
 Run checks relevant to the changed boundary using the repository's CMake and C++20 patterns, root formatting rules, Python boundary tests, CTest, and selected-service IsOS package checks. Test success, rejection, service failure, and Stop at the real boundary where applicable. Save complete output under ignored `data/test/<run-id>/` and record reproducible commands and outcomes in the owning guide.
 
-Follow the [shared publication workflow](docs/conventions.v1.4.0.md#change-and-release-workflow) for review, testing branch, PR, merge, and cleanup. Confirm the integration target before publishing. A local build or package check is evidence for a candidate, not publication of a release; the [package contract](docs/package.md) owns qualification and release rules.
+Follow the [shared publication workflow](docs/conventions.v2.0.0.md#change-and-release-workflow) for review, testing branch, PR, merge, and cleanup. Confirm the integration target before publishing. A local build or package check is evidence for a candidate, not publication of a release; the [package contract](docs/package.md) owns qualification and release rules.
 
 ## Documentation boundaries
 

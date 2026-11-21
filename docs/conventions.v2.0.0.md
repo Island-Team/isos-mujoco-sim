@@ -1,6 +1,8 @@
 # Coding and Documentation Conventions
 
-**Convention version: 1.4.0**
+**Convention version: 2.0.0**
+
+Version 2.0.0 replaces the required numbered PR-title suffix with an unnumbered title; related issue and task references belong in the PR description.
 
 This shared convention applies to source code, interfaces, and hand-written documentation. A component guide may add stricter rules for its own scope. Public wire identities and compatibility rules remain governed by their owning contracts. The convention version is independent of product, package, and wire versions. Change English and Chinese copies together. Compatible additions increment the minor version; corrections increment the patch version; removal or replacement of an established rule increments the major version.
 
@@ -84,7 +86,7 @@ Emit sanitized structured events with stable codes and bounded fields. Include t
 
 1. Confirm the integration target and dependency order before starting. Create a focused `refactor(v2)/<topic>` branch from the current target. Use a separate Git worktree for parallel slices; record which branch and worktree own each slice. Do not develop directly on the integration branch or edit another slice's worktree.
 2. Keep commits focused with `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, or `chore:` prefixes. Update code, contracts, tests, and English/Chinese documentation together when behavior changes. Review the diff, run the applicable checks, and save complete output under ignored `data/test/<run-id>/` before publishing.
-3. Push the topic branch and open a PR against the confirmed integration target. Describe scope, behavior, verification, documentation, and dependencies. End the PR title with `(#<index>)`, using the actual PR number, for example `refactor(v2): unify owner startup (#123)`. Update the title after creation if the number was not known when opening it.
+3. Push the topic branch and open a PR against the confirmed integration target. Describe scope, behavior, verification, documentation, and dependencies. Use `<type>: <description>` for the PR title, for example `docs: clarify publication rules`. Do not append the PR number; GitHub displays it automatically. Put related issue or task references in the PR description.
 4. While related PRs remain open, maintain one checkoutable testing branch containing all current feature slices in dependency order. Update it whenever a topic branch changes, push it, and leave it checked out when handing work to a tester. State its name and exact test commands. This testing branch does not replace the focused PR branches or merge approval.
 5. Before merging, fetch the target and rebase the topic branch onto its latest commit. Resolve conflicts in the topic worktree, rerun checks affected by the resolution, and verify the diff and PR target. When a published branch must be rewritten, use `--force-with-lease` only after confirming no one else has added commits; coordinate first on a shared branch. Re-request review when the rebased diff materially changes. Refresh the testing branch after the rebase.
 6. Obtain independent review and resolve findings. Squash merge reviewed PRs in dependency order. Confirm the PR is merged, the remote target contains its squash commit, and the local target is updated before starting dependent work from it. Do not merge an open PR merely because its branch was rebased.

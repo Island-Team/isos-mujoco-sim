@@ -13,4 +13,4 @@ This repository supplies IsOS-managed MuJoCo and RoboCasa hardware services. IsO
 | [Core](core/README.md) | Native, RoboCasa, adapter, and benchmark |
 | [Development](development.md) | Extension, verification, and contribution |
 | [Changelog](changelog.md) | Historical releases and qualification evidence |
-| [Conventions](conventions.v1.4.0.md) | Shared code and documentation rules |
+| [Conventions](conventions.v2.0.0.md) | Shared code and documentation rules |
