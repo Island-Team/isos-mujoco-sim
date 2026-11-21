@@ -6,7 +6,7 @@ Use C++20 and the root CMake and formatting configuration. `src/mujoco/` owns th
 
 ## Development workflow
 
-Create a focused `fix/`, `test/`, `docs/`, or `refactor/` branch from the confirmed integration target and preserve unrelated changes. Before changing public behavior, update its owning node, package, or core contract, implementation, fixtures, examples, and both languages together. Follow [shared publication rules](conventions.v1.4.0.md#change-and-release-workflow) for independent review, PR, testing branch, merge, and cleanup; local checks do not publish a package.
+Create a focused `fix/`, `test/`, `docs/`, or `refactor/` branch from the confirmed integration target and preserve unrelated changes. Before changing public behavior, update its owning node, package, or core contract, implementation, fixtures, examples, and both languages together. Follow [shared publication rules](conventions.v2.0.0.md#change-and-release-workflow) for independent review, PR, testing branch, merge, and cleanup; local checks do not publish a package.
 
 For a new device or scene, define the problem and supported capability, then update `tools/catalog.py` or `tools/nodes.py`, service handling, adapter translation, package configuration, and the owning reference. Preserve EOS Dispatcher admission and Stop proof, exact version identities, isolated native/RoboCasa devices, and evaluator privacy. Check build, installed package, runtime, and test callers before removing a component.
 
