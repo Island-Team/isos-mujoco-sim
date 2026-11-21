@@ -1,0 +1,28 @@
+{
+  "python.terminal.activateEnvironment": false,
+  "python.terminal.activateEnvInCurrentTerminal": false,
+  "python-envs.terminal.autoActivationType": "off",
+  "python.analysis.languageServerMode": "light",
+  "python.analysis.diagnosticMode": "openFilesOnly",
+  "python.analysis.typeCheckingMode": "off",
+  "python.analysis.ignore": [
+    "**"
+  ],
+  "python.analysis.indexing": false,
+  "python.analysis.autoImportCompletions": false,
+  "python.analysis.useLibraryCodeForTypes": false,
+  "ruff.lint.enable": false,
+  "rust-analyzer.checkOnSave": false,
+  "rust-analyzer.diagnostics.enable": false,
+  "rust-analyzer.cargo.buildScripts.enable": false,
+  "rust-analyzer.procMacro.enable": false,
+  "rust-analyzer.cachePriming.enable": false,
+  "files.watcherExclude": {
+    "**/target/**": true,
+    "**/build/**": true,
+    "**/node_modules/**": true,
+    "**/.venv/**": true,
+    "**/__pycache__/**": true,
+    "**/data/**": true
+  }
+}

@@ -31,3 +31,8 @@ __pycache__/
 !.env.example
 
 # Imported models and their licenses under assets/menagerie remain tracked.
+
+# Shared VS Code defaults; personal workspace metadata stays local.
+!/.vscode/
+/.vscode/*
+!/.vscode/settings.json
