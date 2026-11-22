@@ -71,6 +71,8 @@ def build_graph(manifest: dict, instance: str = "primary", camera_size=(256, 256
             control["description"] += "; " + part.get("mapping", "") + "; output/actuator bounds=" + json.dumps(
                 {key: part[key] for key in ("output_min", "output_max", "actuator_min", "actuator_max") if key in part},
                 separators=(",", ":"))
+            if "output_units" in part:
+                control["description"] += "; physical output units=" + json.dumps(part["output_units"], separators=(",", ":"))
             controls.append(control)
         nodes[path] = profile
     nodes[dispatcher] = {"node_type": "eos.dispatcher.parts.control@v0.2", "inputs": {},

@@ -140,6 +140,13 @@ class BodyTests(unittest.TestCase):
                       arms=("left", "right"))
     body = BodyHardware(env)
     self.assertEqual({part.id for part in body.catalog}, {"robocasa/arm/left-arm", "robocasa/arm/right-arm"})
+    for part in body.manifest()["parts"]:
+      self.assertIn("axis-angle vector", part["semantics"])
+      self.assertIn("not absolute position or Euler", part["semantics"])
+      self.assertEqual(part["output_units"], {"translation": "m", "rotation": "rad"})
+    for control in build_graph(body.manifest())["capabilities"]["controls"]:
+      self.assertIn("axis-angle vector", control["description"])
+      self.assertIn('"translation":"m"', control["description"])
     body._observation = {}
     body.control("robocasa/arm/left-arm", {"position": [.1, 0, 0], "rotation": [0, 0, 0]})
     np.testing.assert_allclose(body._pending["robocasa/arm/left-arm"], [.1, 0, 0, 0, 0, 0], atol=1e-7)

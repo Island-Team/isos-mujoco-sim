@@ -70,6 +70,9 @@ class BodyHardware:
         if frame not in ("base", "world"):
           self.warnings.append(f"{name}: unknown Cartesian command frame; control omitted")
           continue
+        meta["semantics"] += ("; Cartesian translation increments and rotation axis-angle vector "
+                               "scaled components, not absolute position or Euler angle targets")
+        meta["output_units"] = {"translation": "m", "rotation": "rad"}
         meta.update({"axes": ["dx", "dy", "dz", "droll", "dpitch", "dyaw"],
                      "frame": "robot_base" if frame == "base" else "world",
                      "positive_directions": {"dx": "+X", "dy": "+Y", "dz": "+Z",
