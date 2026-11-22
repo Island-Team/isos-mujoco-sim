@@ -47,6 +47,7 @@ class BodyHardware:
     self._closed = False
     self._faulted = False
     self._done = False
+    self._measurement_time_ns = 0
     self._mode = -1.0
     self._controlled_qpos = sorted({int(index) for controller in self._controller.part_controllers.values()
                                     for index in controller.qpos_index})
@@ -165,6 +166,19 @@ class BodyHardware:
   def catalog(self) -> tuple[Node, ...]:
     return tuple(part.node for part in self._parts.values())
 
+  measurement_clock = "simulation"
+
+  @property
+  def measurement_time_ns(self) -> int:
+    self._ready()
+    return self._measurement_time_ns
+
+  def _record_measurement_time(self) -> None:
+    seconds = float(self._env.sim.data.time)
+    if not math.isfinite(seconds) or seconds < 0:
+      raise HardwareError("simulation measurement clock unavailable")
+    self._measurement_time_ns = round(seconds * 1_000_000_000)
+
   @property
   def command_step_ms(self) -> float:
     value = self._env.control_timestep * 1000
@@ -198,6 +212,7 @@ class BodyHardware:
     self._mode = -1.0
     self._env.rng = np.random.default_rng(seed)
     self._observation = self._filter(self._env.reset())
+    self._record_measurement_time()
     self._faulted = self._done = False
     return self.observe()
 
@@ -331,6 +346,7 @@ class BodyHardware:
     try:
       raw, _, done, _ = self._env.step(action)
       self._observation = self._filter(raw)
+      self._record_measurement_time()
       self._done = bool(done)
     except Exception:
       self._faulted = True
@@ -345,7 +361,7 @@ class BodyHardware:
     # Prove actual commanded joints settled, including control-only torso joints.
     prior = np.asarray(self._env.sim.data.qpos)[self._controlled_qpos].copy()
     stable = 0
-    for _ in range(12):
+    for _ in range(24):
       self.step()
       current = np.asarray(self._env.sim.data.qpos)[self._controlled_qpos].copy()
       stable = stable + 1 if np.allclose(current, prior, rtol=0, atol=1e-4) else 0

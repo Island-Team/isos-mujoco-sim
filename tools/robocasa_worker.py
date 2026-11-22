@@ -116,9 +116,15 @@ class Service:
         self.faulted = False
         self.commands: dict[str, dict[str, Any]] = {}
         self.sequence = 0
-        self.measurement_time_ns = time.monotonic_ns()
+        self._record_measurement()
         self.manifest_digest = hardware.manifest_digest() if hasattr(hardware, "manifest_digest") else ""
         self.generation_id = os.environ.get("ISOS_PACKAGE_GENERATION", "")
+
+    def _record_measurement(self) -> None:
+        self.measurement_clock = getattr(self.hardware, "measurement_clock", "monotonic")
+        self.measurement_time_ns = getattr(self.hardware, "measurement_time_ns", time.monotonic_ns())
+        if self.measurement_clock not in ("simulation", "monotonic", "system") or type(self.measurement_time_ns) is not int or self.measurement_time_ns < 0:
+            raise ValueError("invalid hardware measurement clock")
 
     def dispatch(self, request: dict[str, Any]) -> dict[str, Any]:
         op = request.get("op")
@@ -161,13 +167,13 @@ class Service:
                         image = cv2.resize(image, requested, interpolation=cv2.INTER_AREA)
                         height, width, channels = image.shape
                     return {"generation_id": self.generation_id, "sequence": self.sequence,
-                            "timestamp_ns": self.measurement_time_ns, "node": node,
+                            "timestamp_ns": self.measurement_time_ns, "clock": self.measurement_clock, "node": node,
                             "width_px": width, "height_px": height,
                             "_binary": image.tobytes()}
                 values = {key: observation[key].tolist() for key in keys}
                 channels = self.hardware.channels(node) if hasattr(self.hardware, "channels") and node.split("/")[1] in ("torso", "gripper") else None
                 return {"generation_id": self.generation_id, "sequence": self.sequence,
-                        "timestamp_ns": self.measurement_time_ns, "node": node, "values": values,
+                        "timestamp_ns": self.measurement_time_ns, "clock": self.measurement_clock, "node": node, "values": values,
                         **({"channels": channels} if channels is not None else {})}
             if op == "command":
                 if self.stopped or self.faulted:
@@ -219,7 +225,7 @@ class Service:
                     self.faulted = True
                     raise
                 self.sequence += 1
-                self.measurement_time_ns = time.monotonic_ns()
+                self._record_measurement()
                 result = {"accepted": True, "sequence": self.sequence,
                           "generation_id": self.generation_id}
                 self.commands[command_id] = {"fingerprint": fingerprint, "result": result}

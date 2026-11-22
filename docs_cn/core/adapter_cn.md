@@ -233,7 +233,7 @@ IsOS 使用已验证的场景和私有套接字启动所选服务，EOS 对每�
 
 RoboCasa 工作进程的私有 `observe` 回复在元数据中携带 `width_px` 和 `height_px`，套接字负载恰好包含 `width_px × height_px × 3` 字节的 RGB8 数据。元数据仍限制为 64 KiB，负载限制为 12 MiB。状态观测继续使用 JSON `values` 回复。插件在发送图中的类型化帧前验证准确尺寸和字节数。
 
-RoboCasa 预设选择三路相机、移动底盘、右臂、右夹爪和躯干。托管原始环境使用 `BodyHardware` 发现，绕过上游固定 Gym 字段转换器；支持的控制器和忽略策略见[全身发现](robocasa_cn.md)。Python 仍在 IsOS 子进程内，禁止字节码写入。观测时间戳保留最近成功 reset/step 的主机 `monotonic` 采样时间。底盘位姿为世界坐标；机械臂采用真实控制器的 base/world 坐标系，site 四元数为 `xyzw`。夹爪和躯干回复实测 `channels:[{name,value,unit}]`，移动关节为 `m`、转动关节为 `rad`；保留 JSON `values` 用于适配器转换。Stop 清空待执行运动与模式，至多执行 12 个中性步，要求受控机器人关节位置连续两步变化不超过 `1e-4`。选定执行器共享缓存证明，失败或不稳定保持 `unknown`。硬件边界不暴露基准奖励或成功真值。
+RoboCasa 预设选择三路相机、移动底盘、右臂、右夹爪和躯干。托管原始环境使用 `BodyHardware` 发现，绕过上游固定 Gym 字段转换器；支持的控制器和忽略策略见[全身发现](robocasa_cn.md)。Python 仍在 IsOS 子进程内，禁止字节码写入。观测时间戳保留最近成功 reset/step 的 `simulation` 时钟（`sim.data.time` 纳秒）；暂停世界保留测量时间，交付时间/接收新鲜度另行处理。没有 clock 的旧私有回复仍按 `monotonic` 解码。底盘位姿为世界坐标；机械臂采用真实控制器的 base/world 坐标系，site 四元数为 `xyzw`。夹爪和躯干回复实测 `channels:[{name,value,unit}]`，移动关节为 `m`、转动关节为 `rad`；保留 JSON `values` 用于适配器转换。Stop 清空待执行运动与模式，至多执行 24 个中性步，要求受控机器人关节位置连续两步变化不超过 `1e-4`。选定执行器共享缓存证明，失败或不稳定保持 `unknown`。硬件边界不暴露基准奖励或成功真值。
 
 私有只读 `manifest` 返回真实机器人/控制器/部件元数据、缩放、关节轴/类型、完整观测可用性与有界忽略警告。`health.manifest_digest` 为规范 JSON（键排序、紧凑分隔）SHA-256；生成适配器通过 `robot_manifest_digest` 固定，readiness 拒绝不同元数据。选定相机集合参与摘要，改变后须重新生成。OSC 的 `droll/dpitch/dyaw` 是缩放后的轴角向量分量，不是绝对欧拉角目标；manifest 和生成控制说明明确物理输出米/弧度。每个 worker 代际至多保留 4096 个唯一动作身份；容量满后在动作前拒绝新身份，已有相同重试保持幂等。
 

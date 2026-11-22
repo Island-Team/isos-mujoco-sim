@@ -301,7 +301,12 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
     set(sample, "sequence",
         node->kind == "camera" ? static_cast<double>(node->frame_sequence + 1)
                                : std::round(sequence->number_value()));
-    set(sample, "clock", "monotonic");
+    const auto measurement_clock =
+        field(reply, "clock") ? string_field(reply, "clock") : "monotonic";
+    if (measurement_clock != "monotonic" && measurement_clock != "simulation" &&
+        measurement_clock != "system")
+      return -1;
+    set(sample, "clock", measurement_clock);
     set(sample, "frame_id",
         !string_field(node->profile, "frame_id").empty() ? string_field(node->profile, "frame_id")
         : node->kind == "base"                           ? "world"

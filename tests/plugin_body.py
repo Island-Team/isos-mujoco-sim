@@ -12,7 +12,7 @@ import threading
 from plugin import Api, Host, EMIT, LOG, buffer, read_exact
 
 
-def run_case(api, host, emitted, channels, *, match=True, valid=True):
+def run_case(api, host, emitted, channels, *, match=True, valid=True, clock=None):
     with tempfile.TemporaryDirectory() as directory:
         path = str(Path(directory) / "worker.sock")
         with socket.socket(socket.AF_UNIX) as listener:
@@ -32,6 +32,8 @@ def run_case(api, host, emitted, channels, *, match=True, valid=True):
                         if operation == "observe":
                             reply.update(sequence=2, timestamp_ns=123,
                                          values={"joint_positions": [.4]}, channels=channels)
+                        if operation == "observe" and clock is not None:
+                            reply["clock"] = clock
                         data = json.dumps(reply).encode()
                         connection.sendall(struct.pack("<II", len(data), 0) + data)
             worker = threading.Thread(target=serve, daemon=True)
@@ -50,7 +52,7 @@ def run_case(api, host, emitted, channels, *, match=True, valid=True):
                 if valid:
                     assert emitted[-1] == {"port": "observation", "payload": {
                         "sample": {"source_time_ns": 123, "sequence": 2,
-                                   "clock": "monotonic", "frame_id": "joint_local"},
+                                   "clock": clock or "monotonic", "frame_id": "joint_local"},
                         "channels": channels}}
             api.destroy(handle)
             worker.join(3)
@@ -73,6 +75,8 @@ def main():
     channels = [{"name": "lift", "value": .4, "unit": "m"},
                 {"name": "rotation", "value": .1, "unit": "rad"}]
     run_case(api, host, emitted, channels)
+    run_case(api, host, emitted, channels, clock="simulation")
+    run_case(api, host, emitted, channels, clock="invalid", valid=False)
     run_case(api, host, emitted, channels, match=False)
     run_case(api, host, emitted, channels * 2, valid=False)
     run_case(api, host, emitted, [{"name": "lift", "value": .4, "unit": "guess"}], valid=False)

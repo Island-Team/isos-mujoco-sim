@@ -52,6 +52,7 @@ def build_graph(manifest: dict, instance: str = "primary", camera_size=(256, 256
         if not part["can_observe"]:
             profile.pop("observation", None)
         if part["can_observe"]:
+            profile["adapter"]["settings"]["frequency_hz"] = 10.0 if role != "camera" else 30.0
             members.append({"id": part["id"], "node": path, "port": "frame" if role == "camera" else "observation",
                             "type_id": {"arm": "pose_state@v0.2", "base": "pose_state@v0.2",
                               "gripper": "gripper_state@v0.2", "torso": "joint_channels@v0.1",

@@ -175,6 +175,19 @@ class WorkerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             Service(hardware, {}).dispatch({"op": "observe", "node": "robocasa/camera/agentview-left"})
 
+    def test_paused_hardware_preserves_simulation_measurement_time(self):
+        hardware = FakeHardware()
+        hardware.measurement_clock = "simulation"
+        hardware.measurement_time_ns = 50_000_000
+        hardware.observe = lambda: {"base_position": type("Vector", (), {"tolist": lambda self: [0, 0, 0]})(),
+                                    "base_rotation": type("Vector", (), {"tolist": lambda self: [0, 0, 0, 1]})()}
+        service = Service(hardware)
+        with patch("robocasa_worker.time.monotonic_ns", return_value=99_000_000_000):
+            result = service.dispatch({"op": "observe", "node": "robocasa/base/mobile-base"})
+        self.assertEqual(result["clock"], "simulation")
+        self.assertEqual(result["timestamp_ns"], 50_000_000)
+        self.assertEqual(hardware.steps, 0)
+
     def test_camera_dimensions_and_robot_reach_raw_environment(self):
         calls = []
         env_module = ModuleType("robocasa.utils.env_utils")

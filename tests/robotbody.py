@@ -41,7 +41,7 @@ class Environment:
                               action_limits=(np.full(offset, -1), np.full(offset, 1)))
     self.robots = [SimpleNamespace(arms=arms, robot_model=SimpleNamespace(naming_prefix="robot0_"),
                                   composite_controller=self.cc)]
-    self.sim = SimpleNamespace(model=Model(), data=SimpleNamespace(qpos=np.linspace(.1, 1.6, 16)))
+    self.sim = SimpleNamespace(model=Model(), data=SimpleNamespace(qpos=np.linspace(.1, 1.6, 16), time=0.0))
     self.raw = {"robot0_gripper_qpos": np.array([.1, .2]), "robot0_base_pos": np.zeros(3),
                 "robot0_base_quat": np.array([0, 0, 0, 1.0])}
     self.actions = []
@@ -52,6 +52,7 @@ class Environment:
 
   def step(self, action):
     self.actions.append(action)
+    self.sim.data.time += self.control_timestep
     return self.raw, 0, False, {}
 
   def close(self):
@@ -76,6 +77,14 @@ class BodyTests(unittest.TestCase):
     self.assertEqual(len(graph["capabilities"]["controls"]), 2)
     torso = next(item for item in graph["members"] if item["id"] == "robocasa/torso/torso")
     self.assertEqual(torso["type_id"], "joint_channels@v0.1")
+    for member in graph["members"]:
+      settings = graph["nodes"][member["node"]]["adapter"]["settings"]
+      self.assertEqual(settings["frequency_hz"], 10.0)
+    self.assertEqual(body.measurement_clock, "simulation")
+    self.assertEqual(body.measurement_time_ns, 100_000_000)
+    env.sim.data.time += 100  # No measurement occurred: cached sample time stays put.
+    body.status("robocasa/torso/torso")
+    self.assertEqual(body.measurement_time_ns, 100_000_000)
 
   def test_missing_optional_observation_does_not_discard_other_parts(self):
     env = Environment({"base": controller(3, name="JOINT_VELOCITY", _class=MobileBaseJointVelocityController,
@@ -150,6 +159,20 @@ class BodyTests(unittest.TestCase):
     body._observation = {}
     body.control("robocasa/arm/left-arm", {"position": [.1, 0, 0], "rotation": [0, 0, 0]})
     np.testing.assert_allclose(body._pending["robocasa/arm/left-arm"], [.1, 0, 0, 0, 0, 0], atol=1e-7)
+
+  def test_idle_stop_allows_initial_transient_without_weakening_proof(self):
+    env = Environment({"torso": controller(1)})
+    original = env.step
+    def settling(action):
+      if len(env.actions) < 13:
+        env.sim.data.qpos[0] += .001
+      return original(action)
+    env.step = settling
+    body = BodyHardware(env)
+    body.reset(42)
+    self.assertTrue(body.stop_motion())
+    self.assertEqual(len(env.actions), 15)
+    self.assertLessEqual(len(env.actions), 24)
 
   def test_invalid_control_and_stop_are_fenced(self):
     body = BodyHardware(Environment({"torso": controller(1)}))
