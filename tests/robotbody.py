@@ -62,7 +62,7 @@ class Environment:
 
 
 class BodyTests(unittest.TestCase):
-  def test_free_camera_restores_every_shared_camera_field_on_render_failure(self):
+  def test_free_camera_restores_every_shared_camera_field_after_success_or_failure(self):
     env = Environment({"torso": controller(1)})
     class Camera(SimpleNamespace):
       def __init__(self):
@@ -78,16 +78,22 @@ class BodyTests(unittest.TestCase):
     def render(**kwargs):
       self.assertEqual(kwargs["camera_name"], None)
       self.assertEqual(camera.type, 0)
-      raise RuntimeError("render failed")
+      if fail:
+        raise RuntimeError("render failed")
+      return np.zeros((720, 1280, 3), dtype=np.uint8)
     env.sim.render = render
     body = BodyHardware(env, {"robocasa/camera/free": (1280, 720)})
-    with patch.dict(sys.modules, {"mujoco": SimpleNamespace(MjvCamera=Camera, mjv_defaultFreeCamera=defaults)}):
-      with self.assertRaisesRegex(RuntimeError, "render failed"):
-        body._filter({})
-    expected = Camera()
-    for field in ("type", "fixedcamid", "trackbodyid", "orthographic", "distance", "azimuth", "elevation"):
-      self.assertEqual(getattr(camera, field), getattr(expected, field))
-    np.testing.assert_array_equal(camera.lookat, expected.lookat)
+    for fail in (True, False):
+      with self.subTest(fail=fail), patch.dict(sys.modules, {"mujoco": SimpleNamespace(MjvCamera=Camera, mjv_defaultFreeCamera=defaults)}):
+        if fail:
+          with self.assertRaisesRegex(RuntimeError, "render failed"):
+            body._filter({})
+        else:
+          body._filter({})
+      expected = Camera()
+      for field in ("type", "fixedcamid", "trackbodyid", "orthographic", "distance", "azimuth", "elevation"):
+        self.assertEqual(getattr(camera, field), getattr(expected, field))
+      np.testing.assert_array_equal(camera.lookat, expected.lookat)
 
   def test_camera_roles_defaults_and_tuning_do_not_change_control_manifest(self):
     env = Environment({"torso": controller(1)})
