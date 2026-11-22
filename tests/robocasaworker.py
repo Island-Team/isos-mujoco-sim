@@ -142,7 +142,8 @@ class WorkerTests(unittest.TestCase):
                 camera_sizes_from_environment()
 
     def test_per_camera_handoff_and_resize(self):
-        sizes = {"robocasa/camera/agentview-left": {"camera_width": 256, "camera_height": 192},
+        sizes = {"robocasa/camera/agentview-left": {"camera_width": 256, "camera_height": 192,
+                                                     "jpeg_quality": 25, "capture_frequency_hz": 10},
                  "robocasa/camera/agentview-right": {"camera_width": 128, "camera_height": 96},
                  "robocasa/camera/eye-in-hand": {"camera_width": 64, "camera_height": 64}}
         with patch.dict("os.environ", {"ISOS_ROBOCASA_CAMERA_SIZES": json.dumps(sizes)}, clear=True):

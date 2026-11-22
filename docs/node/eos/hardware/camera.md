@@ -3,11 +3,12 @@
 
 [Interface index](../../README.md) · [Design](../../../core/adapter.md) · [Runtime control](../../../core/adapter.md) · [中文](../../../../docs_cn/node/eos/hardware/camera_cn.md)
 
-`eos.hardware.camera.device@v0.2` is a read-only camera node. The native preset offers one JPEG view of the MuJoCo scene; the current RoboCasa preset offers three JPEG views of the PandaOmron robot. Select a preset to choose the actual camera devices. The type advertises both `jpeg` and `rgb8`; each instance advertises only the encoding it supplies.
+`eos.hardware.camera.device@v0.2` is a read-only camera node. The native preset offers one free spectator JPEG view of the MuJoCo scene; the current RoboCasa preset offers a separate free spectator view and three agent JPEG views of the PandaOmron robot. Select a preset to choose the actual camera devices. The type advertises both `jpeg` and `rgb8`; each instance advertises only the encoding it supplies.
 
 | Preset / node ref | Device ID | Frame |
 | --- | --- | --- |
-| `native/front` | `cam-0` | JPEG image from the selected `pick-place` or `navigation` scene |
+| `native/front` | `cam-0` | Free spectator JPEG image from the selected native scene |
+| `robocasa/free` | `robocasa/camera/free` | Independent MuJoCo free spectator camera for the UI |
 | `robocasa/left` | `robocasa/camera/agentview-left` | JPEG agent view |
 | `robocasa/right` | `robocasa/camera/agentview-right` | JPEG agent view |
 | `robocasa/wrist` | `robocasa/camera/eye-in-hand` | JPEG eye-in-hand view |
@@ -15,13 +16,13 @@
 <a id="port-and-frame"></a>
 ### Port and frame
 
-`cam-0` is the stable device ID of the native renderer shared by the two native scenes, rather than a camera name inferred from RoboCasa. Native MuJoCo captures and JPEG-encodes that render; the separate RoboCasa Gym worker supplies raw RGB8 arrays from three named cameras. The adapter chooses the service and exact device before decoding a frame, so a native scene or camera failure cannot silently select a RoboCasa camera or change another node's encoding.
+`cam-0` is the stable device ID of the native renderer shared by the two native scenes, rather than a camera name inferred from RoboCasa. Native MuJoCo captures and JPEG-encodes that render; the separate RoboCasa Gym worker supplies raw RGB8 arrays from three named agent cameras and an independent free camera. The adapter chooses the service and exact device before decoding a frame, so a native scene or camera failure cannot silently select a RoboCasa camera or change another node's encoding.
 
-There is no command input. EOS requests an observation and the adapter emits `frame: image_frame@v0.2` as an in-process event. The frame payload has `width_px`, `height_px`, `encoding`, base64 `data`, and a `sample` with `source_time_ns`, `sequence`, `clock`, and `frame_id`. The adapter assigns `sample.sequence` per camera instance, beginning at 1 and increasing after each accepted frame publication. It is independent of the simulator command/state sequence, so repeated captures of cached scene pixels still have distinct delivery sequences; a new node instance starts a new sequence. This counter does not prove that scene contents changed. Native `encoding:"jpeg"` uses the simulation clock; RoboCasa `encoding:"jpeg"` uses the host monotonic clock. The separate worker passes RGB8 data to the adapter, which JPEG-encodes it before emitting the node frame. Its configured width and height are each 64–2048 px. Native dimensions come from the selected camera render. A frame includes no task text, reward, or success truth.
+There is no command input. EOS requests an observation and the adapter emits `frame: image_frame@v0.2` as an in-process event. The frame payload has `width_px`, `height_px`, `encoding`, base64 `data`, and a `sample` with `source_time_ns`, `sequence`, `clock`, and `frame_id`. The adapter assigns `sample.sequence` per camera instance, beginning at 1 and increasing after each accepted frame publication. It is independent of the simulator command/state sequence, so repeated captures of cached scene pixels still have distinct delivery sequences; a new node instance starts a new sequence. This counter does not prove that scene contents changed. Native `encoding:"jpeg"` uses the simulation clock; RoboCasa `encoding:"jpeg"` uses the simulation clock of the cached measurement. The separate worker passes RGB8 data to the adapter, which JPEG-encodes it before emitting the node frame. Its configured width and height are each 64–2048 px. Native dimensions come from the selected camera render. A frame includes no task text, reward, or success truth.
 
-In package 0.2.5 and later, each camera node sets `settings.camera_width` and `settings.camera_height` to integer pixel counts from 64 to 2048. Both presets use 1280 × 720. IsOS passes selected native `cam-0` settings to the simulator at Run; its EGL viewport and JPEG encoder use those exact dimensions. The three RoboCasa cameras may choose different output sizes; their settings reach the separate Gym worker. Direct simulator runs without IsOS settings use the scene offscreen dimensions.
+In package 0.2.5 and later, each camera node sets `settings.camera_width` and `settings.camera_height` to integer pixel counts from 64 to 2048. Both presets use 1280 × 720. IsOS passes selected native `cam-0` settings to the simulator at Run; its EGL viewport and JPEG encoder use those exact dimensions. The four RoboCasa cameras may choose different output sizes; their settings reach the separate Gym worker. Direct simulator runs without IsOS settings use the scene offscreen dimensions.
 
-The registered `frame` output declares image data class and a 30 Hz expected source rate. Each preset camera sets `node.adapter.settings.frequency_hz` to 30 Hz so EOS schedules capture into the source pool. The actual frame rate can be lower when the service or rendering is slow.
+The registered `frame` output declares image data class and a 30 Hz expected source rate. Each current camera declares user-adjustable `settings.capture_frequency_hz` (default 30 Hz) so EOS schedules capture into the source pool. The actual frame rate can be lower when the service or rendering is slow.
 
 For the native camera, `python3 tests/vision_rate.py <build>/eos-mujoco-sim <absolute-scene.xml>` measures 31 distinct 1280 × 720 JPEG captures through the strict service socket and reports wall-clock throughput and request latency. This isolated source probe does not measure EOS, IsOS, or browser delivery. The RoboCasa worker returns its cached observation until the scene advances; repeated reads do not establish fresh-frame throughput.
 
@@ -56,4 +57,15 @@ The verified instance binds `service_instance` and `device_id`; neither defaults
 
 All ports use the `in_process` carrier. Adapter settings `service_instance` and `device_id` are required strings and must match the verified package and selected device; neither defaults to another service. Camera sizes, cadence, and limits are defined above; actuator limits come from the selected registered profile. Missing settings, unknown types, or an unavailable service block admission or readiness.
 
-The current 0.2.8 candidate explicitly requires both size settings, with no type defaults; presets provide both values. Missing settings reject before service launch.
+The current 0.2.8 candidate declares these node settings; the preset values come from the same declaration defaults. Width and height remain explicit required service inputs in saved profiles. No shared package setting overrides a camera node.
+
+| Setting | Default | Bounds | Effect |
+| --- | --- | --- | --- |
+| `camera_width` | 1280 | integer 64–2048 px | Render width on next Run |
+| `camera_height` | 720 | integer 64–2048 px | Render height on next Run |
+| `jpeg_quality` | 80 | integer 1–100 | JPEG bandwidth/quality on next Run |
+| `capture_frequency_hz` | 30 | integer 1–60 Hz | EOS sampling cadence on next Run; source ceilings still apply |
+
+The free view uses MuJoCo `mjCAMERA_FREE`, independent of every fixed agent camera. Discovery exports `view_role:"spectator"` for it and `view_role:"agent"` for agent cameras. The composed robot graph sends only the spectator view to human Vision and stores agent views in Vision pools for model observations. Camera rendering settings do not enter the robot capability manifest digest, so tuning resolution or quality does not change actuator identity. Selecting a different camera device set still changes the manifest. Interactive free-camera motion remains a separate target.
+
+Advanced node field `observation.max_payload_bytes` defaults to 4 MiB per current camera. Operators may adjust it alongside quality/resolution and downstream pool budgets; the adapter honors the EOS-injected output bound and rejects an oversized encoded frame before emitting it. The registered payload descriptor remains a supported ceiling rather than a per-node allocation.

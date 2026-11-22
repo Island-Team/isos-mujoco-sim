@@ -24,7 +24,7 @@ from typing import Any
 MAX_REQUEST = 65536
 CAMERA_NODES = frozenset((
     "robocasa/camera/agentview-left", "robocasa/camera/agentview-right",
-    "robocasa/camera/eye-in-hand"))
+    "robocasa/camera/eye-in-hand", "robocasa/camera/free"))
 
 
 def read_exact(stream: socket.socket, count: int) -> bytes:
@@ -67,7 +67,8 @@ def camera_sizes_from_environment() -> dict[str, tuple[int, int]]:
     for device, settings in values.items():
         if not device.startswith("robocasa/camera/"):
             continue
-        if not isinstance(settings, dict) or set(settings) != {"camera_width", "camera_height"}:
+        if (not isinstance(settings, dict) or not {"camera_width", "camera_height"} <= set(settings)
+                or set(settings) - {"camera_width", "camera_height", "jpeg_quality", "capture_frequency_hz"}):
             raise ValueError("camera node requires width and height")
         width, height = settings["camera_width"], settings["camera_height"]
         if type(width) is not int or type(height) is not int:

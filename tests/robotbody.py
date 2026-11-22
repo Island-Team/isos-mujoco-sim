@@ -1,5 +1,7 @@
 """Discovery and safety cases independent of optional upstream robot assets."""
 from types import SimpleNamespace
+from unittest.mock import patch
+import sys
 import unittest
 
 import numpy as np
@@ -60,6 +62,57 @@ class Environment:
 
 
 class BodyTests(unittest.TestCase):
+  def test_free_camera_restores_every_shared_camera_field_after_success_or_failure(self):
+    env = Environment({"torso": controller(1)})
+    class Camera(SimpleNamespace):
+      def __init__(self):
+        super().__init__(type=1, fixedcamid=2, trackbodyid=3, orthographic=1,
+                         distance=4.0, azimuth=5.0, elevation=6.0, lookat=np.array([7., 8., 9.]))
+    camera = Camera()
+    env.sim._render_context_offscreen = SimpleNamespace(cam=camera)
+    env.sim.model._model = object()
+    def defaults(model, target):
+      for name in ("type", "fixedcamid", "trackbodyid", "orthographic", "distance", "azimuth", "elevation"):
+        setattr(target, name, 0)
+      target.lookat[:] = 0
+    def render(**kwargs):
+      self.assertEqual(kwargs["camera_name"], None)
+      self.assertEqual(camera.type, 0)
+      if fail:
+        raise RuntimeError("render failed")
+      return np.zeros((720, 1280, 3), dtype=np.uint8)
+    env.sim.render = render
+    body = BodyHardware(env, {"robocasa/camera/free": (1280, 720)})
+    for fail in (True, False):
+      with self.subTest(fail=fail), patch.dict(sys.modules, {"mujoco": SimpleNamespace(MjvCamera=Camera, mjv_defaultFreeCamera=defaults)}):
+        if fail:
+          with self.assertRaisesRegex(RuntimeError, "render failed"):
+            body._filter({})
+        else:
+          body._filter({})
+      expected = Camera()
+      for field in ("type", "fixedcamid", "trackbodyid", "orthographic", "distance", "azimuth", "elevation"):
+        self.assertEqual(getattr(camera, field), getattr(expected, field))
+      np.testing.assert_array_equal(camera.lookat, expected.lookat)
+
+  def test_camera_roles_defaults_and_tuning_do_not_change_control_manifest(self):
+    env = Environment({"torso": controller(1)})
+    env.sim.model.camera_names = ("robot0_agentview_left",)
+    sizes = {"robocasa/camera/agentview-left": (1280, 720), "robocasa/camera/free": (1280, 720)}
+    body = BodyHardware(env, sizes)
+    roles = {part.node.id: part.metadata.get("view_role") for part in body._parts.values()
+             if part.node.group == "camera"}
+    self.assertEqual(roles, {"robocasa/camera/agentview-left": "agent",
+                             "robocasa/camera/free": "spectator"})
+    digest = body.manifest_digest()
+    body._camera_sizes = dict.fromkeys(sizes, (640, 360))
+    self.assertEqual(body.manifest_digest(), digest)
+    graph = build_graph(body.manifest())
+    for profile in graph["nodes"].values():
+      if profile["node_type"] == "eos.hardware.camera.device@v0.2":
+        self.assertEqual(profile["settings"], {"camera_width": 1280, "camera_height": 720,
+                         "jpeg_quality": 80, "capture_frequency_hz": 30.0})
+
   def test_optional_parts_and_real_torso_channels(self):
     env = Environment({"torso": controller(1), "right_gripper": controller(2, 1)})
     body = BodyHardware(env)

@@ -229,3 +229,5 @@ isos pkg configure island/mujoco-sim@0.2.8 --service robocasa
 RoboCasa 基准在前台运行，结果输出到终端。原生启动器将日志写到选定的运行目录。对于受管理部署，修改图之前先找到当前 IsOS 运行及其首条就绪或失败事件；参见[构建与运行](start_cn.md)。
 
 0.2.8 候选配置需要 `[services.robocasa].robot = "PandaOmron"`（或已安装的其他兼容模型），并使用[全身发现准备工具](core/robocasa_cn.md)重新生成硬件/控制片段。旧录制运行器仍专用于 PandaOmron。
+
+托管机器人图：在相机节点设置中调整分辨率（默认 1280 × 720）、JPEG 质量和采样频率。只将独立自由相机接到人类 Vision；agent 相机接到 Vision pool 供模型读取。详见 [相机接口](node/eos/hardware/camera_cn.md)。

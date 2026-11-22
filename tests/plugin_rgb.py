@@ -14,7 +14,7 @@ import threading
 from plugin import Api, Host, EMIT, LOG, buffer, read_exact
 
 
-def run_case(api, host, emitted, width, height, binary, expected, announced_size=None):
+def run_case(api, host, emitted, width, height, binary, expected, announced_size=None, quality=80, max_output_bytes=20 * 1024 * 1024):
     device = "robocasa/camera/agentview-right"
     with tempfile.TemporaryDirectory() as directory:
         path = str(Path(directory) / "worker.sock")
@@ -47,8 +47,9 @@ def run_case(api, host, emitted, width, height, binary, expected, announced_size
                                 pass
             worker = threading.Thread(target=serve, daemon=True)
             worker.start()
-            config, size = buffer({"instance": {"node": {
+            config, size = buffer({"instance": {"max_output_bytes": max_output_bytes, "node": {
                 "node_type": "eos.hardware.camera.device@v0.2",
+                "settings": {"jpeg_quality": quality},
                 "adapter": {"settings": {"socket_path": path, "device_id": device,
                                           "service_instance": "robocasa"}}}}})
             handle = ctypes.c_void_p()
@@ -72,6 +73,7 @@ def run_case(api, host, emitted, width, height, binary, expected, announced_size
             api.destroy(handle)
             worker.join(3)
             assert not worker.is_alive()
+            return jpeg if expected else None
 
 
 def main():
@@ -88,6 +90,10 @@ def main():
         del level, data, length
     host = Host(1, ctypes.sizeof(Host), None, emit, log)
     frame = b"\x7f" * (256 * 192 * 3)
+    low_quality = run_case(api, host, emitted, 256, 192, frame, True, quality=25)
+    high_quality = run_case(api, host, emitted, 256, 192, frame, True, quality=95)
+    assert low_quality != high_quality, "node JPEG quality must alter encoded bytes"
+    run_case(api, host, emitted, 256, 192, frame, False, max_output_bytes=100)
     run_case(api, host, emitted, 256, 192, frame, True)
     run_case(api, host, emitted, 2048, 2048, b"\x7f" * (2048 * 2048 * 3), True)
     run_case(api, host, emitted, 256, 192, frame[:-1], False)

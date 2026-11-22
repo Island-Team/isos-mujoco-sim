@@ -36,6 +36,8 @@ struct isos_node_handle {
   std::string generation_id;
   std::string service_instance;
   std::string manifest_digest;
+  int jpeg_quality = 80;
+  std::size_t max_output_bytes = 20 * 1024 * 1024;
   bool legacy_contract = false;
   Struct profile;
   bool started = false;
@@ -45,8 +47,8 @@ struct isos_node_handle {
 };
 
 namespace {
-std::vector<unsigned char> encode_jpeg(const std::vector<unsigned char>& rgb, int width,
-                                       int height) {
+std::vector<unsigned char> encode_jpeg(const std::vector<unsigned char>& rgb, int width, int height,
+                                       int quality) {
   jpeg_compress_struct jpeg{};
   jpeg_error_mgr error{};
   jpeg.err = jpeg_std_error(&error);
@@ -59,7 +61,7 @@ std::vector<unsigned char> encode_jpeg(const std::vector<unsigned char>& rgb, in
   jpeg.input_components = 3;
   jpeg.in_color_space = JCS_RGB;
   jpeg_set_defaults(&jpeg);
-  jpeg_set_quality(&jpeg, 80, TRUE);
+  jpeg_set_quality(&jpeg, quality, TRUE);
   jpeg_start_compress(&jpeg, TRUE);
   while (jpeg.next_scanline < jpeg.image_height) {
     JSAMPROW row =
@@ -221,6 +223,7 @@ int32_t create_impl(const std::uint8_t* config, std::size_t length, const isos_n
   if (!parse(config, length, &document)) return -1;
   const Struct* instance = object_field(document, "instance");
   if (!instance) instance = &document;
+  const Value* output_limit = field(*instance, "max_output_bytes");
   const Struct* profile = object_field(*instance, "node");
   if (profile) instance = profile;
   const Struct* adapter = object_field(*instance, "adapter");
@@ -229,6 +232,15 @@ int32_t create_impl(const std::uint8_t* config, std::size_t length, const isos_n
   if (!settings) return -1;
   auto node = std::make_unique<isos_node_handle>();
   node->host = host;
+  if (output_limit) {
+    if (output_limit->kind_case() != Value::kNumberValue ||
+        !std::isfinite(output_limit->number_value()) || output_limit->number_value() < 1 ||
+        std::trunc(output_limit->number_value()) != output_limit->number_value() ||
+        output_limit->number_value() > 9007199254740991.0)
+      return -1;
+    node->max_output_bytes =
+        std::min(node->max_output_bytes, static_cast<std::size_t>(output_limit->number_value()));
+  }
   node->profile = *instance;
   if (const auto* package = object_field(*instance, "package")) {
     const auto version = string_field(*package, "version");
@@ -248,6 +260,18 @@ int32_t create_impl(const std::uint8_t* config, std::size_t length, const isos_n
   if (type == "eos.hardware.base.normalized_axes@v0.2") node->kind = "base";
   if (type == "eos.hardware.manipulator.normalized_cartesian@v0.2") node->kind = "manipulator";
   if (type == "eos.hardware.torso.normalized_axes@v0.2") node->kind = "torso";
+  if (node->kind == "camera") {
+    if (const auto* values = object_field(*instance, "settings")) {
+      if (const auto* quality = field(*values, "jpeg_quality")) {
+        if (quality->kind_case() != Value::kNumberValue ||
+            !std::isfinite(quality->number_value()) || quality->number_value() < 1 ||
+            quality->number_value() > 100 ||
+            std::trunc(quality->number_value()) != quality->number_value())
+          return -1;
+        node->jpeg_quality = static_cast<int>(quality->number_value());
+      }
+    }
+  }
   node->run_id = string_field(document, "run_id");
   node->revision = string_field(document, "revision");
   node->generation_id = string_field(document, "generation_id");
@@ -386,7 +410,7 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
       const int width = static_cast<int>(width_number);
       const int height = static_cast<int>(height_number);
       if (binary.size() != static_cast<std::size_t>(width) * height * 3) return -1;
-      const auto jpeg = encode_jpeg(binary, width, height);
+      const auto jpeg = encode_jpeg(binary, width, height, node->jpeg_quality);
       if (jpeg.empty() || jpeg.size() > 8 * 1024 * 1024) return -1;
       std::string encoded;
       google::protobuf::Base64Escape(
@@ -399,7 +423,7 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
       return -1;
     std::string json;
     if (!google::protobuf::util::MessageToJsonString(envelope, &json).ok() ||
-        json.size() > 20 * 1024 * 1024)
+        json.size() > node->max_output_bytes)
       return -1;
     const auto emitted = node->host->emit(
         node->host->context, reinterpret_cast<const std::uint8_t*>(json.data()), json.size());
@@ -508,7 +532,7 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
   }
   std::string json;
   if (!google::protobuf::util::MessageToJsonString(envelope, &json).ok() ||
-      json.size() > 20 * 1024 * 1024)
+      json.size() > node->max_output_bytes)
     return -1;
   const auto emitted = node->host->emit(
       node->host->context, reinterpret_cast<const std::uint8_t*>(json.data()), json.size());
