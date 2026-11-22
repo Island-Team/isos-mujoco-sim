@@ -61,7 +61,7 @@
 
 ## 当前 0.2.8 相机节点设置
 
-所有相机节点声明可调设置：`camera_width` 默认 1280、`camera_height` 默认 720（均为 64–2048 px 整数），`jpeg_quality` 默认 80（1–100 整数），`capture_frequency_hz` 默认 30（1–60 Hz，实际速率仍受源上限约束）。预设使用同一声明默认值；修改节点后 Apply 并重新 Run 生效。宽高仍是保存配置中必须显式提供的服务输入。共享包配置不会覆盖单个相机。
+所有相机节点声明可调设置：`camera_width` 默认 1280、`camera_height` 默认 720（均为 64–2048 px 整数），`jpeg_quality` 默认 80（1–100 整数），`capture_frequency_hz` 默认 30（1–60 Hz 整数，实际速率仍受源上限约束）。预设使用同一声明默认值；修改节点后 Apply 并重新 Run 生效。宽高仍是保存配置中必须显式提供的服务输入。共享包配置不会覆盖单个相机。
 
 原生 `cam-0` 使用 MuJoCo 自由旁观视角。RoboCasa 新增独立的 `robocasa/camera/free`，使用真实 `mjCAMERA_FREE`，不是重命名 agent 相机。发现结果以 `view_role:"spectator"` 标记自由相机，以 `view_role:"agent"` 标记其余三个相机。机器人组合图只将自由相机送入人类 Vision 页面；agent 相机经 Vision pool 供模型读取。调整尺寸、质量、采样频率不会改变执行器能力清单摘要；改变选中相机设备集合仍改变清单。交互移动自由相机仍是单独的目标。RoboCasa JPEG 使用缓存测量的 simulation 时钟。
 

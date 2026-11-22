@@ -64,7 +64,7 @@ The current 0.2.8 candidate declares these node settings; the preset values come
 | `camera_width` | 1280 | integer 64–2048 px | Render width on next Run |
 | `camera_height` | 720 | integer 64–2048 px | Render height on next Run |
 | `jpeg_quality` | 80 | integer 1–100 | JPEG bandwidth/quality on next Run |
-| `capture_frequency_hz` | 30 | number 1–60 Hz | EOS sampling cadence on next Run; source ceilings still apply |
+| `capture_frequency_hz` | 30 | integer 1–60 Hz | EOS sampling cadence on next Run; source ceilings still apply |
 
 The free view uses MuJoCo `mjCAMERA_FREE`, independent of every fixed agent camera. Discovery exports `view_role:"spectator"` for it and `view_role:"agent"` for agent cameras. The composed robot graph sends only the spectator view to human Vision and stores agent views in Vision pools for model observations. Camera rendering settings do not enter the robot capability manifest digest, so tuning resolution or quality does not change actuator identity. Selecting a different camera device set still changes the manifest. Interactive free-camera motion remains a separate target.
 

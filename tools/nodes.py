@@ -8,7 +8,7 @@ BACKEND = "eos.process.mujoco.simulator@v0.2"
 CAMERA = "eos.hardware.camera.device@v0.2"
 PACKAGE_VERSION = "0.2.8"
 CAMERA_DEFAULTS = {"camera_width": 1280, "camera_height": 720,
-                   "jpeg_quality": 80, "capture_frequency_hz": 30.0}
+                   "jpeg_quality": 80, "capture_frequency_hz": 30}
 
 
 def candidate_version(value: str = "") -> str:
@@ -218,8 +218,8 @@ def full_hardware_contributions(version: str) -> dict:
       definition["settings"] += [
         {"name": "jpeg_quality", "data_type": "positive_integer", "required": False,
          "default": CAMERA_DEFAULTS["jpeg_quality"], "min": 1, "max": 100, "description": "JPEG quality; lower values reduce bandwidth"},
-        {"name": "capture_frequency_hz", "data_type": "positive_number", "required": False,
-         "default": CAMERA_DEFAULTS["capture_frequency_hz"], "min": 1.0, "max": 60.0, "unit": "Hz",
+        {"name": "capture_frequency_hz", "data_type": "positive_integer", "required": False,
+         "default": CAMERA_DEFAULTS["capture_frequency_hz"], "min": 1, "max": 60, "unit": "Hz",
          "description": "EOS camera capture cadence; rendering may run slower"}]
     definitions.append(definition)
   native = (
