@@ -80,6 +80,8 @@ python3 tests/package_logs.py <check-output-directory>
 
 使用 `PYTHONPATH=. .local/robocasa-venv/bin/python -m unittest discover -s tests -p 'robotbody.py' -v` 验证多臂发现、缺失观测、躯干实测米制通道、未知绝对控制、缩放后非零的中性动作拒绝和 Stop 门控；原硬件与 worker 套件仍须通过。`tools/robot_graph.py` 从真实控制器 manifest 生成图片段。
 
-准备好的固定运行时中，PandaOmron 成功读取七个设备（三相机、机械臂、夹爪、底盘、躯干），提交四种控制并验证重复 ID 不重复执行，独立 Stop 边界返回 `stopped`。Release 构建和 35 项 CTest 全部通过，包含原生插件、严格 socket 与 Stop。固定底座 `Panda` 无法加载当前厨房：上游 reset 要求 `mobilebase0_joint_mobile_yaw`，因此不声明为已验证配置。多臂桩测试不代表所有上游机器人及未安装模型/IK 依赖均已验证。完整日志及生成 manifest 位于忽略目录 `data/test/20261122-body/`。源码软件包构建仅为未发布本地候选，已安装 EOS/EI 验证另行进行。
+准备好的固定运行时中，PandaOmron 成功读取七个设备（三相机、机械臂、夹爪、底盘、躯干），提交四种控制并验证重复 ID 不重复执行，独立 Stop 边界返回 `stopped`。Release 构建和 35 项 CTest 全部通过，包含原生插件、严格 socket 与 Stop。固定底座 `Panda` 无法加载当前厨房：上游 reset 要求 `mobilebase0_joint_mobile_yaw`，因此不声明为已验证配置。多臂桩测试不代表所有上游机器人及未安装模型/IK 依赖均已验证。完整日志及生成 manifest 位于忽略目录 `data/test/20261122-body/`。软件包仍为未发布本地候选，完整 EI 模型控制行为与硬件资格验证分开。
 
 `python3 tests/plugin_body.py build/libmujoco-eos-node.so` 额外验证原生适配器边界：躯干米/弧度混合通道、重复名称与无效单位拒绝、manifest 摘要变化导致 readiness 拒绝。
+
+最终源码 `c496ca0` 使用当前 `ISOS_AETHER_BIN_DIR`、`ISOS_EI_BIN_DIR` 和 `MUJOCO_ROOT`，执行 `isos pkg check --source "$PWD" --version 0.2.8 --output <empty-output> --graph <full-native-graph> --graph <full-discovered-RoboCasa-graph> --package-config <private-package.toml>` 通过。两套完整服务图验证精确 Apply、readiness、类型化观测/动作、陈旧身份与身份冲突拒绝、子进程失败、确认 Stop 和 socket 清理。修正 manager replay 的服务作用域日志路径后，`python3 tests/package_logs.py <check-output>` 也验证两套必需 manager/EOS 日志身份通过。证据保留在忽略目录 `data/test/20261122-body/qualification-final/`；`check.json` 记录 `qualified:true`、归档 SHA-256 `375ef3865871a91677a074b767bfc635189966ed839168411f919ee6c8825d43`、资格 SHA-256 `b192a87f467985ae1250c570b139b9e28efe3cda5483d074207634ecb74a3655`。这证明本地候选，不代表发布或自主任务成功。
