@@ -4,6 +4,26 @@
 
 Python 硬件 API 控制调用方拥有的一个 Gym 环境。打包工作进程拥有独立环境，按[私有服务契约](adapter_cn.md)串行处理请求。本地记录用于控制回放，评测计分保持私有。
 
+## 发现机器人全身部件（0.2.8 候选）
+
+托管 worker 使用 `[services.robocasa].robot`（默认 `PandaOmron`）构造原始 RoboCasa 环境，并使用 `robocasa_core.BodyHardware`，绕过上游固定的 PandaOmron Gym 字段转换器。一个世界包含一个机器人；控制器可以具有零个或多个机械臂和夹爪、可选底盘与躯干、选定的相机。下文的旧 `Hardware` API 和版本 1 PandaOmron 录制保持兼容。
+
+发现过程读取实际复合控制器的动作切片、控制器类型、归一化输入与物理输出缩放、控制坐标系、关节名称/类型/局部轴以及可用相机。私有只读 `manifest` 操作和启动时的 `robot_manifest` 日志提供有界元数据，不暴露奖励、成功条件、物体或基准真值。每条动作只执行一次真实环境控制步；lease 必须覆盖该步，manifest 中记录 `command_step_ms`（已验证 PandaOmron 为 50 ms）。
+
+支持已知 base/world 坐标系的六维笛卡尔增量机械臂、二值夹爪、三维平面底盘和单轴躯干。其他控制器（包括全身 IK、头部/腿部关节控制、绝对笛卡尔控制）会被忽略并产生有界警告。仅固定阻抗、固定版本的绝对 `JOINT_POSITION` 控制器使用未缩放的实测关节位置保持。未知绝对/中性控制语义或零输入缩放后非零的增量控制器，在推进物理前拒绝。这是控制器兼容性发现，不表示所有上游机器人都可使用当前安装的可选模型与资源加载。缺失可选观测不会丢弃其他部件，也不会补零。
+
+机械臂状态读取真实末端 site 的位置和四元数，转换到声明坐标系；夹爪和躯干读取真实受控关节位置，移动关节使用米、转动关节使用弧度。躯干不再因为上游 Gym 转换器漏掉字段而缺失状态。只渲染显式选中的相机，渲染不推进物理。重复读取保留最近一次成功 reset/step 的采样时间，不会把旧样本伪装成新样本。
+
+`tools/robot_graph.py` 从新建的选定环境生成 `{nodes, capabilities, members, robot_manifest, robot_manifest_digest}`。它生成一个全身 Dispatcher、精确硬件绑定、模型动作 schema、坐标系、单位、正方向、控制器缩放与中性动作。可选模式保留在 manifest 中；独立验证前不生成对应 Dispatcher 绑定。`members` 为 EOS 合并状态池标记观测源。它只是准备工具；需与 IsOS/EI session 和池声明组合，审阅后经 IsOS Apply，生成过程不授予动作权限。图中适配器固定 manifest SHA-256，控制器元数据不同会使 readiness 失败，避免陈旧控制说明静默控制不同机器人。改变机器人/控制器后须重新生成。
+
+```sh
+PYTHONPATH=. .local/robocasa-venv/bin/python tools/robot_graph.py \
+  --robot PandaOmron --assets /absolute/path/to/robocasa/models/assets \
+  --camera-size 256 --output /absolute/path/to/robot-fragment.json
+```
+
+固定 `PandaOmron` preset 是示例，不是发现机制。其他兼容全身应使用生成节点。0.2.8 候选托管配置必须包含 `robot`。session 中性动作不是 Stop 证明；独立 Stop 通道关闭准入并有界检查受控关节稳定，不能证明时返回 `unknown`。
+
 <a id="robocasa-机器人硬件核心接口"></a>
 ## RoboCasa 机器人硬件核心接口
 

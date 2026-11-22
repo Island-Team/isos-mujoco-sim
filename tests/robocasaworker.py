@@ -175,31 +175,31 @@ class WorkerTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             Service(hardware, {}).dispatch({"op": "observe", "node": "robocasa/camera/agentview-left"})
 
-    def test_camera_dimensions_reach_gym(self):
+    def test_camera_dimensions_and_robot_reach_raw_environment(self):
         calls = []
-        gym = ModuleType("gymnasium")
-        gym.make = lambda *args, **kwargs: calls.append((args, kwargs)) or object()
-        robocasa = ModuleType("robocasa")
-        robocasa.__path__ = []
-        wrappers = ModuleType("robocasa.wrappers")
-        wrappers.__path__ = []
-        gym_wrapper = ModuleType("robocasa.wrappers.gym_wrapper")
-        hardware_module = ModuleType("robocasa_core.hardware")
+        env_module = ModuleType("robocasa.utils.env_utils")
+        class Env:
+            def reset(self):
+                pass
+        env_module.create_env = lambda **kwargs: calls.append(kwargs) or Env()
+        body_module = ModuleType("robocasa_core.body")
         class HardwareStub:
-            def __init__(self, env):
-                self.env = env
+            def __init__(self, env, sizes):
+                self.env, self.sizes = env, sizes
             def reset(self, seed):
                 self.seed = seed
-        hardware_module.Hardware = HardwareStub
-        modules = {"gymnasium": gym, "robocasa": robocasa,
-                   "robocasa.wrappers": wrappers,
-                   "robocasa.wrappers.gym_wrapper": gym_wrapper,
-                   "robocasa_core.hardware": hardware_module}
-        with TemporaryDirectory() as assets, patch.dict(sys.modules, modules):
-            hardware = create_hardware("CloseFridge", 42, assets, 1280, 720)
+            def manifest(self):
+                return {"parts": []}
+        body_module.BodyHardware = HardwareStub
+        with TemporaryDirectory() as assets, patch.dict(sys.modules, {
+                "robocasa.utils.env_utils": env_module,
+                "robocasa_core.body": body_module}):
+            hardware = create_hardware("CloseFridge", 42, assets, 1280, 720, robot="TestRobot")
         self.assertEqual(hardware.seed, 42)
-        self.assertEqual(calls[0][1]["camera_widths"], 1280)
-        self.assertEqual(calls[0][1]["camera_heights"], 720)
+        self.assertEqual(calls[0]["camera_widths"], 1280)
+        self.assertEqual(calls[0]["camera_heights"], 720)
+        self.assertEqual(calls[0]["robots"], "TestRobot")
+        self.assertEqual(calls[0]["camera_names"], [])
 
     def test_camera_observation_uses_bounded_binary_payload(self):
         class Image:

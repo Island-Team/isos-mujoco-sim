@@ -76,3 +76,5 @@ RoboCasa 启动器通过 `ISOS_PACKAGE_PYTHON` 接收 `host.python_interpreter`�
 `./build.sh --output ABSOLUTE_EMPTY_DIRECTORY` 选择当前源码候选版本；`--version 0.2.x` 可选择规范格式的后续未发布候选版本。两个构建入口均拒绝低于当前候选版本的历史版本，因为当前配置与接口不能重建这些历史发行包。本地发行标签不阻止显式选择的源码构建，包括干净 HEAD 变化后重新构建已登记的源码版本。这些构建仍是本地源码候选；IsOS 资格验证和发布检查负责未占用目录版本、已发布标签及发行工件的不可变性。
 
 运行 `python3 tests/nodes.py`、`python3 tests/build_env.py`、`python3 tests/config_modes.py`、`python3 tests/robocasaworker.py` 和 `python3 tests/bundle.py BUILD/eos-mujoco-sim MUJOCO_ROOT`，检查声明、调用方式、配置隔离、worker 失败与 Stop，以及当前归档迁移。归档检查验证配置和资源摘要、设置助手与可执行服务入口，随后检查原生采集、拒绝、Stop 和缺失 RoboCasa 解释器。完整资格验证仍需在干净源码上运行 `isos pkg check`，提供两个服务的图和部署本地软件包配置。
+
+0.2.8 候选通过原始复合控制器发现支持的 RoboCasa 全身部件。[全身准备工具](core/robocasa_cn.md)生成精确硬件、Dispatcher 和模型动作声明，并固定运行时 manifest 摘要。固定 preset 保持为兼容示例。服务配置新增必填 robot 模型；躯干 observation 使用真实 joint_channels@v0.1，保留移动/转动关节单位。

@@ -4,6 +4,26 @@
 
 The Python hardware API controls one caller-owned Gym environment. The packaged worker owns its separate environment and serializes requests behind the [private service contract](adapter.md). Local recording is a control replay tool; benchmark scoring stays private.
 
+## Discovered robot body (0.2.8 candidate)
+
+The managed worker now constructs the raw RoboCasa environment with `[services.robocasa].robot` (default `PandaOmron`) and uses `robocasa_core.BodyHardware`. It bypasses upstream's fixed PandaOmron Gym key converter. One world contains one robot, whose controller may expose zero or several arms and grippers, an optional base and torso, and selected cameras. The legacy `Hardware` API and version-1 PandaOmron records below remain compatible.
+
+Discovery reads the actual composite controller's action slices, controller class, normalized input and physical output scales, command frame, robot joint names/types/local axes, and available cameras. The private read-only `manifest` operation and startup `robot_manifest` log expose this bounded robot metadata, with no task reward, success, objects, or benchmark truth. Every accepted motion advances exactly one actual environment control step. Leases must cover that step; the manifest records `command_step_ms` (50 ms for the verified PandaOmron).
+
+Supported controls are six-axis Cartesian delta arms with known base/world frames, signed binary grippers, three-axis planar bases, and one-axis torsos. Additional controller families (including whole-body IK, head/leg joint control and absolute Cartesian control) are omitted with bounded warnings. Only the pinned absolute `JOINT_POSITION` controller with fixed impedance receives its measured joint position as an unscaled hold target. Unknown absolute semantics, unknown neutral control semantics, and delta controllers whose scaled zero is nonzero reject before physics advances. This is controller compatibility discovery, not a claim that every upstream robot can load with the installed optional models and assets. Missing optional observations do not discard other available parts; missing physical state is never replaced by zero.
+
+Arm position and quaternion are read from actual end-effector sites, transformed into the declared base/world frame. Gripper and torso channels read actual controlled joint positions: prismatic joints use metres and hinge joints radians. Torso status is no longer fabricated or absent merely because the upstream Gym converter omitted it. RGB frames use only explicitly selected cameras; render operations do not advance physics. Publication time preserves the last successful reset/step measurement time, so repeated reads do not make an old sample appear fresh.
+
+`tools/robot_graph.py` generates `{nodes, capabilities, members, robot_manifest, robot_manifest_digest}` from a fresh selected environment. It creates one full-body Dispatcher with exact typed hardware bindings, model control schemas, frames, units, positive direction descriptions, physical controller scales and neutral payloads. Optional mode availability is recorded in the manifest but omitted from generated Dispatcher bindings until separately qualified. `members` identifies typed observation sources for the EOS combined status pool. The result is an operator preparation fragment; combine it with the IsOS/EI session and pool declarations, review and Apply it through IsOS. Generation itself grants no command authority. The graph hardware adapters pin the manifest SHA-256; a different controller manifest fails readiness, preventing stale model control descriptions from silently addressing a changed robot. Regenerate after changing robot/controller configuration.
+
+```sh
+PYTHONPATH=. .local/robocasa-venv/bin/python tools/robot_graph.py \
+  --robot PandaOmron --assets /absolute/path/to/robocasa/models/assets \
+  --camera-size 256 --output /absolute/path/to/robot-fragment.json
+```
+
+The `PandaOmron` preset remains a convenient fixed robot example, not the discovery mechanism. Use generated nodes for another compatible body. The managed service configuration's `robot` is required in the 0.2.8 candidate. A neutral session command is not a Stop proof: the worker's separate Stop lane fences command admission and returns `stopped` only after controlled robot joints settle within the bounded check; failure remains `unknown`.
+
 <a id="robocasa-robot-hardware-core"></a>
 ## RoboCasa robot hardware core
 

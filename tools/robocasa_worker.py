@@ -61,9 +61,11 @@ def camera_sizes_from_environment() -> dict[str, tuple[int, int]]:
     values = json.loads(raw)
     if not isinstance(values, dict):
         raise ValueError("camera settings must be an object")
+    if len(values) > 32:
+        raise ValueError("too many camera settings")
     sizes: dict[str, tuple[int, int]] = {}
     for device, settings in values.items():
-        if device not in CAMERA_NODES:
+        if not device.startswith("robocasa/camera/"):
             continue
         if not isinstance(settings, dict) or set(settings) != {"camera_width", "camera_height"}:
             raise ValueError("camera node requires width and height")
@@ -82,20 +84,25 @@ def reset_seed(value: str) -> int:
     return seed
 
 
-def create_hardware(task: str, seed: int, assets: str, width: int, height: int):
+def create_hardware(task: str, seed: int, assets: str, width: int, height: int,
+                    robot: str | None = None, camera_sizes=None):
     if not assets or not Path(assets).is_dir():
         raise ValueError("configured RoboCasa assets are unavailable")
     os.environ["ROBOSUITE_ASSETS_ROOT"] = assets
     os.environ.setdefault("MUJOCO_GL", "egl")
-    import gymnasium as gym
-    import robocasa  # noqa: F401
-    import robocasa.wrappers.gym_wrapper  # noqa: F401
-    from robocasa_core.hardware import Hardware
+    from robocasa.utils.env_utils import create_env
+    from robocasa_core.body import BodyHardware
 
-    env = gym.make(f"robocasa/{task}", seed=seed, split="target",
-                   generative_textures=False, camera_widths=width, camera_heights=height)
-    hardware = Hardware(env)
+    selected_robot = robot or os.environ.get("ISOS_ROBOCASA_ROBOT", "PandaOmron")
+    env = create_env(env_name=task, robots=selected_robot, seed=seed, split="target",
+                     generative_textures=False, camera_names=[], renderer="mujoco", render_camera=None,
+                     camera_widths=width, camera_heights=height)
+    sizes = camera_sizes if camera_sizes is not None else {
+        device: (width, height) for device in CAMERA_NODES}
+    env.reset()  # RoboCasa constructs controllers during its first reset.
+    hardware = BodyHardware(env, sizes)
     hardware.reset(seed)
+    print(json.dumps({"event": "robot_manifest", **hardware.manifest()}), flush=True)
     return hardware
 
 
@@ -109,6 +116,8 @@ class Service:
         self.faulted = False
         self.commands: dict[str, dict[str, Any]] = {}
         self.sequence = 0
+        self.measurement_time_ns = time.monotonic_ns()
+        self.manifest_digest = hardware.manifest_digest() if hasattr(hardware, "manifest_digest") else ""
         self.generation_id = os.environ.get("ISOS_PACKAGE_GENERATION", "")
 
     def dispatch(self, request: dict[str, Any]) -> dict[str, Any]:
@@ -120,13 +129,16 @@ class Service:
                 return {"version": "2.0.0", "accepted": not self.stopped and not self.faulted,
                         "features": ["strict-socket-v1", "strict-stop-v1"],
                         "timestamp_ns": time.monotonic_ns(),
-                        "generation_id": self.generation_id, "sequence": self.sequence}
+                        "generation_id": self.generation_id, "sequence": self.sequence,
+                        "manifest_digest": self.manifest_digest}
+            if op == "manifest":
+                return {"generation_id": self.generation_id, **self.hardware.manifest()}
             if op == "observe":
                 if self.stopped or self.faulted:
                     raise ValueError("service is not ready")
                 node = request.get("node")
                 observation = self.hardware.status(node)
-                keys = {
+                keys = tuple(observation) if hasattr(self.hardware, "manifest") else {
                     "robocasa/base/mobile-base": ("base_position", "base_rotation"),
                     "robocasa/arm/right-arm": ("end_effector_position_relative", "end_effector_rotation_relative"),
                     "robocasa/gripper/right-gripper": ("gripper_qpos",),
@@ -149,12 +161,14 @@ class Service:
                         image = cv2.resize(image, requested, interpolation=cv2.INTER_AREA)
                         height, width, channels = image.shape
                     return {"generation_id": self.generation_id, "sequence": self.sequence,
-                            "timestamp_ns": time.monotonic_ns(), "node": node,
+                            "timestamp_ns": self.measurement_time_ns, "node": node,
                             "width_px": width, "height_px": height,
                             "_binary": image.tobytes()}
                 values = {key: observation[key].tolist() for key in keys}
+                channels = self.hardware.channels(node) if hasattr(self.hardware, "channels") and node.split("/")[1] in ("torso", "gripper") else None
                 return {"generation_id": self.generation_id, "sequence": self.sequence,
-                        "timestamp_ns": time.monotonic_ns(), "node": node, "values": values}
+                        "timestamp_ns": self.measurement_time_ns, "node": node, "values": values,
+                        **({"channels": channels} if channels is not None else {})}
             if op == "command":
                 if self.stopped or self.faulted:
                     raise ValueError("service is not ready")
@@ -165,13 +179,15 @@ class Service:
                 values = request.get("values")
                 mode = "mode" if (node == "robocasa/arm/right-arm" and
                                   request.get("control_mode") == "mode") else "command"
-                if node == "robocasa/arm/right-arm" and mode == "mode":
+                group = node.split("/")[1] if isinstance(node, str) and len(node.split("/")) == 3 else ""
+                mode = "mode" if group == "arm" and request.get("control_mode") == "mode" else "command"
+                if group == "arm" and mode == "mode":
                     payload = {"mode": values}
-                elif node == "robocasa/arm/right-arm" and isinstance(values, dict):
+                elif group == "arm" and isinstance(values, dict):
                     payload = {key: values[key] for key in ("position", "rotation") if key in values}
-                elif node in ("robocasa/base/mobile-base", "robocasa/torso/torso"):
+                elif group in ("base", "torso"):
                     payload = {"motion": values}
-                elif node == "robocasa/gripper/right-gripper":
+                elif group == "gripper":
                     payload = {"close": values}
                 else:
                     raise ValueError("unknown command device")
@@ -180,7 +196,7 @@ class Service:
                     lease = request["lease_ms"]
                     if type(lease) is not int or not 1 <= lease <= 1000:
                         raise ValueError("invalid normalized command lease")
-                    if node not in ("robocasa/base/mobile-base", "robocasa/torso/torso", "robocasa/arm/right-arm") or mode != "command":
+                    if group not in ("base", "torso", "arm") or mode != "command":
                         raise ValueError("lease requires normalized movement")
                     try:
                         step_ms = self.hardware.command_step_ms
@@ -194,6 +210,8 @@ class Service:
                     if prior["fingerprint"] != fingerprint:
                         raise ValueError("command ID conflict")
                     return prior["result"]
+                if len(self.commands) >= 4096:
+                    raise ValueError("command receipt capacity reached; restart run")
                 self.hardware.control(node, payload)
                 try:
                     self.hardware.step()
@@ -201,6 +219,7 @@ class Service:
                     self.faulted = True
                     raise
                 self.sequence += 1
+                self.measurement_time_ns = time.monotonic_ns()
                 result = {"accepted": True, "sequence": self.sequence,
                           "generation_id": self.generation_id}
                 self.commands[command_id] = {"fingerprint": fingerprint, "result": result}
@@ -303,7 +322,7 @@ def main() -> None:
     sizes = camera_sizes_from_environment()
     width = max((size[0] for size in sizes.values()), default=64)
     height = max((size[1] for size in sizes.values()), default=64)
-    serve(args.socket, Service(create_hardware(task, seed, assets, width, height), sizes))
+    serve(args.socket, Service(create_hardware(task, seed, assets, width, height, camera_sizes=sizes), sizes))
 
 
 if __name__ == "__main__":

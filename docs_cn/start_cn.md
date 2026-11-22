@@ -227,3 +227,5 @@ isos pkg configure island/mujoco-sim@0.2.8 --service robocasa
 | 无图形界面的主机上 `--gui` 失败 | 使用 `--no-gui`；基准和 C++ 测试均不要求桌面窗口。 |
 
 RoboCasa 基准在前台运行，结果输出到终端。原生启动器将日志写到选定的运行目录。对于受管理部署，修改图之前先找到当前 IsOS 运行及其首条就绪或失败事件；参见[构建与运行](start_cn.md)。
+
+0.2.8 候选配置需要 `[services.robocasa].robot = "PandaOmron"`（或已安装的其他兼容模型），并使用[全身发现准备工具](core/robocasa_cn.md)重新生成硬件/控制片段。旧录制运行器仍专用于 PandaOmron。

@@ -75,3 +75,9 @@ python3 tests/package_logs.py <check-output-directory>
 - [ ] 扩展组合所有者回放，将捕获帧传给已准入订阅路线，并在捕获进行中 Stop。使用 `python3 tests/full_interfaces.py build/eos-mujoco-sim assets/scene.xml data/test/<run-id>/native --gui` 作为现有服务边界基线，再加入所有者路线断言；此基线本身不证明未来路线。
 - [ ] 拒绝不可用服务、过期运行/修订、错误设备、无效帧、阻塞消费者和缺失路线；确认运动仍须 Dispatcher 准入，结果不确定的命令不会换新 ID 重放。
 - [ ] 描述路线已支持前，同步双语文档并保存完整跨所有者证据。
+
+## 机器人全身候选验证，2026 年 11 月 22 日
+
+使用 `PYTHONPATH=. .local/robocasa-venv/bin/python -m unittest discover -s tests -p 'robotbody.py' -v` 验证多臂发现、缺失观测、躯干实测米制通道、未知绝对控制、缩放后非零的中性动作拒绝和 Stop 门控；原硬件与 worker 套件仍须通过。`tools/robot_graph.py` 从真实控制器 manifest 生成图片段。
+
+准备好的固定运行时中，PandaOmron 成功读取七个设备（三相机、机械臂、夹爪、底盘、躯干），提交四种控制并验证重复 ID 不重复执行，独立 Stop 边界返回 `stopped`。Release 构建和 35 项 CTest 全部通过，包含原生插件、严格 socket 与 Stop。固定底座 `Panda` 无法加载当前厨房：上游 reset 要求 `mobilebase0_joint_mobile_yaw`，因此不声明为已验证配置。多臂桩测试不代表所有上游机器人及未安装模型/IK 依赖均已验证。完整日志及生成 manifest 位于忽略目录 `data/test/20261122-body/`。源码软件包构建仅为未发布本地候选，已安装 EOS/EI 验证另行进行。

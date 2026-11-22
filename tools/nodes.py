@@ -165,7 +165,7 @@ def full_hardware_contributions(version: str) -> dict:
             "delivery_mode": "event", "data_class": data_class,
             "contract": {"owner": "isos" if standard_hardware(version) and data_class == "command" else "eos",
                          "id": data_type,
-                         "version": "1.0" if standard_hardware(version) and data_class == "command" else "0.2"}}
+                         "version": "1.0" if standard_hardware(version) and data_class == "command" else ("0.1" if data_type == "joint_channels@v0.1" else "0.2")}}
 
   observation = "observation" if standard_hardware(version) else "state"
   hardware_types = (
@@ -190,7 +190,8 @@ def full_hardware_contributions(version: str) -> dict:
      "gripper_binary", [live_port("command", "gripper_binary_command@v0.2", "command")],
      [live_port(observation, "gripper_state@v0.2", "observation")]),
     ("eos.hardware.torso.normalized_axes@v0.2", "torso", "torso", ["normalized_axes"],
-     "torso_normalized_axes", [live_port("command", "normalized_axes_command@v0.2", "command")], []),
+     "torso_normalized_axes", [live_port("command", "normalized_axes_command@v0.2", "command")],
+     [live_port(observation, "joint_channels@v0.1", "observation")] if standard_hardware(version) else []),
   )
   definitions = []
   for type_id, group, kind, capabilities, safety, inputs, outputs in hardware_types:
@@ -246,7 +247,7 @@ def full_hardware_contributions(version: str) -> dict:
         item["frame_id"] = "base_link" if service == "native" else "world"
       elif kind == "manipulator":
         item["frame_id"] = "robot_base"
-    if kind == "torso":
+    if kind == "torso" and not standard_hardware(version):
       item.pop("observation", None)
     if kind != "camera":
       mode = capabilities[0]
@@ -310,6 +311,7 @@ def full_hardware_contributions(version: str) -> dict:
        "environment": [
          {"name": "ISOS_PACKAGE_PYTHON", "value": "${config.host.python_interpreter}"},
          {"name": "ISOS_ROBOCASA_ASSETS", "value": "${config.host.robocasa_assets}"},
+         {"name": "ISOS_ROBOCASA_ROBOT", "value": "${config.service.robot}"},
          {"name": "ISOS_ROBOCASA_TASK", "value": "${config.service.task}"},
          {"name": "ISOS_ROBOCASA_SEED", "value": "${config.service.seed}"},
          *([{"name": "ISOS_ROBOCASA_CAMERA_SIZES", "value": "${selected_nodes.settings_json}"}]
