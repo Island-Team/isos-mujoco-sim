@@ -73,6 +73,7 @@ def run_case(api, host, emitted, width, height, binary, expected, announced_size
             api.destroy(handle)
             worker.join(3)
             assert not worker.is_alive()
+            return jpeg if expected else None
 
 
 def main():
@@ -89,7 +90,9 @@ def main():
         del level, data, length
     host = Host(1, ctypes.sizeof(Host), None, emit, log)
     frame = b"\x7f" * (256 * 192 * 3)
-    run_case(api, host, emitted, 256, 192, frame, True, quality=25)
+    low_quality = run_case(api, host, emitted, 256, 192, frame, True, quality=25)
+    high_quality = run_case(api, host, emitted, 256, 192, frame, True, quality=95)
+    assert low_quality != high_quality, "node JPEG quality must alter encoded bytes"
     run_case(api, host, emitted, 256, 192, frame, False, max_output_bytes=100)
     run_case(api, host, emitted, 256, 192, frame, True)
     run_case(api, host, emitted, 2048, 2048, b"\x7f" * (2048 * 2048 * 3), True)
