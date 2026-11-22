@@ -76,3 +76,11 @@ RoboCasa 启动器通过 `ISOS_PACKAGE_PYTHON` 接收 `host.python_interpreter`�
 `./build.sh --output ABSOLUTE_EMPTY_DIRECTORY` 选择当前源码候选版本；`--version 0.2.x` 可选择规范格式的后续未发布候选版本。两个构建入口均拒绝低于当前候选版本的历史版本，因为当前配置与接口不能重建这些历史发行包。本地发行标签不阻止显式选择的源码构建，包括干净 HEAD 变化后重新构建已登记的源码版本。这些构建仍是本地源码候选；IsOS 资格验证和发布检查负责未占用目录版本、已发布标签及发行工件的不可变性。
 
 运行 `python3 tests/nodes.py`、`python3 tests/build_env.py`、`python3 tests/config_modes.py`、`python3 tests/robocasaworker.py` 和 `python3 tests/bundle.py BUILD/eos-mujoco-sim MUJOCO_ROOT`，检查声明、调用方式、配置隔离、worker 失败与 Stop，以及当前归档迁移。归档检查验证配置和资源摘要、设置助手与可执行服务入口，随后检查原生采集、拒绝、Stop 和缺失 RoboCasa 解释器。完整资格验证仍需在干净源码上运行 `isos pkg check`，提供两个服务的图和部署本地软件包配置。
+
+0.2.8 候选通过原始复合控制器发现支持的 RoboCasa 全身部件。[全身准备工具](core/robocasa_cn.md)生成精确硬件、Dispatcher 和模型动作声明，并固定运行时 manifest 摘要。固定 preset 保持为兼容示例。服务配置新增必填 robot 模型；躯干 observation 使用真实 joint_channels@v0.1，保留移动/转动关节单位。
+
+## 本地候选资格验证，2026 年 11 月 22 日
+
+从源码 `d0d6cda4b4cdc50849498f8f54f73231e3c36428` 构建的未发布0.2.8候选，针对完整原生服务图与自动发现的 PandaOmron 服务图，通过当前 IsOS 软件包资格验证。归档 SHA-256 为 `b125e54a8db1867ebd67148199f777bbf65675d21b9081c2838610ce5097f3d2`；资格 SHA-256 为 `2ff22a77f0adbac94af9ad54cfdc0244988ee9ca7e5fdbefa6b6c4eb85ab9808`。检查覆盖精确 Apply/readiness、全部类型化观测/动作、身份拒绝与去重、子进程失败、确认 Stop、socket 清理及必需服务/EOS 日志身份。完整本地证据保留在忽略目录 `data/test/20261122-body/qualification-clock-stable/`，`tests/package_logs.py` 通过。
+
+候选包含显式观测采集时钟、暂停世界保留真实仿真采样时间，以及24步有界初始 Stop 稳定窗口，连续两次测量证明的容差不变。独立空闲 worker 测试在没有先发运动命令时确认 Stop。固定底座 `Panda` 对当前固定厨房仍未验证，因为 reset 要求移动底盘 yaw 关节。可选不支持控制器保持不可用；本地资格验证不代表发布标签/版本或自主任务成功。复现命令见[开发验证](development_cn.md)。

@@ -39,6 +39,9 @@
     ]},
     {"id": "services.robocasa", "label": {"en": "RoboCasa service", "cn": "RoboCasa 服务"},
      "description": {"en": "Task and seed for RoboCasa robot nodes.", "cn": "RoboCasa 机器人节点使用的任务和种子。"}, "fields": [
+      {"name": "robot", "type": "string", "required": true, "default": "PandaOmron",
+       "label": {"en": "Robot model", "cn": "机器人模型"},
+       "description": {"en": "Pinned RoboCasa-compatible robot; supported parts are discovered at startup.", "cn": "固定 RoboCasa 版本兼容的机器人；启动时发现支持的部件。"}},
       {"name": "task", "type": "enum", "required": true, "default": "CloseFridge",
        "label": {"en": "Task", "cn": "任务"},
        "description": {"en": "Locally verified RoboCasa Gym task.", "cn": "已在本地验证的 RoboCasa Gym 任务。"},

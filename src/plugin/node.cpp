@@ -16,6 +16,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 #include "isos_node_v1.h"
@@ -34,6 +35,7 @@ struct isos_node_handle {
   std::string revision;
   std::string generation_id;
   std::string service_instance;
+  std::string manifest_digest;
   bool legacy_contract = false;
   Struct profile;
   bool started = false;
@@ -197,6 +199,9 @@ bool strict_health_impl(isos_node_handle* node) {
   if (!accepted || accepted->kind_case() != Value::kBoolValue || !accepted->bool_value() ||
       !features || features->kind_case() != Value::kListValue)
     return false;
+  if (!node->manifest_digest.empty() &&
+      string_field(reply, "manifest_digest") != node->manifest_digest)
+    return false;
   const auto generation = string_field(reply, "generation_id");
   if (!generation.empty()) {
     if (!node->generation_id.empty() && node->generation_id != generation) return false;
@@ -247,6 +252,7 @@ int32_t create_impl(const std::uint8_t* config, std::size_t length, const isos_n
   node->revision = string_field(document, "revision");
   node->generation_id = string_field(document, "generation_id");
   node->service_instance = string_field(*settings, "service_instance");
+  node->manifest_digest = string_field(*settings, "robot_manifest_digest");
   if (node->socket.empty() || node->device.empty() || node->kind.empty()) return -1;
   *out = node.release();
   return 0;
@@ -295,11 +301,17 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
     set(sample, "sequence",
         node->kind == "camera" ? static_cast<double>(node->frame_sequence + 1)
                                : std::round(sequence->number_value()));
-    set(sample, "clock", "monotonic");
+    const auto measurement_clock =
+        field(reply, "clock") ? string_field(reply, "clock") : "monotonic";
+    if (measurement_clock != "monotonic" && measurement_clock != "simulation" &&
+        measurement_clock != "system")
+      return -1;
+    set(sample, "clock", measurement_clock);
     set(sample, "frame_id",
-        node->kind == "base"          ? "world"
-        : node->kind == "manipulator" ? "robot_base"
-                                      : node->device);
+        !string_field(node->profile, "frame_id").empty() ? string_field(node->profile, "frame_id")
+        : node->kind == "base"                           ? "world"
+        : node->kind == "manipulator"                    ? "robot_base"
+                                                         : node->device);
     if (node->kind == "base" || node->kind == "manipulator") {
       const char* position_key =
           node->kind == "base" ? "base_position" : "end_effector_position_relative";
@@ -323,21 +335,43 @@ int32_t input_impl(isos_node_handle* node, const std::uint8_t* bytes, std::size_
       if (std::abs(norm - 1.0) > 0.02) return -1;
       *(*data->mutable_fields())["position_m"].mutable_list_value() = position->list_value();
       *(*data->mutable_fields())["orientation_xyzw"].mutable_list_value() = rotation->list_value();
-    } else if (node->kind == "gripper") {
-      const auto* positions = field(*values, "gripper_qpos");
-      if (!positions || positions->kind_case() != Value::kListValue ||
-          positions->list_value().values_size() != 2)
-        return -1;
-      auto* channels = (*data->mutable_fields())["channels"].mutable_list_value();
-      for (int i = 0; i < 2; ++i) {
-        const auto& value = positions->list_value().values(i);
-        if (value.kind_case() != Value::kNumberValue || !std::isfinite(value.number_value()))
+    } else if (node->kind == "gripper" || node->kind == "torso") {
+      const auto* channels = field(reply, "channels");
+      if (channels && channels->kind_case() == Value::kListValue) {
+        if (channels->list_value().values_size() < 1 ||
+            channels->list_value().values_size() > (node->kind == "gripper" ? 32 : 64))
           return -1;
-        Struct* channel = channels->add_values()->mutable_struct_value();
-        set(channel, "name", i == 0 ? "left_finger" : "right_finger");
-        set(channel, "value", value.number_value());
-        set(channel, "unit", "m");
-      }
+        std::unordered_set<std::string> names;
+        for (const auto& value : channels->list_value().values()) {
+          if (value.kind_case() != Value::kStructValue) return -1;
+          const auto& item = value.struct_value();
+          const auto name = string_field(item, "name");
+          const auto unit = string_field(item, "unit");
+          const auto* scalar = field(item, "value");
+          if (name.empty() || name.size() > 64 || !names.insert(name).second ||
+              (unit != "m" && unit != "rad") || !scalar ||
+              scalar->kind_case() != Value::kNumberValue || !std::isfinite(scalar->number_value()))
+            return -1;
+        }
+        *(*data->mutable_fields())["channels"].mutable_list_value() = channels->list_value();
+      } else if (node->kind == "gripper") {
+        // Legacy private worker replies retain the fixed Panda finger channels.
+        const auto* positions = field(*values, "gripper_qpos");
+        if (!positions || positions->kind_case() != Value::kListValue ||
+            positions->list_value().values_size() != 2)
+          return -1;
+        auto* output = (*data->mutable_fields())["channels"].mutable_list_value();
+        for (int i = 0; i < 2; ++i) {
+          const auto& value = positions->list_value().values(i);
+          if (value.kind_case() != Value::kNumberValue || !std::isfinite(value.number_value()))
+            return -1;
+          Struct* channel = output->add_values()->mutable_struct_value();
+          set(channel, "name", i == 0 ? "left_finger" : "right_finger");
+          set(channel, "value", value.number_value());
+          set(channel, "unit", "m");
+        }
+      } else
+        return -1;
     } else if (node->kind == "camera") {
       const auto* width_value = field(reply, "width_px");
       const auto* height_value = field(reply, "height_px");

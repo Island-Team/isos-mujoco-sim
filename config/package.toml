@@ -10,5 +10,6 @@ python_interpreter = ""
 scene = "pick-place"
 
 [services.robocasa]
+robot = "PandaOmron"
 task = "CloseFridge"
 seed = 42

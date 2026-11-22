@@ -240,7 +240,7 @@ class NodeContributionTests(unittest.TestCase):
                          {"owner": "isos", "id": port["data_type"], "version": "1.0"})
       self.assertEqual([port["name"] for port in definition["outputs"]],
                        ["frame"] if definition["kind"] == "camera" else
-                       [] if definition["kind"] == "torso" else ["observation"])
+                       ["observation"])
     for node_set in contract["node_sets"]:
       for node in node_set["nodes"]:
         profile = node["profile"]
