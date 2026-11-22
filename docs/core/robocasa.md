@@ -19,7 +19,7 @@ Arm position and quaternion are read from actual end-effector sites, transformed
 ```sh
 PYTHONPATH=. .local/robocasa-venv/bin/python tools/robot_graph.py \
   --robot PandaOmron --assets /absolute/path/to/robocasa/models/assets \
-  --camera-size 256 --output /absolute/path/to/robot-fragment.json
+  --output /absolute/path/to/robot-fragment.json
 ```
 
 The `PandaOmron` preset remains a convenient fixed robot example, not the discovery mechanism. Use generated nodes for another compatible body. The managed service configuration's `robot` is required in the 0.2.8 candidate. A neutral session command is not a Stop proof: the worker's separate Stop lane fences command admission and returns `stopped` only after controlled robot joints settle within the bounded check; failure remains `unknown`.

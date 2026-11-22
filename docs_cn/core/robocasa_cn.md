@@ -19,7 +19,7 @@ Python 硬件 API 控制调用方拥有的一个 Gym 环境。打包工作进程
 ```sh
 PYTHONPATH=. .local/robocasa-venv/bin/python tools/robot_graph.py \
   --robot PandaOmron --assets /absolute/path/to/robocasa/models/assets \
-  --camera-size 256 --output /absolute/path/to/robot-fragment.json
+  --output /absolute/path/to/robot-fragment.json
 ```
 
 固定 `PandaOmron` preset 是示例，不是发现机制。其他兼容全身应使用生成节点。0.2.8 候选托管配置必须包含 `robot`。session 中性动作不是 Stop 证明；独立 Stop 通道关闭准入并有界检查受控关节稳定，不能证明时返回 `unknown`。
