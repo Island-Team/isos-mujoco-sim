@@ -1,5 +1,7 @@
 """Discovery and safety cases independent of optional upstream robot assets."""
 from types import SimpleNamespace
+from unittest.mock import patch
+import sys
 import unittest
 
 import numpy as np
@@ -60,6 +62,33 @@ class Environment:
 
 
 class BodyTests(unittest.TestCase):
+  def test_free_camera_restores_every_shared_camera_field_on_render_failure(self):
+    env = Environment({"torso": controller(1)})
+    class Camera(SimpleNamespace):
+      def __init__(self):
+        super().__init__(type=1, fixedcamid=2, trackbodyid=3, orthographic=1,
+                         distance=4.0, azimuth=5.0, elevation=6.0, lookat=np.array([7., 8., 9.]))
+    camera = Camera()
+    env.sim._render_context_offscreen = SimpleNamespace(cam=camera)
+    env.sim.model._model = object()
+    def defaults(model, target):
+      for name in ("type", "fixedcamid", "trackbodyid", "orthographic", "distance", "azimuth", "elevation"):
+        setattr(target, name, 0)
+      target.lookat[:] = 0
+    def render(**kwargs):
+      self.assertEqual(kwargs["camera_name"], None)
+      self.assertEqual(camera.type, 0)
+      raise RuntimeError("render failed")
+    env.sim.render = render
+    body = BodyHardware(env, {"robocasa/camera/free": (1280, 720)})
+    with patch.dict(sys.modules, {"mujoco": SimpleNamespace(MjvCamera=Camera, mjv_defaultFreeCamera=defaults)}):
+      with self.assertRaisesRegex(RuntimeError, "render failed"):
+        body._filter({})
+    expected = Camera()
+    for field in ("type", "fixedcamid", "trackbodyid", "orthographic", "distance", "azimuth", "elevation"):
+      self.assertEqual(getattr(camera, field), getattr(expected, field))
+    np.testing.assert_array_equal(camera.lookat, expected.lookat)
+
   def test_camera_roles_defaults_and_tuning_do_not_change_control_manifest(self):
     env = Environment({"torso": controller(1)})
     env.sim.model.camera_names = ("robot0_agentview_left",)

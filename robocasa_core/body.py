@@ -256,16 +256,18 @@ class BodyHardware:
           import mujoco
           context = self._env.sim._render_context_offscreen
           saved = mujoco.MjvCamera()
-          saved.type, saved.fixedcamid = context.cam.type, context.cam.fixedcamid
+          fields = ("type", "fixedcamid", "trackbodyid", "orthographic",
+                    "distance", "azimuth", "elevation")
+          for field in fields:
+            setattr(saved, field, getattr(context.cam, field))
           saved.lookat[:] = context.cam.lookat
-          saved.distance, saved.azimuth, saved.elevation = context.cam.distance, context.cam.azimuth, context.cam.elevation
           try:
             mujoco.mjv_defaultFreeCamera(self._env.sim.model._model, context.cam)
             raw[f"{camera}_image"] = self._env.sim.render(width=width, height=height, camera_name=None)
           finally:
-            context.cam.type, context.cam.fixedcamid = saved.type, saved.fixedcamid
+            for field in fields:
+              setattr(context.cam, field, getattr(saved, field))
             context.cam.lookat[:] = saved.lookat
-            context.cam.distance, context.cam.azimuth, context.cam.elevation = saved.distance, saved.azimuth, saved.elevation
         else:
           raw[f"{camera}_image"] = self._env.sim.render(width=width, height=height, camera_name=camera)
       for field, key in tuple(part.keys.items()):
