@@ -81,3 +81,5 @@ python3 tests/package_logs.py <check-output-directory>
 使用 `PYTHONPATH=. .local/robocasa-venv/bin/python -m unittest discover -s tests -p 'robotbody.py' -v` 验证多臂发现、缺失观测、躯干实测米制通道、未知绝对控制、缩放后非零的中性动作拒绝和 Stop 门控；原硬件与 worker 套件仍须通过。`tools/robot_graph.py` 从真实控制器 manifest 生成图片段。
 
 准备好的固定运行时中，PandaOmron 成功读取七个设备（三相机、机械臂、夹爪、底盘、躯干），提交四种控制并验证重复 ID 不重复执行，独立 Stop 边界返回 `stopped`。Release 构建和 35 项 CTest 全部通过，包含原生插件、严格 socket 与 Stop。固定底座 `Panda` 无法加载当前厨房：上游 reset 要求 `mobilebase0_joint_mobile_yaw`，因此不声明为已验证配置。多臂桩测试不代表所有上游机器人及未安装模型/IK 依赖均已验证。完整日志及生成 manifest 位于忽略目录 `data/test/20261122-body/`。源码软件包构建仅为未发布本地候选，已安装 EOS/EI 验证另行进行。
+
+`python3 tests/plugin_body.py build/libmujoco-eos-node.so` 额外验证原生适配器边界：躯干米/弧度混合通道、重复名称与无效单位拒绝、manifest 摘要变化导致 readiness 拒绝。
