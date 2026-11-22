@@ -1,8 +1,8 @@
 #include "service.h"
 
-#include <grpcpp/grpcpp.h>
 #include <google/protobuf/struct.pb.h>
 #include <google/protobuf/util/json_util.h>
+#include <grpcpp/grpcpp.h>
 #include <sys/stat.h>
 
 #include <chrono>
@@ -15,41 +15,55 @@
 #include <stdexcept>
 #include <thread>
 
-#include "benchmark.grpc.pb.h"
 #include "../mujoco/engine.h"
 #include "../mujoco/gui.h"
-#include "simulator.grpc.pb.h"
 #include "adapter.h"
+#include "benchmark.grpc.pb.h"
+#include "simulator.grpc.pb.h"
 
 namespace eos_mujoco {
 namespace sim = ::eos::simulator::v1;
 namespace bench = ::eos::mujoco::benchmark::v1;
 namespace {
 
-std::pair<int, int> NativeCameraSize() {
+std::array<int, 3> NativeCameraSize() {
   const char* raw = std::getenv("ISOS_NATIVE_CAMERA_SIZES");
-  if (!raw) return {0, 0};  // Direct simulator users retain scene render dimensions.
+  if (!raw) return {0, 0, 80};  // Direct simulator users retain scene render dimensions.
   if (std::strlen(raw) > 4096) throw std::invalid_argument("native camera settings exceed bound");
   google::protobuf::Struct selected;
   if (!google::protobuf::util::JsonStringToMessage(raw, &selected).ok())
     throw std::invalid_argument("invalid native camera settings JSON");
   const auto camera = selected.fields().find("cam-0");
-  if (camera == selected.fields().end()) return {0, 0};
+  if (camera == selected.fields().end()) return {0, 0, 80};
   if (camera->second.kind_case() != google::protobuf::Value::kStructValue)
     throw std::invalid_argument("native camera settings must be an object");
   const auto& fields = camera->second.struct_value().fields();
-  if (fields.size() != 2 || !fields.contains("camera_width") ||
-      !fields.contains("camera_height"))
+  if (fields.size() > 4 || !fields.contains("camera_width") || !fields.contains("camera_height"))
     throw std::invalid_argument("native camera requires width and height");
   auto dimension = [&](const char* name) {
     const auto& value = fields.at(name);
     if (value.kind_case() != google::protobuf::Value::kNumberValue ||
-        !std::isfinite(value.number_value()) || std::trunc(value.number_value()) != value.number_value() ||
-        value.number_value() < 64 || value.number_value() > 2048)
+        !std::isfinite(value.number_value()) ||
+        std::trunc(value.number_value()) != value.number_value() || value.number_value() < 64 ||
+        value.number_value() > 2048)
       throw std::invalid_argument(std::string("invalid native camera ") + name);
     return static_cast<int>(value.number_value());
   };
-  return {dimension("camera_width"), dimension("camera_height")};
+  int quality = 80;
+  if (const auto found = fields.find("jpeg_quality"); found != fields.end()) {
+    const auto& value = found->second;
+    if (value.kind_case() != google::protobuf::Value::kNumberValue ||
+        !std::isfinite(value.number_value()) ||
+        std::trunc(value.number_value()) != value.number_value() || value.number_value() < 1 ||
+        value.number_value() > 100)
+      throw std::invalid_argument("invalid native JPEG quality");
+    quality = static_cast<int>(value.number_value());
+  }
+  for (const auto& [name, value] : fields)
+    if (name != "camera_width" && name != "camera_height" && name != "jpeg_quality" &&
+        name != "capture_frequency_hz")
+      throw std::invalid_argument("unknown native camera setting");
+  return {dimension("camera_width"), dimension("camera_height"), quality};
 }
 
 template <size_t N>
@@ -331,8 +345,8 @@ void Serve(const std::filesystem::path& simulator_socket,
            const std::filesystem::path& benchmark_socket, const std::filesystem::path& v2_socket,
            const std::filesystem::path& scene, const std::atomic_bool& stop, bool manual_step,
            bool gui, bool managed_strict_socket) {
-  const auto [camera_width, camera_height] = NativeCameraSize();
-  SimEngine engine(scene.string(), camera_width, camera_height);
+  const auto [camera_width, camera_height, jpeg_quality] = NativeCameraSize();
+  SimEngine engine(scene.string(), camera_width, camera_height, jpeg_quality);
   std::string error;
   if (!engine.Load(&error)) throw std::runtime_error("scene load failed: " + error);
   if (!engine.Reset(0, &error)) throw std::runtime_error("scene reset failed: " + error);

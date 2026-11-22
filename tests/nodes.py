@@ -34,7 +34,17 @@ class NodeContributionTests(unittest.TestCase):
     contract = contributions()
     camera = next(item for item in contract["node_types"] if item["id"] ==
                   "eos.hardware.camera.device@v0.2")
-    self.assertTrue(all(field["required"] for field in camera["settings"]))
+    fields = {field["name"]: field for field in camera["settings"]}
+    self.assertTrue(fields["camera_width"]["required"])
+    self.assertTrue(fields["camera_height"]["required"])
+    self.assertEqual({name: field["default"] for name, field in fields.items()},
+                     {"camera_width": 1280, "camera_height": 720, "jpeg_quality": 80,
+                      "capture_frequency_hz": 30.0})
+    presets = [node["profile"] for group in contract["node_sets"] for node in group["nodes"]
+               if node["group"] == "camera"]
+    for profile in presets:
+      self.assertEqual(profile["settings"], {name: field["default"] for name, field in fields.items()})
+      self.assertNotIn("frequency_hz", profile["adapter"]["settings"])
     self.assertFalse(any(item.get("extensions") for item in contract["node_types"]))
 
   def test_robocasa_config_requires_runtime_values_with_bounded_seed(self) -> None:

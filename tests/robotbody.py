@@ -60,6 +60,24 @@ class Environment:
 
 
 class BodyTests(unittest.TestCase):
+  def test_camera_roles_defaults_and_tuning_do_not_change_control_manifest(self):
+    env = Environment({"torso": controller(1)})
+    env.sim.model.camera_names = ("robot0_agentview_left",)
+    sizes = {"robocasa/camera/agentview-left": (1280, 720), "robocasa/camera/free": (1280, 720)}
+    body = BodyHardware(env, sizes)
+    roles = {part.node.id: part.metadata.get("view_role") for part in body._parts.values()
+             if part.node.group == "camera"}
+    self.assertEqual(roles, {"robocasa/camera/agentview-left": "agent",
+                             "robocasa/camera/free": "spectator"})
+    digest = body.manifest_digest()
+    body._camera_sizes = dict.fromkeys(sizes, (640, 360))
+    self.assertEqual(body.manifest_digest(), digest)
+    graph = build_graph(body.manifest())
+    for profile in graph["nodes"].values():
+      if profile["node_type"] == "eos.hardware.camera.device@v0.2":
+        self.assertEqual(profile["settings"], {"camera_width": 1280, "camera_height": 720,
+                         "jpeg_quality": 80, "capture_frequency_hz": 30.0})
+
   def test_optional_parts_and_real_torso_channels(self):
     env = Environment({"torso": controller(1), "right_gripper": controller(2, 1)})
     body = BodyHardware(env)

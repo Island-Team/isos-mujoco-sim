@@ -14,11 +14,11 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from tools.nodes import PACKAGE_VERSION, contributions
+from tools.nodes import PACKAGE_VERSION, CAMERA_DEFAULTS, contributions
 from tools.robocasa_worker import CAMERA_NODES, create_hardware
 
 
-def build_graph(manifest: dict, instance: str = "primary", camera_size=(256, 256)) -> dict:
+def build_graph(manifest: dict, instance: str = "primary", camera_size=(CAMERA_DEFAULTS["camera_width"], CAMERA_DEFAULTS["camera_height"])) -> dict:
     templates = {item["group"]: item["profile"] for group in contributions()["node_sets"]
                  if group["id"] == "robocasa" for item in group["nodes"]}
     encoded = json.dumps(manifest, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
@@ -41,7 +41,7 @@ def build_graph(manifest: dict, instance: str = "primary", camera_size=(256, 256
         profile["adapter"]["settings"]["robot_manifest_digest"] = manifest_digest
         profile["inputs"] = {}
         if role == "camera":
-            profile["settings"] = {"camera_width": camera_size[0], "camera_height": camera_size[1]}
+            profile["settings"].update({"camera_width": camera_size[0], "camera_height": camera_size[1]})
             profile["frame_id"] = part["frame"]
         elif role == "arm":
             profile["frame_id"] = part["frame"]
@@ -52,11 +52,13 @@ def build_graph(manifest: dict, instance: str = "primary", camera_size=(256, 256
         if not part["can_observe"]:
             profile.pop("observation", None)
         if part["can_observe"]:
-            profile["adapter"]["settings"]["frequency_hz"] = 10.0 if role != "camera" else 30.0
+            if role != "camera":
+                profile["adapter"]["settings"]["frequency_hz"] = 10.0
             members.append({"id": part["id"], "node": path, "port": "frame" if role == "camera" else "observation",
                             "type_id": {"arm": "pose_state@v0.2", "base": "pose_state@v0.2",
                               "gripper": "gripper_state@v0.2", "torso": "joint_channels@v0.1",
-                              "camera": "image_frame@v0.2"}[role]})
+                              "camera": "image_frame@v0.2"}[role],
+                            **({"view_role": part.get("view_role", "agent")} if role == "camera" else {})})
         if part["can_control"]:
             port = name.replace("-", "_")
             bindings.append({"port": port, "hardware_node": path, "hardware_input": "command"})
@@ -91,12 +93,12 @@ def main() -> None:
     parser.add_argument("--assets", required=True)
     parser.add_argument("--instance", default="primary")
     parser.add_argument("--camera", action="append", help="selected robocasa/camera/device ID; repeatable")
-    parser.add_argument("--camera-size", type=int, default=256)
+    parser.add_argument("--camera-size", type=int, default=None)
     parser.add_argument("--camera-width", type=int)
     parser.add_argument("--camera-height", type=int)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    width, height = args.camera_width or args.camera_size, args.camera_height or args.camera_size
+    width, height = args.camera_width or args.camera_size or CAMERA_DEFAULTS["camera_width"], args.camera_height or args.camera_size or CAMERA_DEFAULTS["camera_height"]
     if not 64 <= width <= 2048 or not 64 <= height <= 2048 or not 0 <= args.seed <= 4294967295:
         parser.error("camera-size must be 64–2048 and seed uint32")
     sizes = {device: (width, height) for device in (args.camera or CAMERA_NODES)}

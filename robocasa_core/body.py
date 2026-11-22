@@ -157,7 +157,12 @@ class BodyHardware:
       if node.id not in self._camera_sizes:
         continue
       self._parts[node.id] = Part(node, "", 0, 0, {label: f"{camera}_image"},
-                                  {"frame": camera, "unit": "RGB8", "axes": []})
+                                  {"frame": camera, "unit": "RGB8", "axes": [], "view_role": "agent"})
+
+    if "robocasa/camera/free" in self._camera_sizes:
+      node = Node("camera", "free", observations=("free",), unit="RGB8")
+      self._parts[node.id] = Part(node, "", 0, 0, {"free": "free_image"},
+        {"frame": "free", "unit": "RGB8", "axes": [], "view_role": "spectator"})
 
     for missing in sorted(set(self._camera_sizes) - set(self._parts)):
       self.warnings.append(f"{missing}: selected camera absent; omitted")
@@ -247,7 +252,22 @@ class BodyHardware:
         width, height = self._camera_sizes[part.node.id]
         camera = part.metadata["frame"]
         raw = dict(raw)
-        raw[f"{camera}_image"] = self._env.sim.render(width=width, height=height, camera_name=camera)
+        if part.metadata.get("view_role") == "spectator":
+          import mujoco
+          context = self._env.sim._render_context_offscreen
+          saved = mujoco.MjvCamera()
+          saved.type, saved.fixedcamid = context.cam.type, context.cam.fixedcamid
+          saved.lookat[:] = context.cam.lookat
+          saved.distance, saved.azimuth, saved.elevation = context.cam.distance, context.cam.azimuth, context.cam.elevation
+          try:
+            mujoco.mjv_defaultFreeCamera(self._env.sim.model._model, context.cam)
+            raw[f"{camera}_image"] = self._env.sim.render(width=width, height=height, camera_name=None)
+          finally:
+            context.cam.type, context.cam.fixedcamid = saved.type, saved.fixedcamid
+            context.cam.lookat[:] = saved.lookat
+            context.cam.distance, context.cam.azimuth, context.cam.elevation = saved.distance, saved.azimuth, saved.elevation
+        else:
+          raw[f"{camera}_image"] = self._env.sim.render(width=width, height=height, camera_name=camera)
       for field, key in tuple(part.keys.items()):
         if key in ("@eef_position", "@eef_quat"):
           from robosuite.utils.transform_utils import mat2quat

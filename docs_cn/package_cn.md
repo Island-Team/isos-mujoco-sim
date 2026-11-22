@@ -84,3 +84,5 @@ RoboCasa 启动器通过 `ISOS_PACKAGE_PYTHON` 接收 `host.python_interpreter`�
 从源码 `d0d6cda4b4cdc50849498f8f54f73231e3c36428` 构建的未发布0.2.8候选，针对完整原生服务图与自动发现的 PandaOmron 服务图，通过当前 IsOS 软件包资格验证。归档 SHA-256 为 `b125e54a8db1867ebd67148199f777bbf65675d21b9081c2838610ce5097f3d2`；资格 SHA-256 为 `2ff22a77f0adbac94af9ad54cfdc0244988ee9ca7e5fdbefa6b6c4eb85ab9808`。检查覆盖精确 Apply/readiness、全部类型化观测/动作、身份拒绝与去重、子进程失败、确认 Stop、socket 清理及必需服务/EOS 日志身份。完整本地证据保留在忽略目录 `data/test/20261122-body/qualification-clock-stable/`，`tests/package_logs.py` 通过。
 
 候选包含显式观测采集时钟、暂停世界保留真实仿真采样时间，以及24步有界初始 Stop 稳定窗口，连续两次测量证明的容差不变。独立空闲 worker 测试在没有先发运动命令时确认 Stop。固定底座 `Panda` 对当前固定厨房仍未验证，因为 reset 要求移动底盘 yaw 关节。可选不支持控制器保持不可用；本地资格验证不代表发布标签/版本或自主任务成功。复现命令见[开发验证](development_cn.md)。
+
+当前 0.2.8 相机节点提供 1280 × 720 默认值及可调 JPEG 质量/采样频率，新增独立自由旁观相机；详细接口见 [相机节点](node/eos/hardware/camera_cn.md)。

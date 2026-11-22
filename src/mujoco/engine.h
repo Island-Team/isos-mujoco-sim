@@ -68,7 +68,8 @@ struct RenderState;
 
 class SimEngine {
  public:
-  explicit SimEngine(std::string scene_path, int camera_width = 0, int camera_height = 0);
+  explicit SimEngine(std::string scene_path, int camera_width = 0, int camera_height = 0,
+                     int jpeg_quality = 80);
   ~SimEngine();
   SimEngine(const SimEngine&) = delete;
   SimEngine& operator=(const SimEngine&) = delete;
@@ -95,6 +96,7 @@ class SimEngine {
   bool ResolveIds(std::string* error);
   std::string scene_path_;
   int camera_width_ = 0, camera_height_ = 0;
+  int jpeg_quality_ = 80;
   BenchmarkProfile profile_ = BenchmarkProfile::PickPlace;
   mutable std::mutex mutex_;
   mutable std::mutex render_mutex_;

@@ -38,8 +38,11 @@ struct RenderState {
   mjrContext render{};
   mjData* data = nullptr;
 };
-SimEngine::SimEngine(std::string path, int camera_width, int camera_height)
-    : scene_path_(std::move(path)), camera_width_(camera_width), camera_height_(camera_height) {}
+SimEngine::SimEngine(std::string path, int camera_width, int camera_height, int jpeg_quality)
+    : scene_path_(std::move(path)),
+      camera_width_(camera_width),
+      camera_height_(camera_height),
+      jpeg_quality_(jpeg_quality) {}
 
 std::string SimEngine::SceneProfile() const {
   std::lock_guard lock(mutex_);
@@ -760,8 +763,7 @@ CameraFrame SimEngine::RenderCamera(std::optional<std::uint64_t> expected_stop_e
   }
   mjvCamera camera;
   mjv_defaultCamera(&camera);
-  camera.type = mjCAMERA_FIXED;
-  camera.fixedcamid = camera_id_;
+  mjv_defaultFreeCamera(model_, &camera);
   mjvOption options;
   mjv_defaultOption(&options);
   mjvPerturb perturb;
@@ -770,7 +772,8 @@ CameraFrame SimEngine::RenderCamera(std::optional<std::uint64_t> expected_stop_e
   mjrRect viewport{0, 0, width, height};
   mjr_setBuffer(mjFB_OFFSCREEN, &r->render);
   mjr_render(viewport, &r->scene, &r->render);
-  std::vector<unsigned char> pixels(static_cast<size_t>(width) * height * 3), flipped(pixels.size());
+  std::vector<unsigned char> pixels(static_cast<size_t>(width) * height * 3),
+      flipped(pixels.size());
   mjr_readPixels(pixels.data(), nullptr, viewport, &r->render);
   for (int y = 0; y < height; ++y)
     std::memcpy(flipped.data() + static_cast<size_t>(y) * width * 3,
@@ -788,7 +791,7 @@ CameraFrame SimEngine::RenderCamera(std::optional<std::uint64_t> expected_stop_e
   jpeg.input_components = 3;
   jpeg.in_color_space = JCS_RGB;
   jpeg_set_defaults(&jpeg);
-  jpeg_set_quality(&jpeg, 85, TRUE);
+  jpeg_set_quality(&jpeg, jpeg_quality_, TRUE);
   jpeg_start_compress(&jpeg, TRUE);
   while (jpeg.next_scanline < jpeg.image_height) {
     JSAMPROW row = flipped.data() + static_cast<size_t>(jpeg.next_scanline) * width * 3;

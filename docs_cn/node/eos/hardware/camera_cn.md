@@ -3,10 +3,11 @@
 
 [接口目录](../../README_cn.md) · [设计](../../../core/adapter_cn.md) · [运行控制](../../../core/adapter_cn.md) · [English](../../../../docs/node/eos/hardware/camera.md)
 
-`eos.hardware.camera.device@v0.2` 是只读相机节点。原生预设提供一个 MuJoCo 场景 JPEG 画面；当前 RoboCasa 预设提供三个 PandaOmron JPEG 画面。预设决定具体设备。类型声明 `jpeg` 和 `rgb8`，每个实例只声明实际提供的编码。
+`eos.hardware.camera.device@v0.2` 是只读相机节点。原生预设提供一个 MuJoCo 自由旁观 JPEG 画面；当前 RoboCasa 预设提供三个 PandaOmron agent JPEG 画面及一个独立自由旁观画面。预设决定具体设备。类型声明 `jpeg` 和 `rgb8`，每个实例只声明实际提供的编码。
 
 | 预设 / 节点引用 | 设备 ID | 画面 |
 | --- | --- | --- |
+| `robocasa/free` | `robocasa/camera/free` | 独立自由旁观 JPEG 视角 |
 | `native/front` | `cam-0` | 所选 `pick-place` 或 `navigation` 场景的 JPEG |
 | `robocasa/left` | `robocasa/camera/agentview-left` | JPEG 代理视角 |
 | `robocasa/right` | `robocasa/camera/agentview-right` | JPEG 代理视角 |
@@ -21,7 +22,7 @@
 
 在 0.2.5 及之后的软件包中，每个相机节点通过 `settings.camera_width` 和 `settings.camera_height` 设置 64 到 2048 的整数像素数。两套预设均为 1280 × 720。IsOS 在 Run 时将原生 `cam-0` 的已选设置传给模拟器；EGL 视口和 JPEG 编码器使用该准确尺寸。三个 RoboCasa 相机可分别选择输出尺寸，其设置传给独立的 Gym 工作进程。没有 IsOS 设置的直接模拟器运行使用场景的离屏尺寸。
 
-注册的 `frame` 输出声明图像数据类别和 30 Hz 预期源频率。每个预设相机将 `node.adapter.settings.frequency_hz` 设为 30 Hz，使 EOS 把采集帧送入来源池。服务或渲染较慢时，实际帧率可以低于该值。
+注册的 `frame` 输出声明图像数据类别和 30 Hz 预期源频率。每个当前相机通过可调 `settings.capture_frequency_hz` 声明默认 30 Hz，使 EOS 把采集帧送入来源池。服务或渲染较慢时，实际帧率可以低于该值。
 
 对原生相机，`python3 tests/vision_rate.py <build>/eos-mujoco-sim <absolute-scene.xml>` 通过严格服务套接字测量 31 个不同的 1280 × 720 JPEG 捕获帧，并报告墙钟吞吐量与请求延迟。此隔离源测试不测量 EOS、IsOS 或浏览器的传输速率。RoboCasa 工作进程在场景推进前返回缓存观测；重复读取不能证明新鲜帧吞吐量。
 
@@ -57,3 +58,11 @@
 所有端口使用 `in_process` 载体。适配器设置 `service_instance` 与 `device_id` 是必需字符串，必须匹配已验证包及所选设备，不会默认切换到其他服务。相机的尺寸、频率与限制见上文；执行器限值来自所选注册 profile。缺失设置、未知类型或不可用服务阻止准入或就绪。
 
 当前 0.2.8 候选包显式要求两个尺寸设置，不声明类型默认值；预设提供两个值。缺失设置在服务启动前被拒绝。
+
+## 当前 0.2.8 相机节点设置
+
+所有相机节点声明可调设置：`camera_width` 默认 1280、`camera_height` 默认 720（均为 64–2048 px 整数），`jpeg_quality` 默认 80（1–100 整数），`capture_frequency_hz` 默认 30（1–60 Hz，实际速率仍受源上限约束）。预设使用同一声明默认值；修改节点后 Apply 并重新 Run 生效。宽高仍是保存配置中必须显式提供的服务输入。共享包配置不会覆盖单个相机。
+
+原生 `cam-0` 使用 MuJoCo 自由旁观视角。RoboCasa 新增独立的 `robocasa/camera/free`，使用真实 `mjCAMERA_FREE`，不是重命名 agent 相机。发现结果以 `view_role:"spectator"` 标记自由相机，以 `view_role:"agent"` 标记其余三个相机。机器人组合图只将自由相机送入人类 Vision 页面；agent 相机经 Vision pool 供模型读取。调整尺寸、质量、采样频率不会改变执行器能力清单摘要；改变选中相机设备集合仍改变清单。交互移动自由相机仍是单独的目标。RoboCasa JPEG 使用缓存测量的 simulation 时钟。
+
+高级节点字段 `observation.max_payload_bytes` 的当前相机默认值为 4 MiB，可与分辨率、质量及下游 pool 预算一起调整。适配器遵循 EOS 注入的输出上限，在发布前拒绝过大的编码帧；注册负载描述符表示支持上限而不是节点分配量。

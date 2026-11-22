@@ -229,3 +229,5 @@ Each local run has a timestamped log in Git-ignored `logs/dev/`. `logs/dev/roboc
 The benchmark runs in the foreground and writes its result to the terminal and `logs/dev/robocasa/latest.log`. Native output is under `logs/dev/native/latest.log`; timestamped files preserve earlier runs. The viewer has a corresponding `*-viewer.log`. Local logs are ignored by Git. For a managed deployment, find the current IsOS run and its first ready or failure event before changing the graph; see [build and run](start.md).
 
 For the 0.2.8 candidate, set `[services.robocasa].robot = "PandaOmron"` (or another compatible installed model) and regenerate its hardware/controls fragment using the [discovered body preparation tool](core/robocasa.md). The legacy record runner remains PandaOmron-specific.
+
+For managed robot graphs, adjust resolution (default 1280 × 720), JPEG quality and sampling cadence on each camera node. Connect the independent free camera to human Vision and agent cameras to Vision pools for model input. See [camera settings](node/eos/hardware/camera.md).

@@ -7,6 +7,8 @@ import re
 BACKEND = "eos.process.mujoco.simulator@v0.2"
 CAMERA = "eos.hardware.camera.device@v0.2"
 PACKAGE_VERSION = "0.2.8"
+CAMERA_DEFAULTS = {"camera_width": 1280, "camera_height": 720,
+                   "jpeg_quality": 80, "capture_frequency_hz": 30.0}
 
 
 def candidate_version(value: str = "") -> str:
@@ -209,8 +211,16 @@ def full_hardware_contributions(version: str) -> dict:
       definition["settings"] = [
         {"name": name, "data_type": "positive_integer", "required": standard_hardware(version),
          "min": 64, "max": 2048, "unit": "px",
+         **({"default": CAMERA_DEFAULTS[name]} if standard_hardware(version) else {}),
          "description": f"Camera {axis} in pixels; takes effect on the next Run"}
         for name, axis in (("camera_width", "width"), ("camera_height", "height"))]
+    if type_id == CAMERA and standard_hardware(version):
+      definition["settings"] += [
+        {"name": "jpeg_quality", "data_type": "positive_integer", "required": False,
+         "default": CAMERA_DEFAULTS["jpeg_quality"], "min": 1, "max": 100, "description": "JPEG quality; lower values reduce bandwidth"},
+        {"name": "capture_frequency_hz", "data_type": "positive_number", "required": False,
+         "default": CAMERA_DEFAULTS["capture_frequency_hz"], "min": 1.0, "max": 60.0, "unit": "Hz",
+         "description": "EOS camera capture cadence; rendering may run slower"}]
     definitions.append(definition)
   native = (
     ("front", "camera", CAMERA, "cam-0", ["jpeg"], 30.0, 12582912),
@@ -228,17 +238,26 @@ def full_hardware_contributions(version: str) -> dict:
     ("lift", "torso", "eos.hardware.torso.normalized_axes@v0.2", "robocasa/torso/torso", ["normalized_axes"], 50.0, 65536),
   )
 
+  if standard_hardware(version):
+    robocasa = (("free", "camera", CAMERA, "robocasa/camera/free", ["jpeg"],
+                 30.0, 20 * 1024 * 1024),) + robocasa
+
   def profile(ref: str, kind: str, type_id: str, device: str, capabilities: list[str],
               rate: float, size: int, service: str) -> dict:
     item = hardware_profile(ref, type_id, device, f"{service} {kind} device", device,
                             capabilities, device, rate, size, version)
+    if kind == "camera" and standard_hardware(version):
+      item["observation"]["max_payload_bytes"] = 4 * 1024 * 1024
     item["package"] = package
     item["references"] = []
     item["adapter"]["settings"] = {"service_instance": service, "device_id": device}
     if kind == "camera" and per_camera_size(version):
       item["settings"] = {"camera_width": 1280, "camera_height": 720}
     if kind == "camera":
-      item["adapter"]["settings"]["frequency_hz"] = rate
+      if standard_hardware(version):
+        item["settings"] = dict(CAMERA_DEFAULTS)
+      else:
+        item["adapter"]["settings"]["frequency_hz"] = rate
     if service == "native" and kind == "manipulator":
       item["joint_names"] = ["shoulder_pan_joint", "shoulder_lift_joint", "elbow_joint",
                              "wrist_1_joint", "wrist_2_joint", "wrist_3_joint"]
