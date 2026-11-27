@@ -36,3 +36,13 @@ __pycache__/
 !/.vscode/
 /.vscode/*
 !/.vscode/settings.json
+
+# Local car-scene Python environment.
+/.car-venv/
+
+# Blender-scene source models and generated meshes ship as downloadable asset
+# packs instead of git blobs (see tools/blendscene_assets.py pack/download).
+/0001.blend
+/assets/*_scene/meshes/
+/assets/*_scene/collision/
+/dist/

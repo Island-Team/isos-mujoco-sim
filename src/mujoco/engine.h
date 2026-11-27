@@ -90,7 +90,7 @@ class SimEngine {
   bool JointTargetsInRange(const std::array<double, 6>& targets) const;
 
  private:
-  enum class BenchmarkProfile { PickPlace, Navigation };
+  enum class BenchmarkProfile { PickPlace, Navigation, CarNavigation };
   void StepLocked(int steps);
   Snapshot SnapshotLocked() const;
   bool ResolveIds(std::string* error);
@@ -110,6 +110,8 @@ class SimEngine {
   int ee_site_id_ = -1, camera_id_ = -1, object_free_joint_id_ = -1;
   int left_pad_id_ = -1, right_pad_id_ = -1;
   int goal_site_id_ = -1;
+  int wheel_joint_ids_[2]{}, wheel_actuator_ids_[2]{}, car_body_id_ = -1;
+  std::vector<int> car_collision_geom_ids_;  // chassis/cabin only; wheels and casters roll legally.
   std::uint64_t sequence_ = 0, interruption_epoch_ = 0;
   std::atomic<std::uint64_t> stop_epoch_{0};
   std::atomic_bool active_motion_{false};

@@ -24,6 +24,11 @@ constexpr std::array<const char*, 6> kJoints = {"shoulder_pan_joint", "shoulder_
                                                 "wrist_2_joint",      "wrist_3_joint"};
 constexpr std::array<const char*, 6> kActuators = {"shoulder_pan", "shoulder_lift", "elbow",
                                                    "wrist_1",      "wrist_2",       "wrist_3"};
+constexpr std::array<const char*, 2> kCarJoints = {"wheel_left_spin", "wheel_right_spin"};
+constexpr std::array<const char*, 2> kCarActuators = {"left_wheel_motor", "right_wheel_motor"};
+constexpr double kCarWheelRadius = 0.08;   // must match tools/blendscene_build.py
+constexpr double kCarWheelSpan = 0.36;     // distance between driven wheel centers
+constexpr double kCarMaxWheelSpeed = 15.;  // rad/s, matches actuator ctrlrange
 int Id(const mjModel* m, mjtObj kind, const char* name) { return mj_name2id(m, kind, name); }
 std::array<double, 4> Quaternion(const mjtNum* wxyz) {
   return {wxyz[1], wxyz[2], wxyz[3], wxyz[0]};
@@ -46,13 +51,19 @@ SimEngine::SimEngine(std::string path, int camera_width, int camera_height, int 
 
 std::string SimEngine::SceneProfile() const {
   std::lock_guard lock(mutex_);
-  return profile_ == BenchmarkProfile::Navigation ? "eos_benchmark_navigation_v1"
-                                                  : "eos_benchmark_pick_place_v1";
+  switch (profile_) {
+    case BenchmarkProfile::Navigation:
+      return "eos_benchmark_navigation_v1";
+    case BenchmarkProfile::CarNavigation:
+      return "eos_benchmark_car_navigation_v1";
+    default:
+      return "eos_benchmark_pick_place_v1";
+  }
 }
 
 bool SimEngine::JointTargetsInRange(const std::array<double, 6>& targets) const {
   std::lock_guard lock(mutex_);
-  if (!model_ || !data_) return false;
+  if (!model_ || !data_ || profile_ == BenchmarkProfile::CarNavigation) return false;
   for (int i = 0; i < 6; ++i) {
     const int joint = joint_ids_[i];
     if (joint < 0 || !std::isfinite(targets[i]) || targets[i] < model_->jnt_range[2 * joint] ||
@@ -84,7 +95,7 @@ SimEngine::~SimEngine() {
 }
 bool SimEngine::ResolveIds(std::string* error) {
   int recognized_profiles = 0;
-  bool navigation = false;
+  bool navigation = false, car = false;
   for (int i = 0; i < model_->nnumeric; ++i) {
     const char* name = mj_id2name(model_, mjOBJ_NUMERIC, i);
     if (!name || std::strncmp(name, "eos_benchmark_", 14) != 0) continue;
@@ -93,6 +104,9 @@ bool SimEngine::ResolveIds(std::string* error) {
     } else if (std::strcmp(name, "eos_benchmark_navigation_v1") == 0) {
       ++recognized_profiles;
       navigation = true;
+    } else if (std::strcmp(name, "eos_benchmark_car_navigation_v1") == 0) {
+      ++recognized_profiles;
+      car = true;
     } else {
       if (error) *error = "unknown benchmark profile: " + std::string(name);
       return false;
@@ -102,7 +116,33 @@ bool SimEngine::ResolveIds(std::string* error) {
     if (error) *error = "scene must declare exactly one supported benchmark profile";
     return false;
   }
-  profile_ = navigation ? BenchmarkProfile::Navigation : BenchmarkProfile::PickPlace;
+  profile_ = car ? BenchmarkProfile::CarNavigation
+                 : (navigation ? BenchmarkProfile::Navigation : BenchmarkProfile::PickPlace);
+  if (car) {
+    for (int i = 0; i < 2; ++i) {
+      wheel_joint_ids_[i] = Id(model_, mjOBJ_JOINT, kCarJoints[i]);
+      wheel_actuator_ids_[i] = Id(model_, mjOBJ_ACTUATOR, kCarActuators[i]);
+      if (wheel_joint_ids_[i] < 0 || wheel_actuator_ids_[i] < 0) {
+        if (error) *error = "missing car wheel joint or actuator";
+        return false;
+      }
+    }
+    car_body_id_ = Id(model_, mjOBJ_BODY, "car");
+    camera_id_ = Id(model_, mjOBJ_CAMERA, "robot_camera");
+    goal_site_id_ = Id(model_, mjOBJ_SITE, "navigation_goal");
+    if (car_body_id_ < 0 || camera_id_ < 0) {
+      if (error) *error = "missing car scene element";
+      return false;
+    }
+    if (goal_site_id_ < 0) {
+      if (error) *error = "car scene is missing navigation_goal site";
+      return false;
+    }
+    car_collision_geom_ids_.clear();
+    for (int g = 0; g < model_->ngeom; ++g)
+      if (model_->geom_bodyid[g] == car_body_id_) car_collision_geom_ids_.push_back(g);
+    return true;
+  }
   goal_site_id_ = navigation ? Id(model_, mjOBJ_SITE, "navigation_goal") : -1;
   if (navigation && goal_site_id_ < 0) {
     if (error) *error = "navigation scene is missing navigation_goal site";
@@ -175,6 +215,24 @@ bool SimEngine::Reset(std::uint64_t seed, std::string* error) {
   }
   mj_resetData(model_,
                data_);  // Stable integer mixing gives deterministic, bounded variants.
+  if (profile_ == BenchmarkProfile::CarNavigation) {
+    // qpos0 carries the scene spawn pose; the car scene has no seeded variants.
+    for (int i = 0; i < 2; ++i) {
+      data_->ctrl[wheel_actuator_ids_[i]] = 0;
+      target_joint_[i] = 0;
+    }
+    for (int i = 0; i < 3; ++i) base_drive_[i] = 0;
+    base_drive_active_ = false;
+    base_drive_until_s_ = 0;
+    halted_ = false;
+    collision_active_ = false;
+    collisions_ = 0;
+    sequence_ = 0;
+    stop_epoch_.store(0);
+    ++interruption_epoch_;
+    mj_forward(model_, data_);
+    return true;
+  }
   auto mix = [&seed]() {
     seed += 0x9e3779b97f4a7c15ULL;
     auto z = seed;
@@ -226,6 +284,39 @@ bool SimEngine::Reset(std::uint64_t seed, std::string* error) {
 }
 void SimEngine::StepLocked(int steps) {
   if (!model_ || !data_) return;
+  if (profile_ == BenchmarkProfile::CarNavigation) {
+    for (int n = 0; n < steps; ++n) {
+      if (base_drive_active_ && base_drive_until_s_ > 0 && data_->time >= base_drive_until_s_) {
+        base_drive_active_ = false;
+        base_drive_until_s_ = 0;
+        for (int i = 0; i < 3; ++i) base_drive_[i] = 0;
+      }
+      const double v = base_drive_[0], w = base_drive_[2];
+      // Differential drive: wheel speeds from commanded body twist.
+      const double left = (v - w * kCarWheelSpan / 2) / kCarWheelRadius;
+      const double right = (v + w * kCarWheelSpan / 2) / kCarWheelRadius;
+      data_->ctrl[wheel_actuator_ids_[0]] = std::clamp(left, -kCarMaxWheelSpeed, kCarMaxWheelSpeed);
+      data_->ctrl[wheel_actuator_ids_[1]] = std::clamp(right, -kCarMaxWheelSpeed, kCarMaxWheelSpeed);
+      mj_step(model_, data_);
+      ++sequence_;
+      bool world_collision = false;
+      for (int c = 0; c < data_->ncon; ++c) {
+        const int a = data_->contact[c].geom[0], b = data_->contact[c].geom[1];
+        auto is_chassis = [&](int geom) {
+          return std::find(car_collision_geom_ids_.begin(), car_collision_geom_ids_.end(), geom) !=
+                 car_collision_geom_ids_.end();
+        };
+        // Wheels and casters belong to child bodies and may touch anything; only the
+        // chassis/cabin shell hitting static world geometry counts as a collision.
+        if ((is_chassis(a) && model_->geom_bodyid[b] == 0) ||
+            (is_chassis(b) && model_->geom_bodyid[a] == 0))
+          world_collision = true;
+      }
+      if (world_collision && !collision_active_) ++collisions_;
+      collision_active_ = world_collision;
+    }
+    return;
+  }
   for (int n = 0; n < steps; ++n) {
     if (base_drive_active_ && base_drive_until_s_ > 0 && data_->time >= base_drive_until_s_) {
       base_drive_active_ = false;
@@ -296,6 +387,26 @@ void SimEngine::Step(int steps) {
 Snapshot SimEngine::SnapshotLocked() const {
   Snapshot s;
   if (!model_) return s;
+  if (profile_ == BenchmarkProfile::CarNavigation) {
+    s.sequence = sequence_;
+    s.simulation_time_s = data_->time;
+    for (int i = 0; i < 2; ++i) {
+      const int j = wheel_joint_ids_[i];
+      s.joint_positions_rad[i] = data_->qpos[model_->jnt_qposadr[j]];
+      s.joint_velocities_rad_s[i] = data_->qvel[model_->jnt_dofadr[j]];
+    }
+    const mjtNum* p = data_->xpos + 3 * car_body_id_;
+    const mjtNum* q = data_->xquat + 4 * car_body_id_;
+    s.base_pose = {p[0], p[1],
+                   std::atan2(2 * (q[0] * q[3] + q[1] * q[2]), 1 - 2 * (q[2] * q[2] + q[3] * q[3]))};
+    const int dof = model_->jnt_dofadr[model_->body_jntadr[car_body_id_]];
+    s.base_velocity[0] = data_->qvel[dof + 0];  // free joint translation is world frame
+    s.base_velocity[1] = data_->qvel[dof + 1];
+    const mjtNum* R = data_->xmat + 9 * car_body_id_;  // yaw rate: local omega -> world z
+    s.base_velocity[2] = R[2] * data_->qvel[dof + 3] + R[5] * data_->qvel[dof + 4] +
+                         R[8] * data_->qvel[dof + 5];
+    return s;
+  }
   s.sequence = sequence_;
   s.simulation_time_s = data_->time;
   for (int k = 0; k < 3; ++k) {
@@ -372,6 +483,15 @@ Score SimEngine::GetScore() const {
   Score s;
   if (!model_) return s;
   auto b = SnapshotLocked();
+  if (profile_ == BenchmarkProfile::CarNavigation) {
+    const mjtNum* goal = data_->site_xpos + 3 * goal_site_id_;
+    const double speed = std::hypot(b.base_velocity[0], b.base_velocity[1]);
+    s.navigation = std::hypot(b.base_pose[0] - goal[0], b.base_pose[1] - goal[1]) < 0.35 &&
+                   speed < 0.15;
+    s.collisions = collisions_;
+    s.elapsed_s = data_->time;
+    return s;
+  }
   if (profile_ == BenchmarkProfile::Navigation) {
     const mjtNum* goal = data_->site_xpos + 3 * goal_site_id_;
     s.navigation = std::hypot(b.base_pose[0] - goal[0], b.base_pose[1] - goal[1]) < 0.18 &&
@@ -396,6 +516,90 @@ CommandResult SimEngine::Execute(const Command& c,
   if (!model_) return {false, "unavailable"};
   if (expected_stop_epoch && *expected_stop_epoch != stop_epoch_.load())
     return {false, "command_interrupted"};
+  if (profile_ == BenchmarkProfile::CarNavigation) {
+    if (c.type == Command::Type::Halt) {
+      halted_ = true;
+      ++interruption_epoch_;
+      base_drive_active_ = false;
+      base_drive_until_s_ = 0;
+      for (int i = 0; i < 3; ++i) base_drive_[i] = 0;
+      return {true, {}};
+    }
+    if (c.type == Command::Type::BaseStop) {
+      ++interruption_epoch_;
+      base_drive_active_ = false;
+      base_drive_until_s_ = 0;
+      for (int i = 0; i < 3; ++i) base_drive_[i] = 0;
+      return {true, {}};
+    }
+    if (c.type == Command::Type::ArmStop || c.type == Command::Type::GripperStop)
+      return {true, {}};
+    if (halted_) return {false, "device_unavailable"};
+    if (c.type == Command::Type::BaseDrive) {
+      if (!Finite(c.values[0]) || !Finite(c.values[2]) || !Finite(c.values[3]) ||
+          std::abs(c.values[1]) > 1e-9 || std::abs(c.values[0]) > 1.0 ||
+          std::abs(c.values[2]) > 1.5)
+        return {false, "out_of_range"};  // differential drive has no strafe axis
+      base_drive_[0] = c.values[0];
+      base_drive_[1] = 0;
+      base_drive_[2] = c.values[2];
+      base_drive_until_s_ = c.values[3] > 0 ? data_->time + c.values[3] : 0;
+      base_drive_active_ = true;
+      return {true, {}};
+    }
+    if (c.type == Command::Type::BaseNavigateRelative) {
+      for (double v : c.values)
+        if (!Finite(v)) return {false, "invalid_pose"};
+      active_motion_.store(true);
+      struct MotionGuard {
+        std::atomic_bool& flag;
+        ~MotionGuard() { flag.store(false); }
+      } motion_guard{active_motion_};
+      auto start = SnapshotLocked();
+      const double tx = start.base_pose[0] +
+                        std::cos(start.base_pose[2]) * c.values[0] - std::sin(start.base_pose[2]) * c.values[1];
+      const double ty = start.base_pose[1] +
+                        std::sin(start.base_pose[2]) * c.values[0] + std::cos(start.base_pose[2]) * c.values[1];
+      const double tyaw = start.base_pose[2] + c.values[2];
+      auto epoch = interruption_epoch_;
+      const double t0 = data_->time;
+      auto wrap = [](double a) { return std::atan2(std::sin(a), std::cos(a)); };
+      while (data_->time - t0 < 60) {
+        if (interruption_epoch_ != epoch) return {false, "interrupted"};
+        auto s = SnapshotLocked();
+        const double ex = tx - s.base_pose[0], ey = ty - s.base_pose[1];
+        const double ea = wrap(tyaw - s.base_pose[2]);
+        if (std::hypot(ex, ey) < 0.20 && std::abs(ea) < 0.15) {
+          base_drive_active_ = false;
+          base_drive_until_s_ = 0;
+          for (int i = 0; i < 3; ++i) base_drive_[i] = 0;
+          return {true, {}};
+        }
+        // Face the waypoint before rolling forward; a car cannot strafe.
+        const double dist = std::hypot(ex, ey);
+        const double yaw_err = dist > 0.25 ? wrap(std::atan2(ey, ex) - s.base_pose[2]) : 0.5 * ea;
+        base_drive_[2] = std::clamp(2. * yaw_err, -1.0, 1.0);
+        base_drive_[0] = std::abs(yaw_err) < 0.5 ? std::clamp(dist, -0.5, 0.5) : 0.;
+        base_drive_active_ = true;
+        const int before = collisions_;
+        StepLocked(10);
+        if (collisions_ > before) {
+          base_drive_active_ = false;
+          base_drive_until_s_ = 0;
+          for (int i = 0; i < 3; ++i) base_drive_[i] = 0;
+          return {false, "collision"};
+        }
+        lock.unlock();
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
+        lock.lock();
+      }
+      base_drive_active_ = false;
+      base_drive_until_s_ = 0;
+      for (int i = 0; i < 3; ++i) base_drive_[i] = 0;
+      return {false, "timeout"};
+    }
+    return {false, "unsupported"};
+  }
   if (c.type == Command::Type::Halt) {
     halted_ = true;
     ++interruption_epoch_;
@@ -646,6 +850,25 @@ StopProof SimEngine::ManagedStop(std::uint64_t reserved_epoch) {
   proof.stop_epoch = reserved_epoch;
   ++interruption_epoch_;
   if (!model_ || !data_) return proof;
+  if (profile_ == BenchmarkProfile::CarNavigation) {
+    base_drive_active_ = false;
+    base_drive_until_s_ = 0;
+    for (int i = 0; i < 3; ++i) base_drive_[i] = 0;
+    for (int i = 0; i < 2; ++i) data_->ctrl[wheel_actuator_ids_[i]] = 0;
+    // Prove the chassis settled: zeroed wheel targets with decayed body speed.
+    for (int i = 0; i < 300 && data_->time < 3.; ++i) {
+      StepLocked(5);
+      auto state = SnapshotLocked();
+      if (std::hypot(state.base_velocity[0], state.base_velocity[1]) < 0.05 &&
+          std::abs(state.base_velocity[2]) < 0.15)
+        break;
+    }
+    proof.base_stopped = true;
+    proof.arm_stopped = true;      // the car has no arm or gripper devices to hold.
+    proof.gripper_stopped = true;
+    proof.snapshot = SnapshotLocked();
+    return proof;
+  }
   base_drive_active_ = false;
   base_drive_until_s_ = 0;
   for (int i = 0; i < 3; ++i) {

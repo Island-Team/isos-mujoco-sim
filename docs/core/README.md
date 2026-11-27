@@ -8,3 +8,4 @@ These pages cover this package implementation and its non-node contracts. [Node 
 - [RoboCasa hardware and record/replay](robocasa.md)
 - [EOS adapter and private service control](adapter.md)
 - [Benchmark method and evaluator RPC](benchmark.md)
+- [Blender scene converter](blendscene.md)
