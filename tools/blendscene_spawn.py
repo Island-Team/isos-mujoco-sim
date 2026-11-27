@@ -27,7 +27,7 @@ def _floats(text):
 
 def find_spawn(scene: Path, force=False, window=None, center=None, inset=2.0,
                seed=7, trials=6000, clearance=1.2, floor_z=0.0, quiet=False):
-    """Raycast <scene>/scene_car.xml and write <scene>/spawn.json. Returns it."""
+    """Raycast <scene>/scene.xml and write <scene>/spawn.json. Returns it."""
     spawn_file = scene / "spawn.json"
     if spawn_file.exists() and not force:
         if not quiet:
@@ -43,7 +43,7 @@ def find_spawn(scene: Path, force=False, window=None, center=None, inset=2.0,
     xmin, ymin, xmax, ymax = window
     cx, cy = center
 
-    model = mujoco.MjModel.from_xml_path(str(scene / "scene_car.xml"))
+    model = mujoco.MjModel.from_xml_path(str(scene / "scene.xml"))
     data = mujoco.MjData(model)
     mujoco.mj_forward(model, data)
     car_id = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, "car")

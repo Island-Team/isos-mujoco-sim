@@ -3,7 +3,7 @@
 
 Differential-drive car + full building visuals + structural collision.
 Usage: python tools/blendscene_build.py <scene_dir>   (any python3, stdlib only)
-Writes <scene_dir>/scene_car.xml. Deterministic: same manifest.json + meshes/
+Writes <scene_dir>/scene.xml. Deterministic: same manifest.json + meshes/
 MTL sidecars + spawn.json always produce a byte-identical XML.
 """
 import json
@@ -47,7 +47,7 @@ MAX_WHEEL_SPEED = 15.0   # rad/s -> 1.2 m/s
 
 
 def build(asset: Path) -> Path:
-    """Emit <asset>/scene_car.xml from <asset>/manifest.json (+MTL, +spawn.json)."""
+    """Emit <asset>/scene.xml from <asset>/manifest.json (+MTL, +spawn.json)."""
     manifest = json.loads((asset / "manifest.json").read_text(encoding="utf-8"))
 
     bmin = manifest["world_bbox_min"]
@@ -178,7 +178,7 @@ def build(asset: Path) -> Path:
     A('  </actuator>')
     A('</mujoco>')
 
-    out = asset / "scene_car.xml"
+    out = asset / "scene.xml"
     text = "\n".join(l for l in lines if l)
     out.write_text(text, encoding="utf-8")
     print(f"wrote {out} ({len(text)} bytes), visual groups: {len(manifest['visual_groups'])}, "

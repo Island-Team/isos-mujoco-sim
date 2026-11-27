@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Offscreen renders + contact report for a blendscene scene (validation).
 
-Usage: python tools/blendscene_render.py [scene_car.xml] [--recolor]
+Usage: python tools/blendscene_render.py [scene.xml] [--recolor]
 
 Camera framing derives from the model's <statistic> (center/extent), so it
 works for any exported building. --recolor overrides visual geoms with bright
@@ -22,8 +22,8 @@ def main(argv=None) -> int:
     recolor = "--recolor" in argv
     positions = [a for a in argv if not a.startswith("-")]
     if len(positions) > 1:
-        sys.exit("usage: python tools/blendscene_render.py [scene_car.xml] [--recolor]")
-    scene = Path(positions[0]) if positions else ROOT / "assets" / "car_scene" / "scene_car.xml"
+        sys.exit("usage: python tools/blendscene_render.py [scene.xml] [--recolor]")
+    scene = Path(positions[0]) if positions else ROOT / "assets" / "car_scene" / "scene.xml"
     out = ROOT / ".run"
     out.mkdir(exist_ok=True)
 

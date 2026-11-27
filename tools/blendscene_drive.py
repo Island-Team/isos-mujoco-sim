@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Scripted drive test: straight, turn left, turn right, reverse. Reports motion.
 
-Usage: python tools/blendscene_drive.py [scene_car.xml]
+Usage: python tools/blendscene_drive.py [scene.xml]
 Exits 1 when the car looks flipped/fallen so build --drive can gate on it.
 """
 import sys
@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    scene = Path(argv[0]) if argv else ROOT / "assets" / "car_scene" / "scene_car.xml"
+    scene = Path(argv[0]) if argv else ROOT / "assets" / "car_scene" / "scene.xml"
     model = mujoco.MjModel.from_xml_path(str(scene))
     data = mujoco.MjData(model)
 

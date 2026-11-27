@@ -9,7 +9,7 @@ Keyboard (toggle/nudge controls):
   C       toggle chase camera (follow car) vs free camera
   +/-     overall speed scale
 
-Run: .car-venv/Scripts/python tools/blendscene_run.py [path/to/scene_car.xml]
+Run: .car-venv/Scripts/python tools/blendscene_run.py [path/to/scene.xml]
 """
 import sys
 import time
@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 
 def main(argv=None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    scene = Path(argv[0]) if argv else ROOT / "assets" / "car_scene" / "scene_car.xml"
+    scene = Path(argv[0]) if argv else ROOT / "assets" / "car_scene" / "scene.xml"
 
     model = mujoco.MjModel.from_xml_path(str(scene))
     data = mujoco.MjData(model)

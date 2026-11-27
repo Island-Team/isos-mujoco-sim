@@ -5,7 +5,7 @@
 
 Pipeline: headless Blender export (per-material visual OBJ+MTL with textures,
 largest-structure collision OBJs, manifest.json) -> OBJ-to-binary-MSH pack ->
-scene_car.xml embedding the differential-drive car -> spawn/goal raycast on
+scene.xml embedding the differential-drive car -> spawn/goal raycast on
 first build -> XML rebuild with the found spawn.
 
 Run under a Python with mujoco+numpy+Pillow (the repo's .car-venv works:
@@ -31,7 +31,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-SCENE_XML = "scene_car.xml"
+SCENE_XML = "scene.xml"
 
 
 def find_blender(explicit: str) -> str:
