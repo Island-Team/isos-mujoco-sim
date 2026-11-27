@@ -18,7 +18,7 @@ int Fail(const char* message) {
 int main(int argc, char** argv) {
   if (argc != 2) return Fail("usage: engine-car-test CAR_SCENE");
   if (!std::filesystem::exists(std::filesystem::path(argv[1]).parent_path() / "meshes"))
-    return Fail("car-scene meshes are not downloaded: run 'python tools/carscene_assets.py download'");
+    return Fail("car-scene meshes are not downloaded: run 'python tools/blendscene_assets.py download'");
   eos_mujoco::SimEngine engine(argv[1]);
   std::string error;
   if (!engine.Load(&error)) return Fail(error.c_str());

@@ -40,9 +40,9 @@ __pycache__/
 # Local car-scene Python environment.
 /.car-venv/
 
-# Car-scene source model and generated meshes ship as a downloadable asset
-# pack instead of git blobs (see tools/carscene_assets.py pack/download).
+# Blender-scene source models and generated meshes ship as downloadable asset
+# packs instead of git blobs (see tools/blendscene_assets.py pack/download).
 /0001.blend
-/assets/car_scene/meshes/
-/assets/car_scene/collision/
+/assets/*_scene/meshes/
+/assets/*_scene/collision/
 /dist/

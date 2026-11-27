@@ -1,4 +1,4 @@
-"""Export 0001.blend to MuJoCo-friendly assets.
+"""Export a .blend to MuJoCo-friendly assets (Blender payload script).
 
 Visuals: duplicate objects, bake world transforms, join per primary material,
 export as OBJ with UVs + MTL (MuJoCo loads textures from MTL automatically).
@@ -8,8 +8,8 @@ Packed images are unpacked next to the OBJs so map_Kd resolves.
 
 Both Blender and MuJoCo are z-up right-handed: coordinates pass through unchanged.
 
-Run headless:
-  blender --background 0001.blend --python tools/carscene_blend_export.py -- <outdir> [opts-json]
+Run headless (tools/blendscene.py does this for you):
+  blender --background <model.blend> --python tools/blendscene_export.py -- <outdir> [opts-json]
 Options: {"unit_scale":1.0, "collision_min_size":1.5, "max_collision":350, "skip_visual":false}
 """
 import bpy
@@ -19,7 +19,9 @@ import sys
 from mathutils import Vector
 
 argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
-outdir = argv[0] if argv else "assets/car_scene"
+if not argv:
+    sys.exit("usage: blender --background <model.blend> --python tools/blendscene_export.py -- <outdir> [opts-json]")
+outdir = argv[0]
 opts = json.loads(argv[1]) if len(argv) > 1 else {}
 UNIT = float(opts.get("unit_scale", 1.0))
 COLL_MIN = float(opts.get("collision_min_size", 1.5))
@@ -43,10 +45,9 @@ for o in mesh_objs:
             bbox_max[i] = max(bbox_max[i], w[i])
 
 os.makedirs(outdir, exist_ok=True)
-texdir = os.path.join(outdir, "textures")
 meshdir = os.path.join(outdir, "meshes")
 colldir = os.path.join(outdir, "collision")
-for d in (texdir, meshdir, colldir):
+for d in (meshdir, colldir):
     os.makedirs(d, exist_ok=True)
 
 manifest = {"scale": UNIT,
@@ -217,4 +218,4 @@ for o in scene.objects:
 
 with open(os.path.join(outdir, "manifest.json"), "w", encoding="utf-8") as f:
     json.dump(manifest, f, indent=1, ensure_ascii=False)
-print("WROTE", os.path.join(outdir, "manifest.json"))
+print("EXPORT_COMPLETE", os.path.join(outdir, "manifest.json"))

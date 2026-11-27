@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
-"""Pack car-scene assets: OBJ -> MuJoCo binary MSH, prune unused textures,
+"""Pack a blendscene export: OBJ -> MuJoCo binary MSH, prune unused textures,
 re-encode the map_Kd PNGs. Keeps the MTL sidecars (Kd source for the builder).
+
+Usage: python tools/blendscene_pack.py <scene_dir> [--no-textures]
 
 MSH layout (per MuJoCo 3.3.1 src/user/user_mesh.cc LoadMSH; no magic header):
   int32 nvertex(>=4), nnormal, ntexcoord, nface,
@@ -12,11 +14,6 @@ MSH layout (per MuJoCo 3.3.1 src/user/user_mesh.cc LoadMSH; no magic header):
 import struct
 import sys
 from pathlib import Path
-
-import numpy as np
-
-ROOT = Path(__file__).resolve().parent.parent
-SCENE = ROOT / "assets" / "car_scene"
 
 
 def obj_to_msh(obj_path: Path, msh_path: Path) -> tuple[int, int]:
@@ -51,6 +48,7 @@ def obj_to_msh(obj_path: Path, msh_path: Path) -> tuple[int, int]:
                 out_uvs.append((u, 1.0 - v))  # OBJ loader flips v; MSH must pre-flip
             tri.append(index[key])
         out_faces.append(tri)
+    import numpy as np
     v = np.asarray(out_verts, dtype=np.float32)
     uv = np.asarray(out_uvs, dtype=np.float32)
     f = np.asarray(out_faces, dtype=np.int32)
@@ -64,12 +62,14 @@ def obj_to_msh(obj_path: Path, msh_path: Path) -> tuple[int, int]:
     return len(v), len(f)
 
 
-def prune_and_reencode_textures() -> None:
-    """Delete non-map_Kd maps (specular/bump/roughness MuJoCo never loads) and
-    losslessly-ish re-encode the kept RGB PNGs when that shrinks them."""
+def prune_and_reencode_textures(scene: Path) -> None:
+    """MuJoCo only loads PNG diffuse maps: delete the maps it never loads
+    (specular/bump/roughness), convert kept non-PNG map_Kd images to PNG, and
+    re-encode kept RGB PNGs when that shrinks them. .exr sidecars are left
+    untouched (kept from the original export for provenance)."""
     from PIL import Image
 
-    meshes = SCENE / "meshes"
+    meshes = scene / "meshes"
     used = set()
     for mtl in meshes.glob("vis_*.mtl"):
         for line in mtl.read_text(encoding="utf-8", errors="ignore").splitlines():
@@ -77,24 +77,38 @@ def prune_and_reencode_textures() -> None:
             if line.startswith("map_Kd"):
                 name = line.split()[-1].replace("\\", "/").split("/")[-1]
                 used.add(Path(name).stem)
-    removed = kept = 0
-    for png in sorted(meshes.glob("*.png")):
-        if png.stem not in used:
-            png.unlink()
+    removed = kept = converted = 0
+    for img_path in sorted(meshes.iterdir()):
+        suffix = img_path.suffix.lower()
+        if suffix == ".exr" or suffix not in (".png", ".jpg", ".jpeg", ".bmp", ".tga", ".tif", ".tiff"):
+            continue
+        if img_path.stem not in used:
+            img_path.unlink()
             removed += 1
             continue
-        img = Image.open(png)
-        if img.mode == "RGB":
-            img.save(png, optimize=True)
-        kept += 1
-    print(f"textures: kept {kept} map_Kd PNGs (re-encoded), removed {removed} unused maps")
+        if suffix == ".png":
+            img = Image.open(img_path)
+            if img.mode == "RGB":
+                img.save(img_path, optimize=True)
+            kept += 1
+            continue
+        png = img_path.with_suffix(".png")
+        if png.exists():  # a PNG twin already fills the map_Kd slot
+            img_path.unlink()
+            removed += 1
+            continue
+        Image.open(img_path).save(png)
+        img_path.unlink()
+        converted += 1
+    print(f"textures: kept {kept} map_Kd PNGs (re-encoded), converted {converted} to PNG, "
+          f"removed {removed} unused/redundant maps")
 
 
-def main():
-    do_tex = "--no-textures" not in sys.argv
-    meshes = SCENE / "meshes"
+def pack(scene: Path, do_textures: bool = True) -> None:
+    """Convert every vis_*.obj / col_*.obj under scene/ to binary MSH in place."""
+    meshes = scene / "meshes"
     total_before = total_after = 0
-    for obj in sorted(list(meshes.glob("vis_*.obj")) + list((SCENE / "collision").glob("col_*.obj"))):
+    for obj in sorted(list(meshes.glob("vis_*.obj")) + list((scene / "collision").glob("col_*.obj"))):
         msh = obj.with_suffix(".msh")
         nv, nf = obj_to_msh(obj, msh)
         before, after = obj.stat().st_size, msh.stat().st_size
@@ -104,8 +118,19 @@ def main():
         print(f"{obj.name}: {before // 1024}K -> {after // 1024}K ({nv} verts, {nf} tris)")
     print(f"TOTAL meshes: {total_before // 1024}K -> {total_after // 1024}K "
           f"({100 * total_after / max(total_before, 1):.0f}%)")
-    if do_tex:
-        prune_and_reencode_textures()
+    if do_textures:
+        prune_and_reencode_textures(scene)
+
+
+def main() -> None:
+    args = [a for a in sys.argv[1:] if a != "--no-textures"]
+    positions = [a for a in args if not a.startswith("-")]
+    if len(positions) != 1:
+        sys.exit("usage: python tools/blendscene_pack.py <scene_dir> [--no-textures]")
+    scene = Path(positions[0]).resolve()
+    if not (scene / "meshes").is_dir():
+        sys.exit(f"no blendscene export found under {scene}")
+    pack(scene, do_textures="--no-textures" not in sys.argv)
 
 
 if __name__ == "__main__":

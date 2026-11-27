@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Isolated diff-drive tuning on a plane: fast parameter search for stable traction."""
+"""Isolated diff-drive tuning on a plane: fast parameter search for stable traction.
+
+Lab tool: sweeps kv/armature/friction on a synthetic plane model (no building).
+The winning constants were hand-copied into tools/blendscene_build.py — keep the
+two in sync when re-tuning (see the cross-language contract note there).
+"""
 import mujoco
 import numpy as np
 

@@ -26,7 +26,7 @@ constexpr std::array<const char*, 6> kActuators = {"shoulder_pan", "shoulder_lif
                                                    "wrist_1",      "wrist_2",       "wrist_3"};
 constexpr std::array<const char*, 2> kCarJoints = {"wheel_left_spin", "wheel_right_spin"};
 constexpr std::array<const char*, 2> kCarActuators = {"left_wheel_motor", "right_wheel_motor"};
-constexpr double kCarWheelRadius = 0.08;   // must match tools/carscene_build_xml.py
+constexpr double kCarWheelRadius = 0.08;   // must match tools/blendscene_build.py
 constexpr double kCarWheelSpan = 0.36;     // distance between driven wheel centers
 constexpr double kCarMaxWheelSpeed = 15.;  // rad/s, matches actuator ctrlrange
 int Id(const mjModel* m, mjtObj kind, const char* name) { return mj_name2id(m, kind, name); }

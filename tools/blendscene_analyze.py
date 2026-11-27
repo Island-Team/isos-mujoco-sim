@@ -1,10 +1,17 @@
-"""Analyze 0001.blend inside Blender: units, bbox, object types, collections, materials.
+"""Analyze a .blend inside Blender: units, bbox, object types, collections, materials.
 
-Run headless: blender --background 0001.blend --python tools/carscene_blend_analyze.py
+Run headless (tools/blendscene.py analyze does this for you):
+  blender --background <model.blend> --python tools/blendscene_analyze.py -- [outfile]
+Without an outfile nothing is written; the summary is printed either way.
 """
 import bpy
 import json
+import os
+import sys
 from mathutils import Vector
+
+argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+outfile = os.path.abspath(argv[0]) if argv else None
 
 D = bpy.data
 out = {}
@@ -78,9 +85,11 @@ for m in D.materials:
             pass
 out["material_stats"] = mat_stats
 
-with open("blend_analysis.json", "w", encoding="utf-8") as f:
-    json.dump(out, f, indent=1, ensure_ascii=False)
+if outfile:
+    with open(outfile, "w", encoding="utf-8") as f:
+        json.dump(out, f, indent=1, ensure_ascii=False)
 print(json.dumps({k: out[k] for k in ("scenes", "unit_system", "unit_scale", "counts", "visible_mesh_objects",
                                       "world_bbox_min", "world_bbox_max", "world_bbox_size",
                                       "object_type_hist", "mesh_total_vertices", "mesh_total_faces")}, indent=1))
-print("WROTE blend_analysis.json")
+if outfile:
+    print("WROTE", outfile)
