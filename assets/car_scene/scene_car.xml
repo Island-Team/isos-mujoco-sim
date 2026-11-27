@@ -1,0 +1,850 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="car_scene_v1">
+  <custom>
+    <numeric name="eos_benchmark_car_navigation_v1" data="1" />
+  </custom>
+  <compiler angle="radian" autolimits="true" meshdir="." />
+  <option timestep="0.002" integrator="implicitfast" gravity="0 0 -9.81" />
+  <visual>
+    <global offwidth="1280" offheight="720" />
+    <headlight ambient="0.4 0.4 0.4" diffuse="0.6 0.6 0.6" />
+  </visual>
+  <statistic center="25.0 27.0 4.9" extent="58.9" />
+  <asset>
+    <mesh name="vis_1009358" file="meshes/vis_1009358.msh" />
+    <mesh name="vis_1009378" file="meshes/vis_1009378.msh" />
+    <mesh name="vis_1009354" file="meshes/vis_1009354.msh" />
+    <mesh name="vis_1009353" file="meshes/vis_1009353.msh" />
+    <mesh name="vis_1009350" file="meshes/vis_1009350.msh" />
+    <mesh name="vis_1009347" file="meshes/vis_1009347.msh" />
+    <mesh name="vis_1009373" file="meshes/vis_1009373.msh" />
+    <mesh name="vis_1009344" file="meshes/vis_1009344.msh" />
+    <mesh name="vis_1009364" file="meshes/vis_1009364.msh" />
+    <mesh name="vis_1009376" file="meshes/vis_1009376.msh" />
+    <mesh name="vis_1009349" file="meshes/vis_1009349.msh" />
+    <mesh name="vis_1009366" file="meshes/vis_1009366.msh" />
+    <mesh name="vis_1009345" file="meshes/vis_1009345.msh" />
+    <mesh name="vis_1009363" file="meshes/vis_1009363.msh" />
+    <mesh name="vis_1009342" file="meshes/vis_1009342.msh" />
+    <mesh name="vis_1009375" file="meshes/vis_1009375.msh" />
+    <mesh name="vis_1009343" file="meshes/vis_1009343.msh" />
+    <mesh name="vis_1009361" file="meshes/vis_1009361.msh" />
+    <mesh name="vis_1009370" file="meshes/vis_1009370.msh" />
+    <mesh name="vis_1009365" file="meshes/vis_1009365.msh" />
+    <mesh name="vis_1009368" file="meshes/vis_1009368.msh" />
+    <mesh name="vis_1009374" file="meshes/vis_1009374.msh" />
+    <mesh name="vis_1009352" file="meshes/vis_1009352.msh" />
+    <mesh name="vis_1009359" file="meshes/vis_1009359.msh" />
+    <mesh name="vis_1009362" file="meshes/vis_1009362.msh" />
+    <mesh name="vis_1009379" file="meshes/vis_1009379.msh" />
+    <mesh name="vis_1009355" file="meshes/vis_1009355.msh" />
+    <mesh name="vis_1009372" file="meshes/vis_1009372.msh" />
+    <mesh name="vis_1009357" file="meshes/vis_1009357.msh" />
+    <mesh name="vis_1009356" file="meshes/vis_1009356.msh" />
+    <mesh name="vis_1009377" file="meshes/vis_1009377.msh" />
+    <mesh name="vis_1009351" file="meshes/vis_1009351.msh" />
+    <mesh name="vis_1009348" file="meshes/vis_1009348.msh" />
+    <mesh name="vis_1009346" file="meshes/vis_1009346.msh" />
+    <mesh name="vis_1009371" file="meshes/vis_1009371.msh" />
+    <mesh name="vis_1009360" file="meshes/vis_1009360.msh" />
+    <mesh name="vis_1009369" file="meshes/vis_1009369.msh" />
+    <mesh name="vis_1009383" file="meshes/vis_1009383.msh" />
+    <mesh name="vis_1009382" file="meshes/vis_1009382.msh" />
+    <mesh name="vis_1009380" file="meshes/vis_1009380.msh" />
+    <mesh name="vis_1009381" file="meshes/vis_1009381.msh" />
+    <mesh name="vis_1009386" file="meshes/vis_1009386.msh" />
+    <mesh name="vis_1009385" file="meshes/vis_1009385.msh" />
+    <mesh name="col_0000" file="collision/col_0000.msh" />
+    <mesh name="col_0001" file="collision/col_0001.msh" />
+    <mesh name="col_0002" file="collision/col_0002.msh" />
+    <mesh name="col_0003" file="collision/col_0003.msh" />
+    <mesh name="col_0004" file="collision/col_0004.msh" />
+    <mesh name="col_0005" file="collision/col_0005.msh" />
+    <mesh name="col_0006" file="collision/col_0006.msh" />
+    <mesh name="col_0007" file="collision/col_0007.msh" />
+    <mesh name="col_0008" file="collision/col_0008.msh" />
+    <mesh name="col_0009" file="collision/col_0009.msh" />
+    <mesh name="col_0010" file="collision/col_0010.msh" />
+    <mesh name="col_0011" file="collision/col_0011.msh" />
+    <mesh name="col_0012" file="collision/col_0012.msh" />
+    <mesh name="col_0013" file="collision/col_0013.msh" />
+    <mesh name="col_0014" file="collision/col_0014.msh" />
+    <mesh name="col_0015" file="collision/col_0015.msh" />
+    <mesh name="col_0016" file="collision/col_0016.msh" />
+    <mesh name="col_0017" file="collision/col_0017.msh" />
+    <mesh name="col_0018" file="collision/col_0018.msh" />
+    <mesh name="col_0019" file="collision/col_0019.msh" />
+    <mesh name="col_0020" file="collision/col_0020.msh" />
+    <mesh name="col_0021" file="collision/col_0021.msh" />
+    <mesh name="col_0022" file="collision/col_0022.msh" />
+    <mesh name="col_0023" file="collision/col_0023.msh" />
+    <mesh name="col_0024" file="collision/col_0024.msh" />
+    <mesh name="col_0025" file="collision/col_0025.msh" />
+    <mesh name="col_0026" file="collision/col_0026.msh" />
+    <mesh name="col_0027" file="collision/col_0027.msh" />
+    <mesh name="col_0028" file="collision/col_0028.msh" />
+    <mesh name="col_0029" file="collision/col_0029.msh" />
+    <mesh name="col_0030" file="collision/col_0030.msh" />
+    <mesh name="col_0031" file="collision/col_0031.msh" />
+    <mesh name="col_0032" file="collision/col_0032.msh" />
+    <mesh name="col_0033" file="collision/col_0033.msh" />
+    <mesh name="col_0034" file="collision/col_0034.msh" />
+    <mesh name="col_0035" file="collision/col_0035.msh" />
+    <mesh name="col_0036" file="collision/col_0036.msh" />
+    <mesh name="col_0037" file="collision/col_0037.msh" />
+    <mesh name="col_0038" file="collision/col_0038.msh" />
+    <mesh name="col_0039" file="collision/col_0039.msh" />
+    <mesh name="col_0040" file="collision/col_0040.msh" />
+    <mesh name="col_0041" file="collision/col_0041.msh" />
+    <mesh name="col_0042" file="collision/col_0042.msh" />
+    <mesh name="col_0043" file="collision/col_0043.msh" />
+    <mesh name="col_0044" file="collision/col_0044.msh" />
+    <mesh name="col_0045" file="collision/col_0045.msh" />
+    <mesh name="col_0046" file="collision/col_0046.msh" />
+    <mesh name="col_0047" file="collision/col_0047.msh" />
+    <mesh name="col_0048" file="collision/col_0048.msh" />
+    <mesh name="col_0049" file="collision/col_0049.msh" />
+    <mesh name="col_0050" file="collision/col_0050.msh" />
+    <mesh name="col_0051" file="collision/col_0051.msh" />
+    <mesh name="col_0052" file="collision/col_0052.msh" />
+    <mesh name="col_0053" file="collision/col_0053.msh" />
+    <mesh name="col_0054" file="collision/col_0054.msh" />
+    <mesh name="col_0055" file="collision/col_0055.msh" />
+    <mesh name="col_0056" file="collision/col_0056.msh" />
+    <mesh name="col_0057" file="collision/col_0057.msh" />
+    <mesh name="col_0058" file="collision/col_0058.msh" />
+    <mesh name="col_0059" file="collision/col_0059.msh" />
+    <mesh name="col_0060" file="collision/col_0060.msh" />
+    <mesh name="col_0061" file="collision/col_0061.msh" />
+    <mesh name="col_0062" file="collision/col_0062.msh" />
+    <mesh name="col_0063" file="collision/col_0063.msh" />
+    <mesh name="col_0064" file="collision/col_0064.msh" />
+    <mesh name="col_0065" file="collision/col_0065.msh" />
+    <mesh name="col_0066" file="collision/col_0066.msh" />
+    <mesh name="col_0067" file="collision/col_0067.msh" />
+    <mesh name="col_0068" file="collision/col_0068.msh" />
+    <mesh name="col_0069" file="collision/col_0069.msh" />
+    <mesh name="col_0070" file="collision/col_0070.msh" />
+    <mesh name="col_0071" file="collision/col_0071.msh" />
+    <mesh name="col_0072" file="collision/col_0072.msh" />
+    <mesh name="col_0073" file="collision/col_0073.msh" />
+    <mesh name="col_0074" file="collision/col_0074.msh" />
+    <mesh name="col_0075" file="collision/col_0075.msh" />
+    <mesh name="col_0076" file="collision/col_0076.msh" />
+    <mesh name="col_0077" file="collision/col_0077.msh" />
+    <mesh name="col_0078" file="collision/col_0078.msh" />
+    <mesh name="col_0079" file="collision/col_0079.msh" />
+    <mesh name="col_0080" file="collision/col_0080.msh" />
+    <mesh name="col_0081" file="collision/col_0081.msh" />
+    <mesh name="col_0082" file="collision/col_0082.msh" />
+    <mesh name="col_0083" file="collision/col_0083.msh" />
+    <mesh name="col_0084" file="collision/col_0084.msh" />
+    <mesh name="col_0085" file="collision/col_0085.msh" />
+    <mesh name="col_0086" file="collision/col_0086.msh" />
+    <mesh name="col_0087" file="collision/col_0087.msh" />
+    <mesh name="col_0088" file="collision/col_0088.msh" />
+    <mesh name="col_0089" file="collision/col_0089.msh" />
+    <mesh name="col_0090" file="collision/col_0090.msh" />
+    <mesh name="col_0091" file="collision/col_0091.msh" />
+    <mesh name="col_0092" file="collision/col_0092.msh" />
+    <mesh name="col_0093" file="collision/col_0093.msh" />
+    <mesh name="col_0094" file="collision/col_0094.msh" />
+    <mesh name="col_0095" file="collision/col_0095.msh" />
+    <mesh name="col_0096" file="collision/col_0096.msh" />
+    <mesh name="col_0097" file="collision/col_0097.msh" />
+    <mesh name="col_0098" file="collision/col_0098.msh" />
+    <mesh name="col_0099" file="collision/col_0099.msh" />
+    <mesh name="col_0100" file="collision/col_0100.msh" />
+    <mesh name="col_0101" file="collision/col_0101.msh" />
+    <mesh name="col_0102" file="collision/col_0102.msh" />
+    <mesh name="col_0103" file="collision/col_0103.msh" />
+    <mesh name="col_0104" file="collision/col_0104.msh" />
+    <mesh name="col_0105" file="collision/col_0105.msh" />
+    <mesh name="col_0106" file="collision/col_0106.msh" />
+    <mesh name="col_0107" file="collision/col_0107.msh" />
+    <mesh name="col_0108" file="collision/col_0108.msh" />
+    <mesh name="col_0109" file="collision/col_0109.msh" />
+    <mesh name="col_0110" file="collision/col_0110.msh" />
+    <mesh name="col_0111" file="collision/col_0111.msh" />
+    <mesh name="col_0112" file="collision/col_0112.msh" />
+    <mesh name="col_0113" file="collision/col_0113.msh" />
+    <mesh name="col_0114" file="collision/col_0114.msh" />
+    <mesh name="col_0115" file="collision/col_0115.msh" />
+    <mesh name="col_0116" file="collision/col_0116.msh" />
+    <mesh name="col_0117" file="collision/col_0117.msh" />
+    <mesh name="col_0118" file="collision/col_0118.msh" />
+    <mesh name="col_0119" file="collision/col_0119.msh" />
+    <mesh name="col_0120" file="collision/col_0120.msh" />
+    <mesh name="col_0121" file="collision/col_0121.msh" />
+    <mesh name="col_0122" file="collision/col_0122.msh" />
+    <mesh name="col_0123" file="collision/col_0123.msh" />
+    <mesh name="col_0124" file="collision/col_0124.msh" />
+    <mesh name="col_0125" file="collision/col_0125.msh" />
+    <mesh name="col_0126" file="collision/col_0126.msh" />
+    <mesh name="col_0127" file="collision/col_0127.msh" />
+    <mesh name="col_0128" file="collision/col_0128.msh" />
+    <mesh name="col_0129" file="collision/col_0129.msh" />
+    <mesh name="col_0130" file="collision/col_0130.msh" />
+    <mesh name="col_0131" file="collision/col_0131.msh" />
+    <mesh name="col_0132" file="collision/col_0132.msh" />
+    <mesh name="col_0133" file="collision/col_0133.msh" />
+    <mesh name="col_0134" file="collision/col_0134.msh" />
+    <mesh name="col_0135" file="collision/col_0135.msh" />
+    <mesh name="col_0136" file="collision/col_0136.msh" />
+    <mesh name="col_0137" file="collision/col_0137.msh" />
+    <mesh name="col_0138" file="collision/col_0138.msh" />
+    <mesh name="col_0139" file="collision/col_0139.msh" />
+    <mesh name="col_0140" file="collision/col_0140.msh" />
+    <mesh name="col_0141" file="collision/col_0141.msh" />
+    <mesh name="col_0142" file="collision/col_0142.msh" />
+    <mesh name="col_0143" file="collision/col_0143.msh" />
+    <mesh name="col_0144" file="collision/col_0144.msh" />
+    <mesh name="col_0145" file="collision/col_0145.msh" />
+    <mesh name="col_0146" file="collision/col_0146.msh" />
+    <mesh name="col_0147" file="collision/col_0147.msh" />
+    <mesh name="col_0148" file="collision/col_0148.msh" />
+    <mesh name="col_0149" file="collision/col_0149.msh" />
+    <mesh name="col_0150" file="collision/col_0150.msh" />
+    <mesh name="col_0151" file="collision/col_0151.msh" />
+    <mesh name="col_0152" file="collision/col_0152.msh" />
+    <mesh name="col_0153" file="collision/col_0153.msh" />
+    <mesh name="col_0154" file="collision/col_0154.msh" />
+    <mesh name="col_0155" file="collision/col_0155.msh" />
+    <mesh name="col_0156" file="collision/col_0156.msh" />
+    <mesh name="col_0157" file="collision/col_0157.msh" />
+    <mesh name="col_0158" file="collision/col_0158.msh" />
+    <mesh name="col_0159" file="collision/col_0159.msh" />
+    <mesh name="col_0160" file="collision/col_0160.msh" />
+    <mesh name="col_0161" file="collision/col_0161.msh" />
+    <mesh name="col_0162" file="collision/col_0162.msh" />
+    <mesh name="col_0163" file="collision/col_0163.msh" />
+    <mesh name="col_0164" file="collision/col_0164.msh" />
+    <mesh name="col_0165" file="collision/col_0165.msh" />
+    <mesh name="col_0166" file="collision/col_0166.msh" />
+    <mesh name="col_0167" file="collision/col_0167.msh" />
+    <mesh name="col_0168" file="collision/col_0168.msh" />
+    <mesh name="col_0169" file="collision/col_0169.msh" />
+    <mesh name="col_0170" file="collision/col_0170.msh" />
+    <mesh name="col_0171" file="collision/col_0171.msh" />
+    <mesh name="col_0172" file="collision/col_0172.msh" />
+    <mesh name="col_0173" file="collision/col_0173.msh" />
+    <mesh name="col_0174" file="collision/col_0174.msh" />
+    <mesh name="col_0175" file="collision/col_0175.msh" />
+    <mesh name="col_0176" file="collision/col_0176.msh" />
+    <mesh name="col_0177" file="collision/col_0177.msh" />
+    <mesh name="col_0178" file="collision/col_0178.msh" />
+    <mesh name="col_0179" file="collision/col_0179.msh" />
+    <mesh name="col_0180" file="collision/col_0180.msh" />
+    <mesh name="col_0181" file="collision/col_0181.msh" />
+    <mesh name="col_0182" file="collision/col_0182.msh" />
+    <mesh name="col_0183" file="collision/col_0183.msh" />
+    <mesh name="col_0184" file="collision/col_0184.msh" />
+    <mesh name="col_0185" file="collision/col_0185.msh" />
+    <mesh name="col_0186" file="collision/col_0186.msh" />
+    <mesh name="col_0187" file="collision/col_0187.msh" />
+    <mesh name="col_0188" file="collision/col_0188.msh" />
+    <mesh name="col_0189" file="collision/col_0189.msh" />
+    <mesh name="col_0190" file="collision/col_0190.msh" />
+    <mesh name="col_0191" file="collision/col_0191.msh" />
+    <mesh name="col_0192" file="collision/col_0192.msh" />
+    <mesh name="col_0193" file="collision/col_0193.msh" />
+    <mesh name="col_0194" file="collision/col_0194.msh" />
+    <mesh name="col_0195" file="collision/col_0195.msh" />
+    <mesh name="col_0196" file="collision/col_0196.msh" />
+    <mesh name="col_0197" file="collision/col_0197.msh" />
+    <mesh name="col_0198" file="collision/col_0198.msh" />
+    <mesh name="col_0199" file="collision/col_0199.msh" />
+    <mesh name="col_0200" file="collision/col_0200.msh" />
+    <mesh name="col_0201" file="collision/col_0201.msh" />
+    <mesh name="col_0202" file="collision/col_0202.msh" />
+    <mesh name="col_0203" file="collision/col_0203.msh" />
+    <mesh name="col_0204" file="collision/col_0204.msh" />
+    <mesh name="col_0205" file="collision/col_0205.msh" />
+    <mesh name="col_0206" file="collision/col_0206.msh" />
+    <mesh name="col_0207" file="collision/col_0207.msh" />
+    <mesh name="col_0208" file="collision/col_0208.msh" />
+    <mesh name="col_0209" file="collision/col_0209.msh" />
+    <mesh name="col_0210" file="collision/col_0210.msh" />
+    <mesh name="col_0211" file="collision/col_0211.msh" />
+    <mesh name="col_0212" file="collision/col_0212.msh" />
+    <mesh name="col_0213" file="collision/col_0213.msh" />
+    <mesh name="col_0214" file="collision/col_0214.msh" />
+    <mesh name="col_0215" file="collision/col_0215.msh" />
+    <mesh name="col_0216" file="collision/col_0216.msh" />
+    <mesh name="col_0217" file="collision/col_0217.msh" />
+    <mesh name="col_0218" file="collision/col_0218.msh" />
+    <mesh name="col_0219" file="collision/col_0219.msh" />
+    <mesh name="col_0220" file="collision/col_0220.msh" />
+    <mesh name="col_0221" file="collision/col_0221.msh" />
+    <mesh name="col_0222" file="collision/col_0222.msh" />
+    <mesh name="col_0223" file="collision/col_0223.msh" />
+    <mesh name="col_0224" file="collision/col_0224.msh" />
+    <mesh name="col_0225" file="collision/col_0225.msh" />
+    <mesh name="col_0226" file="collision/col_0226.msh" />
+    <mesh name="col_0227" file="collision/col_0227.msh" />
+    <mesh name="col_0228" file="collision/col_0228.msh" />
+    <mesh name="col_0229" file="collision/col_0229.msh" />
+    <mesh name="col_0230" file="collision/col_0230.msh" />
+    <mesh name="col_0231" file="collision/col_0231.msh" />
+    <mesh name="col_0232" file="collision/col_0232.msh" />
+    <mesh name="col_0233" file="collision/col_0233.msh" />
+    <mesh name="col_0234" file="collision/col_0234.msh" />
+    <mesh name="col_0235" file="collision/col_0235.msh" />
+    <mesh name="col_0236" file="collision/col_0236.msh" />
+    <mesh name="col_0237" file="collision/col_0237.msh" />
+    <mesh name="col_0238" file="collision/col_0238.msh" />
+    <mesh name="col_0239" file="collision/col_0239.msh" />
+    <mesh name="col_0240" file="collision/col_0240.msh" />
+    <mesh name="col_0241" file="collision/col_0241.msh" />
+    <mesh name="col_0242" file="collision/col_0242.msh" />
+    <mesh name="col_0243" file="collision/col_0243.msh" />
+    <mesh name="col_0244" file="collision/col_0244.msh" />
+    <mesh name="col_0245" file="collision/col_0245.msh" />
+    <mesh name="col_0246" file="collision/col_0246.msh" />
+    <mesh name="col_0247" file="collision/col_0247.msh" />
+    <mesh name="col_0248" file="collision/col_0248.msh" />
+    <mesh name="col_0249" file="collision/col_0249.msh" />
+    <mesh name="col_0250" file="collision/col_0250.msh" />
+    <mesh name="col_0251" file="collision/col_0251.msh" />
+    <mesh name="col_0252" file="collision/col_0252.msh" />
+    <mesh name="col_0253" file="collision/col_0253.msh" />
+    <mesh name="col_0254" file="collision/col_0254.msh" />
+    <mesh name="col_0255" file="collision/col_0255.msh" />
+    <mesh name="col_0256" file="collision/col_0256.msh" />
+    <mesh name="col_0257" file="collision/col_0257.msh" />
+    <mesh name="col_0258" file="collision/col_0258.msh" />
+    <mesh name="col_0259" file="collision/col_0259.msh" />
+    <mesh name="col_0260" file="collision/col_0260.msh" />
+    <mesh name="col_0261" file="collision/col_0261.msh" />
+    <mesh name="col_0262" file="collision/col_0262.msh" />
+    <mesh name="col_0263" file="collision/col_0263.msh" />
+    <mesh name="col_0264" file="collision/col_0264.msh" />
+    <mesh name="col_0265" file="collision/col_0265.msh" />
+    <mesh name="col_0266" file="collision/col_0266.msh" />
+    <mesh name="col_0267" file="collision/col_0267.msh" />
+    <mesh name="col_0268" file="collision/col_0268.msh" />
+    <mesh name="col_0269" file="collision/col_0269.msh" />
+    <mesh name="col_0270" file="collision/col_0270.msh" />
+    <mesh name="col_0271" file="collision/col_0271.msh" />
+    <mesh name="col_0272" file="collision/col_0272.msh" />
+    <mesh name="col_0273" file="collision/col_0273.msh" />
+    <mesh name="col_0274" file="collision/col_0274.msh" />
+    <mesh name="col_0275" file="collision/col_0275.msh" />
+    <mesh name="col_0276" file="collision/col_0276.msh" />
+    <mesh name="col_0277" file="collision/col_0277.msh" />
+    <mesh name="col_0278" file="collision/col_0278.msh" />
+    <mesh name="col_0279" file="collision/col_0279.msh" />
+    <mesh name="col_0280" file="collision/col_0280.msh" />
+    <mesh name="col_0281" file="collision/col_0281.msh" />
+    <mesh name="col_0282" file="collision/col_0282.msh" />
+    <mesh name="col_0283" file="collision/col_0283.msh" />
+    <mesh name="col_0284" file="collision/col_0284.msh" />
+    <mesh name="col_0285" file="collision/col_0285.msh" />
+    <mesh name="col_0286" file="collision/col_0286.msh" />
+    <mesh name="col_0287" file="collision/col_0287.msh" />
+    <mesh name="col_0288" file="collision/col_0288.msh" />
+    <mesh name="col_0289" file="collision/col_0289.msh" />
+    <mesh name="col_0290" file="collision/col_0290.msh" />
+    <mesh name="col_0291" file="collision/col_0291.msh" />
+    <mesh name="col_0292" file="collision/col_0292.msh" />
+    <mesh name="col_0293" file="collision/col_0293.msh" />
+    <mesh name="col_0294" file="collision/col_0294.msh" />
+    <mesh name="col_0295" file="collision/col_0295.msh" />
+    <mesh name="col_0296" file="collision/col_0296.msh" />
+    <mesh name="col_0297" file="collision/col_0297.msh" />
+    <mesh name="col_0298" file="collision/col_0298.msh" />
+    <mesh name="col_0299" file="collision/col_0299.msh" />
+    <mesh name="col_0300" file="collision/col_0300.msh" />
+    <mesh name="col_0301" file="collision/col_0301.msh" />
+    <mesh name="col_0302" file="collision/col_0302.msh" />
+    <mesh name="col_0303" file="collision/col_0303.msh" />
+    <mesh name="col_0304" file="collision/col_0304.msh" />
+    <mesh name="col_0305" file="collision/col_0305.msh" />
+    <mesh name="col_0306" file="collision/col_0306.msh" />
+    <mesh name="col_0307" file="collision/col_0307.msh" />
+    <mesh name="col_0308" file="collision/col_0308.msh" />
+    <mesh name="col_0309" file="collision/col_0309.msh" />
+    <mesh name="col_0310" file="collision/col_0310.msh" />
+    <mesh name="col_0311" file="collision/col_0311.msh" />
+    <mesh name="col_0312" file="collision/col_0312.msh" />
+    <mesh name="col_0313" file="collision/col_0313.msh" />
+    <mesh name="col_0314" file="collision/col_0314.msh" />
+    <mesh name="col_0315" file="collision/col_0315.msh" />
+    <mesh name="col_0316" file="collision/col_0316.msh" />
+    <mesh name="col_0317" file="collision/col_0317.msh" />
+    <mesh name="col_0318" file="collision/col_0318.msh" />
+    <mesh name="col_0319" file="collision/col_0319.msh" />
+    <mesh name="col_0320" file="collision/col_0320.msh" />
+    <mesh name="col_0321" file="collision/col_0321.msh" />
+    <mesh name="col_0322" file="collision/col_0322.msh" />
+    <mesh name="col_0323" file="collision/col_0323.msh" />
+    <mesh name="col_0324" file="collision/col_0324.msh" />
+    <mesh name="col_0325" file="collision/col_0325.msh" />
+    <mesh name="col_0326" file="collision/col_0326.msh" />
+    <mesh name="col_0327" file="collision/col_0327.msh" />
+    <mesh name="col_0328" file="collision/col_0328.msh" />
+    <mesh name="col_0329" file="collision/col_0329.msh" />
+    <mesh name="col_0330" file="collision/col_0330.msh" />
+    <mesh name="col_0331" file="collision/col_0331.msh" />
+    <mesh name="col_0332" file="collision/col_0332.msh" />
+    <mesh name="col_0333" file="collision/col_0333.msh" />
+    <mesh name="col_0334" file="collision/col_0334.msh" />
+    <mesh name="col_0335" file="collision/col_0335.msh" />
+    <mesh name="col_0336" file="collision/col_0336.msh" />
+    <mesh name="col_0337" file="collision/col_0337.msh" />
+    <mesh name="col_0338" file="collision/col_0338.msh" />
+    <mesh name="col_0339" file="collision/col_0339.msh" />
+    <mesh name="col_0340" file="collision/col_0340.msh" />
+    <mesh name="col_0341" file="collision/col_0341.msh" />
+    <mesh name="col_0342" file="collision/col_0342.msh" />
+    <mesh name="col_0343" file="collision/col_0343.msh" />
+    <mesh name="col_0344" file="collision/col_0344.msh" />
+    <mesh name="col_0345" file="collision/col_0345.msh" />
+    <mesh name="col_0346" file="collision/col_0346.msh" />
+    <mesh name="col_0347" file="collision/col_0347.msh" />
+    <mesh name="col_0348" file="collision/col_0348.msh" />
+    <mesh name="col_0349" file="collision/col_0349.msh" />
+    <texture name="tx_0014_png" type="2d" file="meshes/0014.png" />
+    <material name="mat_vis_1009370" texture="tx_0014_png" texuniform="true" specular="0.2" />
+    <texture name="tx_0040_png" type="2d" file="meshes/0040.png" />
+    <material name="mat_vis_1009383" texture="tx_0040_png" texuniform="true" specular="0.2" />
+    <texture name="tx_0036_png" type="2d" file="meshes/0036.png" />
+    <material name="mat_vis_1009382" texture="tx_0036_png" texuniform="true" specular="0.2" />
+    <texture name="tx_0032_png" type="2d" file="meshes/0032.png" />
+    <material name="mat_vis_1009380" texture="tx_0032_png" texuniform="true" specular="0.2" />
+    <texture name="tx_0029_png" type="2d" file="meshes/0029.png" />
+    <material name="mat_vis_1009381" texture="tx_0029_png" texuniform="true" specular="0.2" />
+    <texture name="tx_0051_png" type="2d" file="meshes/0051.png" />
+    <material name="mat_vis_1009386" texture="tx_0051_png" texuniform="true" specular="0.2" />
+    <texture name="tx_0045_png" type="2d" file="meshes/0045.png" />
+    <material name="mat_vis_1009385" texture="tx_0045_png" texuniform="true" specular="0.2" />
+  </asset>
+  <worldbody>
+    <light name="sun" pos="0 0 15" dir="0 0 -1" diffuse="0.7 0.7 0.7" specular="0.2 0.2 0.2" />
+    <light name="blender_light_5" pos="42.4 30.39 3.0" diffuse="0.08 1.00 0.39" attenuation="0.05 0.002 0.0005" />
+    <light name="blender_light_6" pos="41.1 23.31 2.99" diffuse="0.08 1.00 0.39" attenuation="0.05 0.002 0.0005" />
+    <light name="blender_light_7" pos="42.4 29.68 3.0" diffuse="0.08 1.00 0.39" attenuation="0.05 0.002 0.0005" />
+    <geom name="safety_floor" type="plane" size="200 200 0.1" pos="0 0 -0.020" rgba="0.25 0.27 0.3 1" friction="1.0 0.02 0.001" />
+    <geom name="vis_1009358" type="mesh" mesh="vis_1009358" group="2" contype="0" conaffinity="0" rgba="0.171 0.202 0.168 1" />
+    <geom name="vis_1009378" type="mesh" mesh="vis_1009378" group="2" contype="0" conaffinity="0" rgba="0.672 0.658 0.571 1" />
+    <geom name="vis_1009354" type="mesh" mesh="vis_1009354" group="2" contype="0" conaffinity="0" rgba="0.060 0.074 0.053 1" />
+    <geom name="vis_1009353" type="mesh" mesh="vis_1009353" group="2" contype="0" conaffinity="0" rgba="0.745 0.738 0.658 1" />
+    <geom name="vis_1009350" type="mesh" mesh="vis_1009350" group="2" contype="0" conaffinity="0" rgba="0.694 0.905 1.000 1" />
+    <geom name="vis_1009347" type="mesh" mesh="vis_1009347" group="2" contype="0" conaffinity="0" rgba="0.376 0.440 0.445 1" />
+    <geom name="vis_1009373" type="mesh" mesh="vis_1009373" group="2" contype="0" conaffinity="0" rgba="0.009 0.016 0.018 1" />
+    <geom name="vis_1009344" type="mesh" mesh="vis_1009344" group="2" contype="0" conaffinity="0" rgba="0.032 0.047 0.047 1" />
+    <geom name="vis_1009364" type="mesh" mesh="vis_1009364" group="2" contype="0" conaffinity="0" rgba="0.209 0.402 0.054 1" />
+    <geom name="vis_1009376" type="mesh" mesh="vis_1009376" group="2" contype="0" conaffinity="0" rgba="0.171 0.328 0.328 1" />
+    <geom name="vis_1009349" type="mesh" mesh="vis_1009349" group="2" contype="0" conaffinity="0" rgba="0.009 0.102 0.301 1" />
+    <geom name="vis_1009366" type="mesh" mesh="vis_1009366" group="2" contype="0" conaffinity="0" rgba="0.672 0.687 0.597 1" />
+    <geom name="vis_1009345" type="mesh" mesh="vis_1009345" group="2" contype="0" conaffinity="0" rgba="0.138 0.497 0.631 1" />
+    <geom name="vis_1009363" type="mesh" mesh="vis_1009363" group="2" contype="0" conaffinity="0" rgba="0.807 0.839 0.768 1" />
+    <geom name="vis_1009342" type="mesh" mesh="vis_1009342" group="2" contype="0" conaffinity="0" rgba="0.694 0.366 0.020 1" />
+    <geom name="vis_1009375" type="mesh" mesh="vis_1009375" group="2" contype="0" conaffinity="0" rgba="0.491 0.030 0.019 1" />
+    <geom name="vis_1009343" type="mesh" mesh="vis_1009343" group="2" contype="0" conaffinity="0" rgba="1.000 0.451 0.045 1" />
+    <geom name="vis_1009361" type="mesh" mesh="vis_1009361" group="2" contype="0" conaffinity="0" rgba="0.007 0.133 0.045 1" />
+    <geom name="vis_1009370" type="mesh" mesh="vis_1009370" group="2" contype="0" conaffinity="0" material="mat_vis_1009370" />
+    <geom name="vis_1009365" type="mesh" mesh="vis_1009365" group="2" contype="0" conaffinity="0" rgba="0.147 0.283 0.147 1" />
+    <geom name="vis_1009368" type="mesh" mesh="vis_1009368" group="2" contype="0" conaffinity="0" rgba="0.202 0.296 0.246 1" />
+    <geom name="vis_1009374" type="mesh" mesh="vis_1009374" group="2" contype="0" conaffinity="0" rgba="0.672 0.156 0.006 1" />
+    <geom name="vis_1009352" type="mesh" mesh="vis_1009352" group="2" contype="0" conaffinity="0" rgba="0.413 0.246 0.093 1" />
+    <geom name="vis_1009359" type="mesh" mesh="vis_1009359" group="2" contype="0" conaffinity="0" rgba="0.456 0.479 0.418 1" />
+    <geom name="vis_1009362" type="mesh" mesh="vis_1009362" group="2" contype="0" conaffinity="0" rgba="0.058 0.072 0.056 1" />
+    <geom name="vis_1009379" type="mesh" mesh="vis_1009379" group="2" contype="0" conaffinity="0" rgba="0.032 0.159 0.093 1" />
+    <geom name="vis_1009355" type="mesh" mesh="vis_1009355" group="2" contype="0" conaffinity="0" rgba="0.184 0.212 0.209 1" />
+    <geom name="vis_1009372" type="mesh" mesh="vis_1009372" group="2" contype="0" conaffinity="0" rgba="0.195 0.191 0.162 1" />
+    <geom name="vis_1009357" type="mesh" mesh="vis_1009357" group="2" contype="0" conaffinity="0" rgba="0.153 1.000 0.509 1" />
+    <geom name="vis_1009356" type="mesh" mesh="vis_1009356" group="2" contype="0" conaffinity="0" rgba="0.423 0.462 0.456 1" />
+    <geom name="vis_1009377" type="mesh" mesh="vis_1009377" group="2" contype="0" conaffinity="0" rgba="1.000 0.880 0.591 1" />
+    <geom name="vis_1009351" type="mesh" mesh="vis_1009351" group="2" contype="0" conaffinity="0" rgba="0.456 0.254 0.100 1" />
+    <geom name="vis_1009348" type="mesh" mesh="vis_1009348" group="2" contype="0" conaffinity="0" rgba="0.386 0.262 0.159 1" />
+    <geom name="vis_1009346" type="mesh" mesh="vis_1009346" group="2" contype="0" conaffinity="0" rgba="0.018 0.209 0.402 1" />
+    <geom name="vis_1009371" type="mesh" mesh="vis_1009371" group="2" contype="0" conaffinity="0" rgba="0.270 0.352 0.042 1" />
+    <geom name="vis_1009360" type="mesh" mesh="vis_1009360" group="2" contype="0" conaffinity="0" rgba="0.053 0.156 0.223 1" />
+    <geom name="vis_1009369" type="mesh" mesh="vis_1009369" group="2" contype="0" conaffinity="0" rgba="0.418 0.468 0.474 1" />
+    <geom name="vis_1009383" type="mesh" mesh="vis_1009383" group="2" contype="0" conaffinity="0" material="mat_vis_1009383" />
+    <geom name="vis_1009382" type="mesh" mesh="vis_1009382" group="2" contype="0" conaffinity="0" material="mat_vis_1009382" />
+    <geom name="vis_1009380" type="mesh" mesh="vis_1009380" group="2" contype="0" conaffinity="0" material="mat_vis_1009380" />
+    <geom name="vis_1009381" type="mesh" mesh="vis_1009381" group="2" contype="0" conaffinity="0" material="mat_vis_1009381" />
+    <geom name="vis_1009386" type="mesh" mesh="vis_1009386" group="2" contype="0" conaffinity="0" material="mat_vis_1009386" />
+    <geom name="vis_1009385" type="mesh" mesh="vis_1009385" group="2" contype="0" conaffinity="0" material="mat_vis_1009385" />
+    <geom name="col_0000_c" type="mesh" mesh="col_0000" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0001_c" type="mesh" mesh="col_0001" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0002_c" type="mesh" mesh="col_0002" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0003_c" type="mesh" mesh="col_0003" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0004_c" type="mesh" mesh="col_0004" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0005_c" type="mesh" mesh="col_0005" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0006_c" type="mesh" mesh="col_0006" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0007_c" type="mesh" mesh="col_0007" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0008_c" type="mesh" mesh="col_0008" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0009_c" type="mesh" mesh="col_0009" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0010_c" type="mesh" mesh="col_0010" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0011_c" type="mesh" mesh="col_0011" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0012_c" type="mesh" mesh="col_0012" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0013_c" type="mesh" mesh="col_0013" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0014_c" type="mesh" mesh="col_0014" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0015_c" type="mesh" mesh="col_0015" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0016_c" type="mesh" mesh="col_0016" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0017_c" type="mesh" mesh="col_0017" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0018_c" type="mesh" mesh="col_0018" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0019_c" type="mesh" mesh="col_0019" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0020_c" type="mesh" mesh="col_0020" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0021_c" type="mesh" mesh="col_0021" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0022_c" type="mesh" mesh="col_0022" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0023_c" type="mesh" mesh="col_0023" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0024_c" type="mesh" mesh="col_0024" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0025_c" type="mesh" mesh="col_0025" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0026_c" type="mesh" mesh="col_0026" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0027_c" type="mesh" mesh="col_0027" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0028_c" type="mesh" mesh="col_0028" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0029_c" type="mesh" mesh="col_0029" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0030_c" type="mesh" mesh="col_0030" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0031_c" type="mesh" mesh="col_0031" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0032_c" type="mesh" mesh="col_0032" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0033_c" type="mesh" mesh="col_0033" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0034_c" type="mesh" mesh="col_0034" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0035_c" type="mesh" mesh="col_0035" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0036_c" type="mesh" mesh="col_0036" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0037_c" type="mesh" mesh="col_0037" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0038_c" type="mesh" mesh="col_0038" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0039_c" type="mesh" mesh="col_0039" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0040_c" type="mesh" mesh="col_0040" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0041_c" type="mesh" mesh="col_0041" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0042_c" type="mesh" mesh="col_0042" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0043_c" type="mesh" mesh="col_0043" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0044_c" type="mesh" mesh="col_0044" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0045_c" type="mesh" mesh="col_0045" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0046_c" type="mesh" mesh="col_0046" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0047_c" type="mesh" mesh="col_0047" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0048_c" type="mesh" mesh="col_0048" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0049_c" type="mesh" mesh="col_0049" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0050_c" type="mesh" mesh="col_0050" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0051_c" type="mesh" mesh="col_0051" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0052_c" type="mesh" mesh="col_0052" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0053_c" type="mesh" mesh="col_0053" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0054_c" type="mesh" mesh="col_0054" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0055_c" type="mesh" mesh="col_0055" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0056_c" type="mesh" mesh="col_0056" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0057_c" type="mesh" mesh="col_0057" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0058_c" type="mesh" mesh="col_0058" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0059_c" type="mesh" mesh="col_0059" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0060_c" type="mesh" mesh="col_0060" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0061_c" type="mesh" mesh="col_0061" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0062_c" type="mesh" mesh="col_0062" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0063_c" type="mesh" mesh="col_0063" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0064_c" type="mesh" mesh="col_0064" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0065_c" type="mesh" mesh="col_0065" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0066_c" type="mesh" mesh="col_0066" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0067_c" type="mesh" mesh="col_0067" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0068_c" type="mesh" mesh="col_0068" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0069_c" type="mesh" mesh="col_0069" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0070_c" type="mesh" mesh="col_0070" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0071_c" type="mesh" mesh="col_0071" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0072_c" type="mesh" mesh="col_0072" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0073_c" type="mesh" mesh="col_0073" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0074_c" type="mesh" mesh="col_0074" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0075_c" type="mesh" mesh="col_0075" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0076_c" type="mesh" mesh="col_0076" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0077_c" type="mesh" mesh="col_0077" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0078_c" type="mesh" mesh="col_0078" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0079_c" type="mesh" mesh="col_0079" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0080_c" type="mesh" mesh="col_0080" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0081_c" type="mesh" mesh="col_0081" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0082_c" type="mesh" mesh="col_0082" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0083_c" type="mesh" mesh="col_0083" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0084_c" type="mesh" mesh="col_0084" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0085_c" type="mesh" mesh="col_0085" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0086_c" type="mesh" mesh="col_0086" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0087_c" type="mesh" mesh="col_0087" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0088_c" type="mesh" mesh="col_0088" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0089_c" type="mesh" mesh="col_0089" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0090_c" type="mesh" mesh="col_0090" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0091_c" type="mesh" mesh="col_0091" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0092_c" type="mesh" mesh="col_0092" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0093_c" type="mesh" mesh="col_0093" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0094_c" type="mesh" mesh="col_0094" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0095_c" type="mesh" mesh="col_0095" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0096_c" type="mesh" mesh="col_0096" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0097_c" type="mesh" mesh="col_0097" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0098_c" type="mesh" mesh="col_0098" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0099_c" type="mesh" mesh="col_0099" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0100_c" type="mesh" mesh="col_0100" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0101_c" type="mesh" mesh="col_0101" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0102_c" type="mesh" mesh="col_0102" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0103_c" type="mesh" mesh="col_0103" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0104_c" type="mesh" mesh="col_0104" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0105_c" type="mesh" mesh="col_0105" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0106_c" type="mesh" mesh="col_0106" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0107_c" type="mesh" mesh="col_0107" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0108_c" type="mesh" mesh="col_0108" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0109_c" type="mesh" mesh="col_0109" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0110_c" type="mesh" mesh="col_0110" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0111_c" type="mesh" mesh="col_0111" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0112_c" type="mesh" mesh="col_0112" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0113_c" type="mesh" mesh="col_0113" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0114_c" type="mesh" mesh="col_0114" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0115_c" type="mesh" mesh="col_0115" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0116_c" type="mesh" mesh="col_0116" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0117_c" type="mesh" mesh="col_0117" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0118_c" type="mesh" mesh="col_0118" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0119_c" type="mesh" mesh="col_0119" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0120_c" type="mesh" mesh="col_0120" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0121_c" type="mesh" mesh="col_0121" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0122_c" type="mesh" mesh="col_0122" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0123_c" type="mesh" mesh="col_0123" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0124_c" type="mesh" mesh="col_0124" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0125_c" type="mesh" mesh="col_0125" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0126_c" type="mesh" mesh="col_0126" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0127_c" type="mesh" mesh="col_0127" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0128_c" type="mesh" mesh="col_0128" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0129_c" type="mesh" mesh="col_0129" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0130_c" type="mesh" mesh="col_0130" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0131_c" type="mesh" mesh="col_0131" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0132_c" type="mesh" mesh="col_0132" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0133_c" type="mesh" mesh="col_0133" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0134_c" type="mesh" mesh="col_0134" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0135_c" type="mesh" mesh="col_0135" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0136_c" type="mesh" mesh="col_0136" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0137_c" type="mesh" mesh="col_0137" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0138_c" type="mesh" mesh="col_0138" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0139_c" type="mesh" mesh="col_0139" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0140_c" type="mesh" mesh="col_0140" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0141_c" type="mesh" mesh="col_0141" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0142_c" type="mesh" mesh="col_0142" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0143_c" type="mesh" mesh="col_0143" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0144_c" type="mesh" mesh="col_0144" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0145_c" type="mesh" mesh="col_0145" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0146_c" type="mesh" mesh="col_0146" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0147_c" type="mesh" mesh="col_0147" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0148_c" type="mesh" mesh="col_0148" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0149_c" type="mesh" mesh="col_0149" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0150_c" type="mesh" mesh="col_0150" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0151_c" type="mesh" mesh="col_0151" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0152_c" type="mesh" mesh="col_0152" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0153_c" type="mesh" mesh="col_0153" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0154_c" type="mesh" mesh="col_0154" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0155_c" type="mesh" mesh="col_0155" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0156_c" type="mesh" mesh="col_0156" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0157_c" type="mesh" mesh="col_0157" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0158_c" type="mesh" mesh="col_0158" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0159_c" type="mesh" mesh="col_0159" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0160_c" type="mesh" mesh="col_0160" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0161_c" type="mesh" mesh="col_0161" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0162_c" type="mesh" mesh="col_0162" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0163_c" type="mesh" mesh="col_0163" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0164_c" type="mesh" mesh="col_0164" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0165_c" type="mesh" mesh="col_0165" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0166_c" type="mesh" mesh="col_0166" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0167_c" type="mesh" mesh="col_0167" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0168_c" type="mesh" mesh="col_0168" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0169_c" type="mesh" mesh="col_0169" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0170_c" type="mesh" mesh="col_0170" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0171_c" type="mesh" mesh="col_0171" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0172_c" type="mesh" mesh="col_0172" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0173_c" type="mesh" mesh="col_0173" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0174_c" type="mesh" mesh="col_0174" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0175_c" type="mesh" mesh="col_0175" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0176_c" type="mesh" mesh="col_0176" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0177_c" type="mesh" mesh="col_0177" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0178_c" type="mesh" mesh="col_0178" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0179_c" type="mesh" mesh="col_0179" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0180_c" type="mesh" mesh="col_0180" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0181_c" type="mesh" mesh="col_0181" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0182_c" type="mesh" mesh="col_0182" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0183_c" type="mesh" mesh="col_0183" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0184_c" type="mesh" mesh="col_0184" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0185_c" type="mesh" mesh="col_0185" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0186_c" type="mesh" mesh="col_0186" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0187_c" type="mesh" mesh="col_0187" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0188_c" type="mesh" mesh="col_0188" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0189_c" type="mesh" mesh="col_0189" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0190_c" type="mesh" mesh="col_0190" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0191_c" type="mesh" mesh="col_0191" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0192_c" type="mesh" mesh="col_0192" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0193_c" type="mesh" mesh="col_0193" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0194_c" type="mesh" mesh="col_0194" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0195_c" type="mesh" mesh="col_0195" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0196_c" type="mesh" mesh="col_0196" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0197_c" type="mesh" mesh="col_0197" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0198_c" type="mesh" mesh="col_0198" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0199_c" type="mesh" mesh="col_0199" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0200_c" type="mesh" mesh="col_0200" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0201_c" type="mesh" mesh="col_0201" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0202_c" type="mesh" mesh="col_0202" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0203_c" type="mesh" mesh="col_0203" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0204_c" type="mesh" mesh="col_0204" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0205_c" type="mesh" mesh="col_0205" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0206_c" type="mesh" mesh="col_0206" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0207_c" type="mesh" mesh="col_0207" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0208_c" type="mesh" mesh="col_0208" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0209_c" type="mesh" mesh="col_0209" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0210_c" type="mesh" mesh="col_0210" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0211_c" type="mesh" mesh="col_0211" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0212_c" type="mesh" mesh="col_0212" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0213_c" type="mesh" mesh="col_0213" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0214_c" type="mesh" mesh="col_0214" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0215_c" type="mesh" mesh="col_0215" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0216_c" type="mesh" mesh="col_0216" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0217_c" type="mesh" mesh="col_0217" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0218_c" type="mesh" mesh="col_0218" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0219_c" type="mesh" mesh="col_0219" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0220_c" type="mesh" mesh="col_0220" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0221_c" type="mesh" mesh="col_0221" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0222_c" type="mesh" mesh="col_0222" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0223_c" type="mesh" mesh="col_0223" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0224_c" type="mesh" mesh="col_0224" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0225_c" type="mesh" mesh="col_0225" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0226_c" type="mesh" mesh="col_0226" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0227_c" type="mesh" mesh="col_0227" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0228_c" type="mesh" mesh="col_0228" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0229_c" type="mesh" mesh="col_0229" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0230_c" type="mesh" mesh="col_0230" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0231_c" type="mesh" mesh="col_0231" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0232_c" type="mesh" mesh="col_0232" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0233_c" type="mesh" mesh="col_0233" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0234_c" type="mesh" mesh="col_0234" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0235_c" type="mesh" mesh="col_0235" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0236_c" type="mesh" mesh="col_0236" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0237_c" type="mesh" mesh="col_0237" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0238_c" type="mesh" mesh="col_0238" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0239_c" type="mesh" mesh="col_0239" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0240_c" type="mesh" mesh="col_0240" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0241_c" type="mesh" mesh="col_0241" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0242_c" type="mesh" mesh="col_0242" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0243_c" type="mesh" mesh="col_0243" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0244_c" type="mesh" mesh="col_0244" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0245_c" type="mesh" mesh="col_0245" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0246_c" type="mesh" mesh="col_0246" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0247_c" type="mesh" mesh="col_0247" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0248_c" type="mesh" mesh="col_0248" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0249_c" type="mesh" mesh="col_0249" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0250_c" type="mesh" mesh="col_0250" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0251_c" type="mesh" mesh="col_0251" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0252_c" type="mesh" mesh="col_0252" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0253_c" type="mesh" mesh="col_0253" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0254_c" type="mesh" mesh="col_0254" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0255_c" type="mesh" mesh="col_0255" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0256_c" type="mesh" mesh="col_0256" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0257_c" type="mesh" mesh="col_0257" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0258_c" type="mesh" mesh="col_0258" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0259_c" type="mesh" mesh="col_0259" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0260_c" type="mesh" mesh="col_0260" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0261_c" type="mesh" mesh="col_0261" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0262_c" type="mesh" mesh="col_0262" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0263_c" type="mesh" mesh="col_0263" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0264_c" type="mesh" mesh="col_0264" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0265_c" type="mesh" mesh="col_0265" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0266_c" type="mesh" mesh="col_0266" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0267_c" type="mesh" mesh="col_0267" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0268_c" type="mesh" mesh="col_0268" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0269_c" type="mesh" mesh="col_0269" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0270_c" type="mesh" mesh="col_0270" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0271_c" type="mesh" mesh="col_0271" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0272_c" type="mesh" mesh="col_0272" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0273_c" type="mesh" mesh="col_0273" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0274_c" type="mesh" mesh="col_0274" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0275_c" type="mesh" mesh="col_0275" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0276_c" type="mesh" mesh="col_0276" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0277_c" type="mesh" mesh="col_0277" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0278_c" type="mesh" mesh="col_0278" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0279_c" type="mesh" mesh="col_0279" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0280_c" type="mesh" mesh="col_0280" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0281_c" type="mesh" mesh="col_0281" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0282_c" type="mesh" mesh="col_0282" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0283_c" type="mesh" mesh="col_0283" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0284_c" type="mesh" mesh="col_0284" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0285_c" type="mesh" mesh="col_0285" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0286_c" type="mesh" mesh="col_0286" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0287_c" type="mesh" mesh="col_0287" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0288_c" type="mesh" mesh="col_0288" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0289_c" type="mesh" mesh="col_0289" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0290_c" type="mesh" mesh="col_0290" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0291_c" type="mesh" mesh="col_0291" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0292_c" type="mesh" mesh="col_0292" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0293_c" type="mesh" mesh="col_0293" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0294_c" type="mesh" mesh="col_0294" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0295_c" type="mesh" mesh="col_0295" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0296_c" type="mesh" mesh="col_0296" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0297_c" type="mesh" mesh="col_0297" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0298_c" type="mesh" mesh="col_0298" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0299_c" type="mesh" mesh="col_0299" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0300_c" type="mesh" mesh="col_0300" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0301_c" type="mesh" mesh="col_0301" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0302_c" type="mesh" mesh="col_0302" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0303_c" type="mesh" mesh="col_0303" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0304_c" type="mesh" mesh="col_0304" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0305_c" type="mesh" mesh="col_0305" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0306_c" type="mesh" mesh="col_0306" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0307_c" type="mesh" mesh="col_0307" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0308_c" type="mesh" mesh="col_0308" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0309_c" type="mesh" mesh="col_0309" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0310_c" type="mesh" mesh="col_0310" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0311_c" type="mesh" mesh="col_0311" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0312_c" type="mesh" mesh="col_0312" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0313_c" type="mesh" mesh="col_0313" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0314_c" type="mesh" mesh="col_0314" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0315_c" type="mesh" mesh="col_0315" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0316_c" type="mesh" mesh="col_0316" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0317_c" type="mesh" mesh="col_0317" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0318_c" type="mesh" mesh="col_0318" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0319_c" type="mesh" mesh="col_0319" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0320_c" type="mesh" mesh="col_0320" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0321_c" type="mesh" mesh="col_0321" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0322_c" type="mesh" mesh="col_0322" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0323_c" type="mesh" mesh="col_0323" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0324_c" type="mesh" mesh="col_0324" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0325_c" type="mesh" mesh="col_0325" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0326_c" type="mesh" mesh="col_0326" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0327_c" type="mesh" mesh="col_0327" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0328_c" type="mesh" mesh="col_0328" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0329_c" type="mesh" mesh="col_0329" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0330_c" type="mesh" mesh="col_0330" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0331_c" type="mesh" mesh="col_0331" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0332_c" type="mesh" mesh="col_0332" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0333_c" type="mesh" mesh="col_0333" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0334_c" type="mesh" mesh="col_0334" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0335_c" type="mesh" mesh="col_0335" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0336_c" type="mesh" mesh="col_0336" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0337_c" type="mesh" mesh="col_0337" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0338_c" type="mesh" mesh="col_0338" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0339_c" type="mesh" mesh="col_0339" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0340_c" type="mesh" mesh="col_0340" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0341_c" type="mesh" mesh="col_0341" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0342_c" type="mesh" mesh="col_0342" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0343_c" type="mesh" mesh="col_0343" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0344_c" type="mesh" mesh="col_0344" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0345_c" type="mesh" mesh="col_0345" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0346_c" type="mesh" mesh="col_0346" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0347_c" type="mesh" mesh="col_0347" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0348_c" type="mesh" mesh="col_0348" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <geom name="col_0349_c" type="mesh" mesh="col_0349" group="3" rgba="0.3 0.6 0.3 0" friction="1.2 0.005 0.0001" />
+    <body name="car" pos="25.484 27.878 0.100">
+      <freejoint name="car_root" />
+      <geom name="chassis" type="box" size="0.21 0.15 0.05" pos="0 0 0.100" mass="12" rgba="0.15 0.19 0.26 1" />
+      <geom name="cabin" type="box" size="0.105 0.11538461538461538 0.0625" pos="0.070 0 0.200" mass="2" rgba="0.13 0.16 0.22 1" contype="0" conaffinity="0" />
+      <camera name="robot_camera" pos="0.190 0 0.200" xyaxes="0 -1 0 0 0 1" fovy="78" />
+      <site name="car_center" pos="0 0 0.080" size="0.01" rgba="1 0 0 0.5" />
+      <body name="wheel_left" pos="0.000 0.180 0.080">
+        <joint name="wheel_left_spin" type="hinge" axis="0 1 0" armature="0.05" damping="0.01" />
+        <geom name="wheel_left_geom" type="cylinder" size="0.08 0.02" quat="0.7071 0.7071 0 0" mass="0.8" rgba="0.05 0.05 0.05 1" friction="1.2 0.005 0.0001" />
+      </body>
+      <body name="wheel_right" pos="0.000 -0.180 0.080">
+        <joint name="wheel_right_spin" type="hinge" axis="0 1 0" armature="0.05" damping="0.01" />
+        <geom name="wheel_right_geom" type="cylinder" size="0.08 0.02" quat="0.7071 0.7071 0 0" mass="0.8" rgba="0.05 0.05 0.05 1" friction="1.2 0.005 0.0001" />
+      </body>
+      <body name="caster_front" pos="0.160 0 0.030">
+        <joint name="caster_front_ball" type="ball" damping="0.002" />
+        <geom name="caster_front_geom" type="sphere" size="0.03" mass="0.2" rgba="0.4 0.4 0.4 1" friction="1.2 0.005 0.0001" />
+      </body>
+      <body name="caster_rear" pos="-0.160 0 0.030">
+        <joint name="caster_rear_ball" type="ball" damping="0.002" />
+        <geom name="caster_rear_geom" type="sphere" size="0.03" mass="0.2" rgba="0.4 0.4 0.4 1" friction="1.2 0.005 0.0001" />
+      </body>
+    </body>
+    <site name="navigation_goal" pos="0.146 51.307 0.02" type="ellipsoid" size="0.35 0.35 0.005" rgba="0.08 0.75 0.25 0.65" />
+  </worldbody>
+  <actuator>
+    <velocity name="left_wheel_motor" joint="wheel_left_spin" kv="15" ctrlrange="-15.0 15.0" ctrllimited="true" />
+    <velocity name="right_wheel_motor" joint="wheel_right_spin" kv="15" ctrlrange="-15.0 15.0" ctrllimited="true" />
+  </actuator>
+</mujoco>
