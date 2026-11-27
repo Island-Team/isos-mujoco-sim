@@ -8,3 +8,4 @@
 - [RoboCasa 硬件与记录回放](robocasa_cn.md)
 - [EOS 适配器与私有服务控制](adapter_cn.md)
 - [评测方法与评测器 RPC](benchmark_cn.md)
+- [Blender 场景转换器](blendscene_cn.md)
